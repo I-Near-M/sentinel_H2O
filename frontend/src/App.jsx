@@ -24,7 +24,34 @@ export default function App() {
     leadTimeMin: 35
   });
 
-  const grafanaUrl = import.meta.env.VITE_GRAFANA_URL || 'http://localhost:3000';
+  const getDynamicGrafanaUrl = () => {
+    if (import.meta.env.VITE_GRAFANA_URL && import.meta.env.VITE_GRAFANA_URL !== 'http://localhost:3000') {
+      return import.meta.env.VITE_GRAFANA_URL;
+    }
+    if (typeof window === 'undefined') return 'http://localhost:3000';
+    
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    
+    // Si estamos navegando por dominio (ej. sentinel.mguillermo.com)
+    if (hostname.includes('.') && !/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+      const parts = hostname.split('.');
+      if (parts.length >= 2) {
+        parts[0] = 'grafana';
+        return `${protocol}//${parts.join('.')}`;
+      }
+      return `${protocol}//grafana.${hostname}`;
+    }
+    
+    // Si estamos navegando por IP pública directa (ej. 217.216.94.194)
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+      return `${protocol}//${hostname}:3000`;
+    }
+    
+    return `${protocol}//${hostname}:3000`;
+  };
+
+  const grafanaUrl = getDynamicGrafanaUrl();
 
   const fetchGlobalStats = async () => {
     try {

@@ -29,10 +29,14 @@ jobs:
             echo "========================================================"
 
             # 1. Navegar al directorio del proyecto en la VPS
-            if [ -d "/root/sentinel_H2O" ]; then
+            if [ -d "/root/sentinel/sentinel_H2O" ]; then
+              cd /root/sentinel/sentinel_H2O
+            elif [ -d "$HOME/sentinel/sentinel_H2O" ]; then
+              cd "$HOME/sentinel/sentinel_H2O"
+            elif [ -d "/root/sentinel_H2O" ]; then
               cd /root/sentinel_H2O
-            elif [ -d "/home/$USER/sentinel_H2O" ]; then
-              cd "/home/$USER/sentinel_H2O"
+            elif [ -d "$HOME/sentinel_H2O" ]; then
+              cd "$HOME/sentinel_H2O"
             elif [ -d "/var/www/sentinel_H2O" ]; then
               cd /var/www/sentinel_H2O
             else
@@ -47,7 +51,11 @@ jobs:
 
             # 3. Reconstruir y levantar contenedores en segundo plano
             echo "🐳 Reconstruyendo imágenes y actualizando servicios Docker..."
-            docker compose up -d --build
+            if docker compose version >/dev/null 2>&1; then
+              docker compose up -d --build
+            else
+              docker-compose up -d --build
+            fi
 
             # 4. Limpiar imágenes huérfanas intermedias
             echo "🧹 Limpiando imágenes Docker residuales..."
@@ -57,4 +65,8 @@ jobs:
             echo "========================================================"
             echo "✅ DESPLIEGUE COMPLETADO EXITOSAMENTE"
             echo "========================================================"
-            docker compose ps
+            if docker compose version >/dev/null 2>&1; then
+              docker compose ps
+            else
+              docker-compose ps
+            fi
