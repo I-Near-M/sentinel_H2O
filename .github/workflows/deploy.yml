@@ -1,0 +1,60 @@
+name: 🚀 Continuous Deployment (Contabo VPS)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to Contabo VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔐 Execute Deployment via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "========================================================"
+            echo "🌊 INICIANDO DESPLIEGUE CONTINUO — SENTINEL-H2O"
+            echo "========================================================"
+
+            # 1. Navegar al directorio del proyecto en la VPS
+            if [ -d "/root/sentinel_H2O" ]; then
+              cd /root/sentinel_H2O
+            elif [ -d "/home/$USER/sentinel_H2O" ]; then
+              cd "/home/$USER/sentinel_H2O"
+            elif [ -d "/var/www/sentinel_H2O" ]; then
+              cd /var/www/sentinel_H2O
+            else
+              echo "❌ Error: Directorio del proyecto no encontrado en la VPS."
+              exit 1
+            fi
+
+            # 2. Descargar últimos cambios del branch main
+            echo "📥 Descargando últimos cambios de Git..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # 3. Reconstruir y levantar contenedores en segundo plano
+            echo "🐳 Reconstruyendo imágenes y actualizando servicios Docker..."
+            docker compose up -d --build
+
+            # 4. Limpiar imágenes huérfanas intermedias
+            echo "🧹 Limpiando imágenes Docker residuales..."
+            docker image prune -f
+
+            # 5. Estado final de los contenedores
+            echo "========================================================"
+            echo "✅ DESPLIEGUE COMPLETADO EXITOSAMENTE"
+            echo "========================================================"
+            docker compose ps

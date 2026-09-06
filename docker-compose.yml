@@ -66,6 +66,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-sentinel_admin_2026}
       - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGNUP:-false}
       - GF_PANELS_ENABLE_ALPHA=true
+      - GF_SECURITY_ALLOW_EMBEDDING=true
       - MYSQL_DATABASE=${MYSQL_DATABASE:-sentinel_h2o_db}
       - MYSQL_USER=${MYSQL_USER:-sentinel_user}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:-sentinel_password_2026}
