@@ -1,0 +1,207 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "AUDITORÍA VOLUMÉTRICA Y DISPONIBILIDAD HÍDRICA (JUNTA DE USUARIOS & COMISIONES)",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "unit": "m3"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT ROUND(SUM(caudal_m3s * (15 * 60)), 0) AS `Volumen Entregado (m³)` FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "refId": "A"
+        }
+      ],
+      "title": "Volumen Total Derivado Cuenca (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "m3"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT ROUND(SUM(caudal_m3s * (15 * 60)), 0) AS `Volumen Huayopampa` FROM mediciones_procesadas WHERE (id_nodo = 'NODO-04-HUAYOPAMPA' OR id_nodo LIKE '%PARCELA%') AND timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "refId": "A"
+        }
+      ],
+      "title": "Volumen Entregado Parcela Huayopampa (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "green", "value": 90 }
+            ]
+          },
+          "unit": "percent", "min": 0, "max": 100
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 3,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT ROUND((AVG(caudal_m3s) / 2.0) * 100, 1) AS `Índice Disponibilidad` FROM mediciones_procesadas WHERE (id_nodo = 'NODO-03-ACOS' OR id_nodo LIKE '%ACOS%') AND timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "refId": "A"
+        }
+      ],
+      "title": "Índice de Disponibilidad Hídrica (IDH)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 15 },
+              { "color": "red", "value": 30 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "id": 4,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT ROUND(ABS(( (SELECT AVG(caudal_m3s) FROM mediciones_procesadas WHERE id_nodo = 'NODO-03-ACOS') - (SELECT AVG(caudal_m3s) FROM mediciones_procesadas WHERE id_nodo = 'NODO-04-HUAYOPAMPA') ) / (SELECT AVG(caudal_m3s) FROM mediciones_procesadas WHERE id_nodo = 'NODO-03-ACOS') * 100), 1) AS `Pérdida en Conducción`;",
+          "refId": "A"
+        }
+      ],
+      "title": "Pérdidas Estimadas en Conducción (%)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "title": "DISTRIBUCIÓN Y CONSUMO ACUMULADO POR SECTOR",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "lineWidth": 1 },
+          "unit": "m3"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 10,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT id_nodo AS `Estación / Sector`, ROUND(SUM(caudal_m3s * (15 * 60)), 0) AS `Volumen Acumulado (m³)` FROM mediciones_procesadas WHERE $__timeFilter(timestamp) GROUP BY id_nodo ORDER BY `Volumen Acumulado (m³)` DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Volumen Acumulado Entregado por Estación (m³)",
+      "type": "barchart"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "spanNulls": true },
+          "unit": "L/s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 11,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp AS time, caudal_ls AS value, id_nodo AS metric FROM mediciones_procesadas WHERE $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Curvas Comparativas de Caudal Instantáneo (L/s)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 102,
+      "title": "AUDITORÍA DE TURNOS DE RIEGO ('LA MITA')",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "displayMode": "auto" }
+        }
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 15 },
+      "id": 20,
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT d.nombre_completo AS `Agricultor / Tomero`, d.sector_predio AS `Predio / Canal`, d.tipo_cultivo AS `Cultivo`, n.nombre AS `Bocatoma Asignada`, e.nombre_entidad AS `Comisión Gestora`, d.telefono_whatsapp AS `WhatsApp` FROM destinatarios_alertas d JOIN nodos n ON d.id_nodo_suscrito = n.id_nodo JOIN entidades e ON d.id_entidad = e.id_entidad WHERE d.activo = 1 ORDER BY e.id_entidad ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Padrón de Asignación y Dotación por Comisión de Regantes",
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["sentinel-h2o", "balance-hidrico", "volumen-m3", "junta-usuarios"],
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"] },
+  "timezone": "browser",
+  "title": "04. Sentinel-H2O — Balance Hídrico, Volumen y Consumo (m³)",
+  "uid": "sentinel-04-balance-volumen",
+  "version": 1
+}

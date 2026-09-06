@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: 'Sentinel-H2O Dashboards'
+    orgId: 1
+    folder: 'Sentinel-H2O (Cuenca Chancay)'
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 15
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

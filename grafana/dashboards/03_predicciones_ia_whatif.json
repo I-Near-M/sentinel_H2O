@@ -1,0 +1,255 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "PRONÓSTICO HIDROLÓGICO Y DE CALIDAD A 24 HORAS (RED NEURONAL RECURRENTE GRU)",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "orange", "value": 2 },
+              { "color": "red", "value": 3 }
+            ]
+          },
+          "mappings": [
+            { "options": { "BAJO": { "color": "green", "index": 0, "text": "BAJO (SEGURO)" }, "MODERADO": { "color": "yellow", "index": 1, "text": "MODERADO" }, "ALTO": { "color": "orange", "index": 2, "text": "ALTO (PRECAUCIÓN)" }, "CRITICO": { "color": "red", "index": 3, "text": "CRÍTICO (PELIGRO)" } }, "type": "value" }
+          ]
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT riesgo_estres_hidrico AS `Nivel de Riesgo` FROM predicciones_ia WHERE id_nodo = '$id_nodo' ORDER BY fecha_emision DESC, horizonte_horas ASC LIMIT 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Nivel de Riesgo Próximas 24h",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "green", "value": 1.0 }
+            ]
+          },
+          "unit": "m³/s"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["mean"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT AVG(caudal_predicho_m3s) AS `Caudal Medio 24h` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo');",
+          "refId": "A"
+        }
+      ],
+      "title": "Caudal Promedio Esperado (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 51 },
+              { "color": "red", "value": 71 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 3,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["mean"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT AVG(wqi_predicho) AS `WQI Medio 24h` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo');",
+          "refId": "A"
+        }
+      ],
+      "title": "WQI Promedio Esperado (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 1500 }
+            ]
+          },
+          "unit": "µS/cm"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "id": 4,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["max"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT MAX(ec_predicho_us_cm) AS `Pico EC 24h` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo');",
+          "refId": "A"
+        }
+      ],
+      "title": "Pico Máximo Salinidad (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 3, "showPoints": "always" },
+          "unit": "m³/s"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 5 },
+      "id": 10,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT fecha_proyectada AS time, caudal_predicho_m3s AS `Caudal Proyectado (m³/s)` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo') ORDER BY fecha_proyectada ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Curva de Caudal Proyectada por Modelo GRU (+1h a +24h)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 3, "showPoints": "always" },
+          "unit": "µS/cm"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 5 },
+      "id": 11,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT fecha_proyectada AS time, ec_predicho_us_cm AS `Salinidad Proyectada (µS/cm)` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo') ORDER BY fecha_proyectada ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Curva de Salinidad / Conductividad Eléctrica a 24 Horas",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "displayMode": "auto" } }
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 12 },
+      "id": 20,
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT horizonte_horas AS `Paso (+h)`, fecha_proyectada AS `Fecha y Hora Futura`, ROUND(caudal_predicho_m3s, 3) AS `Caudal (m³/s)`, ROUND(caudal_predicho_m3s * 1000, 1) AS `Caudal (l/s)`, ROUND(wqi_predicho, 1) AS `WQI`, ROUND(ph_predicho, 2) AS `pH`, ROUND(ec_predicho_us_cm, 1) AS `EC (µS/cm)`, riesgo_estres_hidrico AS `Nivel de Riesgo` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo') ORDER BY horizonte_horas ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Detalle Horario de la Proyección a 24 Pasos (Modelo GRU-Shallow-v1.0)",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "id": 101,
+      "title": "HISTORIAL DE EXPERIMENTOS Y SIMULACIONES 'WHAT-IF'",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "displayMode": "auto" } }
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 19 },
+      "id": 30,
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT id_simulacion AS `ID`, fecha_ejecucion AS `Fecha Simulación`, titulo_escenario AS `Escenario Evaluado`, delta_precipitacion_pct AS `Δ Lluvia (%)`, delta_salinidad_us_cm AS `Δ Salinidad Cabecera`, delta_caudal_cabecera_pct AS `Δ Q Cabecera (%)`, resultado_wqi_valle AS `WQI Valle Resultante`, ROUND(resultado_caudal_valle_m3s, 3) AS `Q Valle (m³/s)`, resumen_impacto AS `Diagnóstico del Modelo` FROM simulaciones_whatif ORDER BY id_simulacion DESC LIMIT 15;",
+          "refId": "A"
+        }
+      ],
+      "title": "Resultados de Simulaciones Hidrológicas What-If",
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["sentinel-h2o", "ia-predicciones", "what-if", "gru-network"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "NODO-04-HUAYOPAMPA", "value": "NODO-04-HUAYOPAMPA" },
+        "datasource": "Sentinel-MySQL",
+        "definition": "SELECT id_nodo AS __value, nombre AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm ASC;",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Estación para Pronóstico IA:",
+        "multi": false,
+        "name": "id_nodo",
+        "options": [],
+        "query": "SELECT id_nodo AS __value, nombre AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm ASC;",
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-24h", "to": "now+24h" },
+  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"] },
+  "timezone": "browser",
+  "title": "03. Sentinel-H2O — Inteligencia Artificial, Pronósticos GRU a 24h & What-If",
+  "uid": "sentinel-03-ia-predicciones",
+  "version": 2
+}

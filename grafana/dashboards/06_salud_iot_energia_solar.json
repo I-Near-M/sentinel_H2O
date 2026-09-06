@@ -1,0 +1,215 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "SUPERVISIÓN DE HARDWARE IOT, ENERGÍA SOLAR Y ENLACES CELULARES",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 11.8 },
+              { "color": "green", "value": 12.3 }
+            ]
+          },
+          "unit": "volt"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT MIN(battery_v) AS `Tensión Mínima Baterías` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
+          "refId": "A"
+        }
+      ],
+      "title": "Batería Solar Mínima en Red (12V)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 15 },
+              { "color": "green", "value": 22 }
+            ]
+          },
+          "unit": "short", "min": 0, "max": 31
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT AVG(signal_rssi) AS `Calidad Señal Media` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
+          "refId": "A"
+        }
+      ],
+      "title": "Calidad Media Señal GSM (CSQ / 31)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 3,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS `Nodos Online` FROM nodos WHERE activo = 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Nodos con Enlace Celular Activo",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "id": 4,
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS `Paquetes Recibidos` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
+          "refId": "A"
+        }
+      ],
+      "title": "Paquetes Telemétricos (24h)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "title": "CICLOS FOTOVOLTAICOS Y COBERTURA GSM POR ESTACIÓN",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "spanNulls": true },
+          "unit": "volt"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 10,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp_servidor AS time, battery_v AS value, id_nodo AS metric FROM mediciones_raw WHERE $__timeFilter(timestamp_servidor) ORDER BY timestamp_servidor ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Curvas de Batería Solar (12V) — Carga Diurna vs Descarga Nocturna",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "spanNulls": true },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 11,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp_servidor AS time, signal_rssi AS value, id_nodo AS metric FROM mediciones_raw WHERE $__timeFilter(timestamp_servidor) ORDER BY timestamp_servidor ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Evolución de Calidad de Señal Celular GSM (CSQ 0-31)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 102,
+      "title": "TABLA DE DIAGNÓSTICO DE SENSORES Y SALUD DE HARDWARE",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "displayMode": "auto" } }
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 15 },
+      "id": 20,
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT id_nodo AS `Nodo`, timestamp_servidor AS `Último Latido`, battery_v AS `Batería (V)`, signal_rssi AS `GSM (CSQ)`, raw_v_ph AS `V_pH`, raw_v_tds AS `V_TDS`, raw_v_turb AS `V_Turb`, raw_dist_cm AS `Dist (cm)`, temp_agua_c AS `Temp (°C)` FROM mediciones_raw WHERE id_raw IN (SELECT MAX(id_raw) FROM mediciones_raw GROUP BY id_nodo) ORDER BY id_nodo ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Matriz de Diagnóstico Electrónico de Sensores (Última Transmisión)",
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["sentinel-h2o", "iot", "hardware", "bateria-solar", "gsm"],
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"] },
+  "timezone": "browser",
+  "title": "06. Sentinel-H2O — Salud de Red IoT, Energía Solar & Supervisión Off-Grid",
+  "uid": "sentinel-06-iot-energia-red",
+  "version": 1
+}

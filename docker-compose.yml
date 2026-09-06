@@ -1,0 +1,108 @@
+services:
+  # -------------------------------------------------------------------------
+  # 1. BASE DE DATOS MYSQL (Persistente)
+  # -------------------------------------------------------------------------
+  sentinel-db:
+    image: mysql:8.0
+    container_name: sentinel_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword2026}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sentinel_h2o_db}
+      MYSQL_USER: ${MYSQL_USER:-sentinel_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-sentinel_password_2026}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword2026}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinel_net
+
+  # -------------------------------------------------------------------------
+  # 2. BACKEND API FASTAPI + MOTOR IA
+  # -------------------------------------------------------------------------
+  sentinel-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sentinel_api
+    restart: always
+    depends_on:
+      sentinel-db:
+        condition: service_healthy
+    environment:
+      PROJECT_NAME: "${PROJECT_NAME:-Sentinel-H2O Backend API}"
+      VERSION: "${VERSION:-2.0.0}"
+      ENV: "${ENV:-production}"
+      DATABASE_URL: "${DATABASE_URL:-mysql+pymysql://${MYSQL_USER:-sentinel_user}:${MYSQL_PASSWORD:-sentinel_password_2026}@sentinel-db:3306/${MYSQL_DATABASE:-sentinel_h2o_db}}"
+      OPENWEATHER_API_KEY: "${OPENWEATHER_API_KEY:-be01a2002315a2d063681a21ae6d168b}"
+      WHATSAPP_PROVIDER: "${WHATSAPP_PROVIDER:-meta_cloud}"
+      WHATSAPP_API_TOKEN: "${WHATSAPP_API_TOKEN:-}"
+      WHATSAPP_PHONE_NUMBER_ID: "${WHATSAPP_PHONE_NUMBER_ID:-}"
+      MASTER_API_KEY: "${MASTER_API_KEY:-sentinel_h2o_master_secret_2026}"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-[\"*\"]}"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    networks:
+      - sentinel_net
+
+  # -------------------------------------------------------------------------
+  # 3. GRAFANA (Visualización y Gemelo Virtual)
+  # -------------------------------------------------------------------------
+  sentinel-grafana:
+    image: grafana/grafana:latest
+    container_name: sentinel_grafana
+    restart: always
+    depends_on:
+      - sentinel-db
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-sentinel_admin_2026}
+      - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGNUP:-false}
+      - GF_PANELS_ENABLE_ALPHA=true
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-sentinel_h2o_db}
+      - MYSQL_USER=${MYSQL_USER:-sentinel_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-sentinel_password_2026}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - sentinel_net
+
+  # -------------------------------------------------------------------------
+  # 4. FRONTEND WEB APP (React + Vite + Nginx Alpine)
+  # -------------------------------------------------------------------------
+  sentinel-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sentinel_webapp
+    restart: always
+    depends_on:
+      - sentinel-backend
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-/api/v1}
+      - VITE_GRAFANA_URL=${VITE_GRAFANA_URL:-http://localhost:3000}
+    ports:
+      - "${WEBAPP_PORT:-80}:80"
+    networks:
+      - sentinel_net
+
+volumes:
+  mysql_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  sentinel_net:
+    driver: bridge

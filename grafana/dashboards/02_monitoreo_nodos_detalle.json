@@ -1,0 +1,342 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "INDICADORES EN TIEMPO REAL DEL NODO SELECCIONADO",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "blue", "value": 31 },
+              { "color": "yellow", "value": 51 },
+              { "color": "orange", "value": 71 },
+              { "color": "red", "value": 91 }
+            ]
+          },
+          "min": 0,
+          "max": 100,
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT wqi_score FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' ORDER BY timestamp DESC LIMIT 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Índice WQI (Calidad Global)",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 6.5 },
+              { "color": "red", "value": 8.51 }
+            ]
+          },
+          "min": 0,
+          "max": 14,
+          "unit": "pH"
+        }
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
+      "id": 2,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT ph FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' ORDER BY timestamp DESC LIMIT 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "pH del Agua (PH-4502C)",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 1500 }
+            ]
+          },
+          "min": 0,
+          "max": 2500,
+          "unit": "µS/cm"
+        }
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 },
+      "id": 3,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT ec_us_cm FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' ORDER BY timestamp DESC LIMIT 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Salinidad / EC (Keyestudio TDS)",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 100 }
+            ]
+          },
+          "unit": "NTU"
+        }
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT turbidez_ntu FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' ORDER BY timestamp DESC LIMIT 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Turbidez Óptica (TS-300B)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "green", "value": 500 }
+            ]
+          },
+          "unit": "L/s"
+        }
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 1 },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT caudal_ls FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' ORDER BY timestamp DESC LIMIT 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Caudal Instantáneo (L/s)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 11.8 },
+              { "color": "green", "value": 12.3 }
+            ]
+          },
+          "unit": "V"
+        }
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 1 },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT battery_v FROM mediciones_raw WHERE id_nodo = '$id_nodo' ORDER BY timestamp_servidor DESC LIMIT 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Salud Batería Solar (12V)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "id": 101,
+      "title": "EVOLUCIÓN TEMPORAL DE PARÁMETROS EN EL NODO",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "spanNulls": true },
+          "unit": "L/s"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 7 },
+      "id": 10,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp AS time, caudal_ls AS `Caudal (L/s)` FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Caudal (L/s) vs Tirante / Nivel",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "spanNulls": true },
+          "unit": "µS/cm"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 7 },
+      "id": 11,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp AS time, ec_us_cm AS `Conductividad (µS/cm)` FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Evolución de Salinidad / Conductividad Eléctrica",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "spanNulls": true },
+          "unit": "pH"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 14 },
+      "id": 12,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp AS time, ph AS `pH Medido` FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Evolución de pH del Agua",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "spanNulls": true },
+          "unit": "celsius"
+        }
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 14 },
+      "id": 13,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp AS time, temp_agua_c AS `Temp Agua (DS18B20)` FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Temperatura del Agua (°C) y Dinámica Térmica",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["sentinel-h2o", "nodo-detalle", "telemetria"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "NODO-01-VICHAYCOCHA", "value": "NODO-01-VICHAYCOCHA" },
+        "datasource": "Sentinel-MySQL",
+        "definition": "SELECT id_nodo AS __value, nombre AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm DESC;",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Estación / Nodo IoT:",
+        "multi": false,
+        "name": "id_nodo",
+        "options": [],
+        "query": "SELECT id_nodo AS __value, nombre AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm DESC;",
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"] },
+  "timezone": "browser",
+  "title": "02. Sentinel-H2O — Telemetría Detallada por Nodo",
+  "uid": "sentinel-02-nodo-detalle",
+  "version": 2
+}

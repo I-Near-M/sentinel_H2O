@@ -1,0 +1,18 @@
+apiVersion: 1
+
+datasources:
+  - name: Sentinel-MySQL
+    type: mysql
+    access: proxy
+    url: sentinel-db:3306
+    database: ${MYSQL_DATABASE:sentinel_h2o_db}
+    user: ${MYSQL_USER:sentinel_user}
+    secureJsonData:
+      password: ${MYSQL_PASSWORD:sentinel_password_2026}
+    isDefault: true
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 5
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+    editable: false
