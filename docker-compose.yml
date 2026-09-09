@@ -7,6 +7,7 @@ services:
     container_name: sentinel_mysql
     restart: always
     environment:
+      TZ: "${TZ:-America/Lima}"
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword2026}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-sentinel_h2o_db}
       MYSQL_USER: ${MYSQL_USER:-sentinel_user}
@@ -37,6 +38,7 @@ services:
       sentinel-db:
         condition: service_healthy
     environment:
+      TZ: "${TZ:-America/Lima}"
       PROJECT_NAME: "${PROJECT_NAME:-Sentinel-H2O Backend API}"
       VERSION: "${VERSION:-2.0.0}"
       ENV: "${ENV:-production}"
@@ -62,6 +64,7 @@ services:
     depends_on:
       - sentinel-db
     environment:
+      - TZ=${TZ:-America/Lima}
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-sentinel_admin_2026}
       - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGNUP:-false}
@@ -91,6 +94,7 @@ services:
     depends_on:
       - sentinel-backend
     environment:
+      - TZ=${TZ:-America/Lima}
       - VITE_API_URL=${VITE_API_URL:-/api/v1}
       - VITE_GRAFANA_URL=${VITE_GRAFANA_URL:-http://localhost:3000}
     ports:
