@@ -1,5 +1,7 @@
 {
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -9,23 +11,51 @@
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 100,
-      "title": "SALA DE CONTROL Y SEGURIDAD HÍDRICA — CUENCA CHANCAY-HUARAL",
+      "title": "SALA DE CONTROL Y SEGURIDAD HÍDRICA — GEMELO VIRTUAL DE CUENCA",
       "type": "row"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "unit": "short"
         }
       },
-      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
       "id": 1,
-      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "table",
@@ -40,27 +70,59 @@
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "blue", "value": 31 },
-              { "color": "yellow", "value": 51 },
-              { "color": "orange", "value": 71 },
-              { "color": "red", "value": 91 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "blue",
+                "value": 31
+              },
+              {
+                "color": "yellow",
+                "value": 51
+              },
+              {
+                "color": "orange",
+                "value": 71
+              },
+              {
+                "color": "red",
+                "value": 91
+              }
             ]
           },
-          "unit": "short", "min": 0, "max": 100
+          "unit": "short",
+          "min": 0,
+          "max": 100
         }
       },
-      "gridPos": { "h": 3, "w": 5, "x": 4, "y": 1 },
+      "gridPos": {
+        "h": 3,
+        "w": 5,
+        "x": 4,
+        "y": 1
+      },
       "id": 2,
-      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT AVG(wqi_score) as `WQI Promedio` FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(AVG(wqi_score), 0.0) as `WQI Promedio` FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -72,79 +134,151 @@
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1000 },
-              { "color": "red", "value": 1500 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 1500
+              }
             ]
           },
           "unit": "µS/cm"
         }
       },
-      "gridPos": { "h": 3, "w": 5, "x": 9, "y": 1 },
+      "gridPos": {
+        "h": 3,
+        "w": 5,
+        "x": 9,
+        "y": 1
+      },
       "id": 3,
-      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT ec_us_cm as `Salinidad Parcela` FROM mediciones_procesadas WHERE id_nodo = 'NODO-04-HUAYOPAMPA' OR id_nodo LIKE '%PARCELA%' OR id_nodo LIKE '%HUAYOPAMPA%' ORDER BY timestamp DESC LIMIT 1;",
+          "rawSql": "SELECT COALESCE(AVG(ec_us_cm), 0.0) as `Salinidad Media Red` FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
-      "title": "Salinidad Parcela Piloto (EC)",
+      "title": "Salinidad Media en Red (EC)",
       "type": "stat"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 0.5 },
-              { "color": "green", "value": 1.0 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "green",
+                "value": 1.0
+              }
             ]
           },
           "unit": "m³/s"
         }
       },
-      "gridPos": { "h": 3, "w": 5, "x": 14, "y": 1 },
+      "gridPos": {
+        "h": 3,
+        "w": 5,
+        "x": 14,
+        "y": 1
+      },
       "id": 4,
-      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT caudal_m3s as `Caudal Conducción` FROM mediciones_procesadas WHERE id_nodo = 'NODO-03-ACOS' OR id_nodo LIKE '%CONDUCCION%' OR id_nodo LIKE '%ACOS%' ORDER BY timestamp DESC LIMIT 1;",
+          "rawSql": "SELECT COALESCE(AVG(caudal_m3s), 0.0) as `Caudal Medio Red` FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
-      "title": "Caudal en Conducción Central",
+      "title": "Caudal Promedio en Red",
       "type": "stat"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1 },
-              { "color": "red", "value": 10 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
             ]
           },
           "unit": "short"
         }
       },
-      "gridPos": { "h": 3, "w": 5, "x": 19, "y": 1 },
+      "gridPos": {
+        "h": 3,
+        "w": 5,
+        "x": 19,
+        "y": 1
+      },
       "id": 5,
-      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "table",
@@ -157,21 +291,31 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
       "id": 101,
-      "title": "MAPA GEOESPACIAL Y UBICACIÓN SATELITAL DE ESTACIONES (GEMELO VIRTUAL)",
+      "title": "MAPA GEOESPACIAL Y UBICACIÓN SATELITAL DE ESTACIONES",
       "type": "row"
     },
     {
       "datasource": "Sentinel-MySQL",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "id": 6,
       "options": {
         "view": {
           "id": "coords",
-          "lat": -11.25,
-          "lon": -76.85,
-          "zoom": 10
+          "lat": -11.4,
+          "lon": -77.0,
+          "zoom": 9
         },
         "controls": {
           "showZoom": true,
@@ -214,452 +358,337 @@
           "refId": "A"
         }
       ],
-      "title": "🗺️ Topología Geoespacial y Calidad en Tiempo Real — Cuenca Chancay-Huaral",
+      "title": "🗺️ Topología Geoespacial y Calidad en Tiempo Real — Red Hidrológica",
       "type": "geomap"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
       "id": 102,
-      "title": "ESPEJO VIRTUAL DE LOS 4 NODOS ESTRATÉGICOS (DE LA FUENTE AL SURCO)",
+      "title": "ESTADO Y DINÁMICA DE ESTACIONES HIDROLÓGICAS EN OPERACIÓN",
       "type": "row"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "blue", "value": 31 },
-              { "color": "yellow", "value": 51 },
-              { "color": "orange", "value": 71 },
-              { "color": "red", "value": 91 }
-            ]
-          },
-          "min": 0, "max": 100, "unit": "short"
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "pH" },
-            "properties": [{ "id": "unit", "value": "pH" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Caudal (m³/s)" },
-            "properties": [{ "id": "unit", "value": "m³/s" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "EC (µS/cm)" },
-            "properties": [{ "id": "unit", "value": "µS/cm" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Turbidez (NTU)" },
-            "properties": [{ "id": "unit", "value": "NTU" }]
+            "matcher": {
+              "id": "byName",
+              "options": "WQI Score"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "blue",
+                      "value": 31
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 51
+                    },
+                    {
+                      "color": "orange",
+                      "value": 71
+                    },
+                    {
+                      "color": "red",
+                      "value": 91
+                    }
+                  ]
+                }
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 16 },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
       "id": 10,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "orientation": "horizontal",
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "auto"
+        "showHeader": true
       },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT wqi_score AS `WQI (0-100)`, ph AS `pH`, caudal_m3s AS `Caudal (m³/s)`, ec_us_cm AS `EC (µS/cm)`, turbidez_ntu AS `Turbidez (NTU)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-01-VICHAYCOCHA' ORDER BY timestamp DESC LIMIT 1;",
+          "rawSql": "SELECT n.cota_msnm AS `Cota (msnm)`, n.nombre AS `Estación`, n.sector_cuenca AS `Sector`, n.tipo_fuente AS `Tipo Fuente`, p.caudal_m3s AS `Caudal (m³/s)`, p.ph AS `pH`, p.ec_us_cm AS `EC (µS/cm)`, p.turbidez_ntu AS `Turbidez (NTU)`, p.temp_agua_c AS `Temp (°C)`, p.wqi_score AS `WQI Score`, p.wqi_categoria AS `Categoría WQI`, p.timestamp AS `Última Lectura` FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp) AS max_t FROM mediciones_procesadas GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_procesadas p ON latest.id_nodo = p.id_nodo AND latest.max_t = p.timestamp WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
           "refId": "A"
         }
       ],
-      "title": "🟢 Nodo 1: Cabecera (Vichaycocha - 4,350 msnm)",
-      "description": "WQI: 0-30 Excelente | pH óptimo 6.5-8.5 | Caudal de origen glaciar",
-      "type": "stat"
-    },
-    {
-      "datasource": "Sentinel-MySQL",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "blue", "value": 31 },
-              { "color": "yellow", "value": 51 },
-              { "color": "orange", "value": 71 },
-              { "color": "red", "value": 91 }
-            ]
-          },
-          "min": 0, "max": 100, "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "pH" },
-            "properties": [{ "id": "unit", "value": "pH" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Caudal (m³/s)" },
-            "properties": [{ "id": "unit", "value": "m³/s" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "EC (µS/cm)" },
-            "properties": [{ "id": "unit", "value": "µS/cm" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Turbidez (NTU)" },
-            "properties": [{ "id": "unit", "value": "NTU" }]
-          }
-        ]
-      },
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 16 },
-      "id": 11,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "orientation": "horizontal",
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "format": "table",
-          "rawSql": "SELECT wqi_score AS `WQI (0-100)`, ph AS `pH`, caudal_m3s AS `Caudal (m³/s)`, ec_us_cm AS `EC (µS/cm)`, turbidez_ntu AS `Turbidez (NTU)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-02-RAVIRA' ORDER BY timestamp DESC LIMIT 1;",
-          "refId": "A"
-        }
-      ],
-      "title": "🟢 Nodo 2: Intermedia (Ravira - 2,850 msnm)",
-      "description": "WQI: 0-30 Excelente | Monitoreo de aguas termales y afluentes",
-      "type": "stat"
-    },
-    {
-      "datasource": "Sentinel-MySQL",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "blue", "value": 31 },
-              { "color": "yellow", "value": 51 },
-              { "color": "orange", "value": 71 },
-              { "color": "red", "value": 91 }
-            ]
-          },
-          "min": 0, "max": 100, "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "pH" },
-            "properties": [{ "id": "unit", "value": "pH" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Caudal (m³/s)" },
-            "properties": [{ "id": "unit", "value": "m³/s" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "EC (µS/cm)" },
-            "properties": [{ "id": "unit", "value": "µS/cm" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Turbidez (NTU)" },
-            "properties": [{ "id": "unit", "value": "NTU" }]
-          }
-        ]
-      },
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 16 },
-      "id": 12,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "orientation": "horizontal",
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "format": "table",
-          "rawSql": "SELECT wqi_score AS `WQI (0-100)`, ph AS `pH`, caudal_m3s AS `Caudal (m³/s)`, ec_us_cm AS `EC (µS/cm)`, turbidez_ntu AS `Turbidez (NTU)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-03-ACOS' ORDER BY timestamp DESC LIMIT 1;",
-          "refId": "A"
-        }
-      ],
-      "title": "🟡 Nodo 3: Conducción (Acos - 1,250 msnm)",
-      "description": "WQI: 0-30 Excelente | Bocatoma principal de reparto hacia valles agrícolas",
-      "type": "stat"
-    },
-    {
-      "datasource": "Sentinel-MySQL",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "blue", "value": 31 },
-              { "color": "yellow", "value": 51 },
-              { "color": "orange", "value": 71 },
-              { "color": "red", "value": 91 }
-            ]
-          },
-          "min": 0, "max": 100, "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "pH" },
-            "properties": [{ "id": "unit", "value": "pH" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Caudal (m³/s)" },
-            "properties": [{ "id": "unit", "value": "m³/s" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "EC (µS/cm)" },
-            "properties": [{ "id": "unit", "value": "µS/cm" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Turbidez (NTU)" },
-            "properties": [{ "id": "unit", "value": "NTU" }]
-          }
-        ]
-      },
-      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 16 },
-      "id": 13,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "orientation": "horizontal",
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "format": "table",
-          "rawSql": "SELECT wqi_score AS `WQI (0-100)`, ph AS `pH`, caudal_m3s AS `Caudal (m³/s)`, ec_us_cm AS `EC (µS/cm)`, turbidez_ntu AS `Turbidez (NTU)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-04-HUAYOPAMPA' ORDER BY timestamp DESC LIMIT 1;",
-          "refId": "A"
-        }
-      ],
-      "title": "🔵 Nodo 4: Parcela Piloto (Huayopampa - 320 msnm)",
-      "description": "WQI: 0-30 Excelente | Riego de frutales y paltos en valle costero",
-      "type": "stat"
+      "title": "Resumen Integral de Estaciones Activas (Ordenadas por Altitud de Cabecera a Valle)",
+      "type": "table"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
       "id": 103,
-      "title": "SERIES TEMPORALES Y EVOLUCIÓN MULTIESTACIÓN (DINÁMICA EN CASCADA)",
+      "title": "SERIES TEMPORALES Y DINÁMICA HIDROLÓGICA (MULTIESTACIÓN)",
       "type": "row"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 4, "showPoints": "auto", "spanNulls": true },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "spanNulls": true
+          },
           "unit": "m³/s"
         }
       },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 23 },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
       "id": 20,
-      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max", "min"] } },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, caudal_m3s AS `01. Vichaycocha (4,350m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-01-VICHAYCOCHA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "rawSql": "SELECT p.timestamp AS time, p.caudal_m3s AS value, n.nombre AS metric FROM mediciones_procesadas p JOIN nodos n ON p.id_nodo = n.id_nodo WHERE n.activo = 1 AND $__timeFilter(p.timestamp) ORDER BY p.timestamp ASC;",
           "refId": "A"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, caudal_m3s AS `02. Ravira (2,850m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-02-RAVIRA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "B"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, caudal_m3s AS `03. Acos (1,250m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-03-ACOS' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "C"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, caudal_m3s AS `04. Huayopampa (320m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-04-HUAYOPAMPA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "D"
         }
       ],
-      "title": "Dinámica de Caudales a lo largo de la Cuenca (m³/s)",
+      "title": "Perfil Temporal de Caudal (m³/s) por Estación",
       "type": "timeseries"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 4, "showPoints": "auto", "spanNulls": true },
-          "unit": "µS/cm"
-        },
-        "thresholds": {
-          "mode": "absolute",
-          "steps": [
-            { "color": "green", "value": null },
-            { "color": "yellow", "value": 1000 },
-            { "color": "red", "value": 1500 }
-          ]
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "short",
+          "min": 0,
+          "max": 100
         }
       },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 23 },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
       "id": 21,
-      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max", "mean"] } },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ec_us_cm AS `01. Vichaycocha (4,350m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-01-VICHAYCOCHA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "rawSql": "SELECT p.timestamp AS time, p.wqi_score AS value, n.nombre AS metric FROM mediciones_procesadas p JOIN nodos n ON p.id_nodo = n.id_nodo WHERE n.activo = 1 AND $__timeFilter(p.timestamp) ORDER BY p.timestamp ASC;",
           "refId": "A"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ec_us_cm AS `02. Ravira (2,850m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-02-RAVIRA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "B"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ec_us_cm AS `03. Acos (1,250m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-03-ACOS' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "C"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ec_us_cm AS `04. Huayopampa (320m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-04-HUAYOPAMPA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "D"
         }
       ],
-      "title": "Evolución de Conductividad Eléctrica / Salinidad (µS/cm)",
+      "title": "Índice de Calidad del Agua Global (WQI 0-100)",
       "type": "timeseries"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 4, "showPoints": "auto", "spanNulls": true },
-          "unit": "pH", "min": 5.0, "max": 9.5
-        },
-        "thresholds": {
-          "mode": "absolute",
-          "steps": [
-            { "color": "red", "value": null },
-            { "color": "green", "value": 6.5 },
-            { "color": "red", "value": 8.5 }
-          ]
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "µS/cm"
         }
       },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 30 },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      },
       "id": 22,
-      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max", "min"] } },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ph AS `01. Vichaycocha (4,350m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-01-VICHAYCOCHA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "rawSql": "SELECT p.timestamp AS time, p.ec_us_cm AS value, n.nombre AS metric FROM mediciones_procesadas p JOIN nodos n ON p.id_nodo = n.id_nodo WHERE n.activo = 1 AND $__timeFilter(p.timestamp) ORDER BY p.timestamp ASC;",
           "refId": "A"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ph AS `02. Ravira (2,850m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-02-RAVIRA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "B"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ph AS `03. Acos (1,250m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-03-ACOS' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "C"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ph AS `04. Huayopampa (320m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-04-HUAYOPAMPA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "D"
         }
       ],
-      "title": "Evolución de pH a lo largo de la Cuenca (ECA 3: 6.5 - 8.5)",
+      "title": "Conductividad Eléctrica / Salinidad (µS/cm)",
       "type": "timeseries"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 4, "showPoints": "auto", "spanNulls": true },
-          "unit": "NTU"
-        },
-        "thresholds": {
-          "mode": "absolute",
-          "steps": [
-            { "color": "green", "value": null },
-            { "color": "yellow", "value": 50 },
-            { "color": "red", "value": 150 }
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "pH",
+          "min": 0,
+          "max": 14
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      },
+      "id": 23,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "lastNotNull"
           ]
         }
       },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 30 },
-      "id": 23,
-      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, turbidez_ntu AS `01. Vichaycocha (4,350m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-01-VICHAYCOCHA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "rawSql": "SELECT p.timestamp AS time, p.ph AS value, n.nombre AS metric FROM mediciones_procesadas p JOIN nodos n ON p.id_nodo = n.id_nodo WHERE n.activo = 1 AND $__timeFilter(p.timestamp) ORDER BY p.timestamp ASC;",
           "refId": "A"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, turbidez_ntu AS `02. Ravira (2,850m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-02-RAVIRA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "B"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, turbidez_ntu AS `03. Acos (1,250m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-03-ACOS' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "C"
-        },
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, turbidez_ntu AS `04. Huayopampa (320m)` FROM mediciones_procesadas WHERE id_nodo = 'NODO-04-HUAYOPAMPA' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
-          "refId": "D"
         }
       ],
-      "title": "Turbidez y Sedimentos en Suspensión (NTU)",
+      "title": "Evolución de pH en Puntos de Control",
       "type": "timeseries"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 37 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
       "id": 104,
-      "title": "HISTORIAL DE ALERTAS Y CONTINGENCIAS DISPARADAS",
+      "title": "HISTORIAL DE ALERTAS Y EVENTOS HIDROLÓGICOS RECIENTES",
       "type": "row"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "align": "auto", "displayMode": "auto" }
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
         }
       },
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 38 },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
       "id": 30,
-      "options": { "showHeader": true, "sortBy": [{ "desc": true, "displayName": "Fecha y Hora" }] },
+      "options": {
+        "showHeader": true
+      },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT timestamp AS `Fecha y Hora`, id_nodo AS `Estación`, nivel_severidad AS `Severidad`, tipo_evento AS `Evento`, valor_registrado AS `Valor`, valor_umbral AS `Umbral`, mensaje_campesino_whatsapp AS `Mensaje WhatsApp`, estado_envio_whatsapp AS `WhatsApp`, destinatarios_notificados_count AS `Regantes Notificados` FROM alertas_log ORDER BY timestamp DESC LIMIT 25;",
+          "rawSql": "SELECT a.timestamp AS `Fecha y Hora`, n.nombre AS `Estación`, a.nivel_severidad AS `Severidad`, a.tipo_evento AS `Evento`, a.variable_origen AS `Variable`, a.valor_registrado AS `Valor`, a.valor_umbral AS `Umbral`, a.mensaje_tecnico AS `Detalle Técnico`, a.estado_envio_whatsapp AS `WhatsApp` FROM alertas_log a JOIN nodos n ON a.id_nodo = n.id_nodo ORDER BY a.timestamp DESC LIMIT 20;",
           "refId": "A"
         }
       ],
-      "title": "Log de Alertas Tempranas y Registro de Notificaciones",
+      "title": "Registro de Alertas Hídricas Despachadas",
       "type": "table"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["sentinel-h2o", "cuenca-chancay", "geomap", "gemelo-virtual"],
-  "time": { "from": "now-1h", "to": "now" },
-  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"] },
+  "tags": [
+    "sentinel-h2o",
+    "gemelo-virtual",
+    "cuenca",
+    "tiempo-real"
+  ],
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m"
+    ]
+  },
   "timezone": "browser",
-  "title": "01. Sentinel-H2O — Gemelo Virtual Cuenca Chancay-Huaral",
-  "uid": "sentinel-01-cuenca",
-  "version": 4
+  "title": "01. Sentinel-H2O — Gemelo Virtual y Telemetría Global de Cuenca",
+  "uid": "sentinel-01-gemelo-virtual",
+  "version": 3
 }

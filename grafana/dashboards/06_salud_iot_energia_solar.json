@@ -1,5 +1,7 @@
 {
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -9,7 +11,12 @@
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 100,
       "title": "SUPERVISIÓN DE HARDWARE IOT, ENERGÍA SOLAR Y ENLACES CELULARES",
       "type": "row"
@@ -18,25 +25,49 @@
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 11.8 },
-              { "color": "green", "value": 12.3 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 11.8
+              },
+              {
+                "color": "green",
+                "value": 12.3
+              }
             ]
           },
           "unit": "volt"
         }
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
       "id": 1,
-      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT MIN(battery_v) AS `Tensión Mínima Baterías` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(MIN(battery_v), 0.0) AS `Tensión Mínima Baterías` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -47,25 +78,51 @@
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 15 },
-              { "color": "green", "value": 22 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 15
+              },
+              {
+                "color": "green",
+                "value": 22
+              }
             ]
           },
-          "unit": "short", "min": 0, "max": 31
+          "unit": "short",
+          "min": 0,
+          "max": 31
         }
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
       "id": 2,
-      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT AVG(signal_rssi) AS `Calidad Señal Media` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(ROUND(AVG(signal_rssi), 1), 0.0) AS `Calidad Señal Media` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -76,20 +133,41 @@
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 1 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
             ]
           },
           "unit": "short"
         }
       },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
       "id": 3,
-      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "table",
@@ -104,112 +182,243 @@
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "blue",
+                "value": null
+              }
             ]
           },
           "unit": "short"
         }
       },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
       "id": 4,
-      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS `Paquetes Recibidos` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COUNT(*) AS `Paquetes Ingeridos` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
-      "title": "Paquetes Telemétricos (24h)",
+      "title": "Paquetes Telemétricos Ingeridos (24h)",
       "type": "stat"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "id": 101,
-      "title": "CICLOS FOTOVOLTAICOS Y COBERTURA GSM POR ESTACIÓN",
+      "title": "ESTADO DE SALUD DE HARDWARE Y ENERGÍA POR ESTACIÓN",
       "type": "row"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "spanNulls": true },
-          "unit": "volt"
-        }
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Batería (V)"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 11.8
+                    },
+                    {
+                      "color": "green",
+                      "value": 12.3
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          }
+        ]
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
       "id": 10,
-      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
-      "targets": [
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp_servidor AS time, battery_v AS value, id_nodo AS metric FROM mediciones_raw WHERE $__timeFilter(timestamp_servidor) ORDER BY timestamp_servidor ASC;",
-          "refId": "A"
-        }
-      ],
-      "title": "Curvas de Batería Solar (12V) — Carga Diurna vs Descarga Nocturna",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Sentinel-MySQL",
-      "fieldConfig": {
-        "defaults": {
-          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "spanNulls": true },
-          "unit": "short"
-        }
+      "options": {
+        "showHeader": true
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
-      "id": 11,
-      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
-      "targets": [
-        {
-          "format": "time_series",
-          "rawSql": "SELECT timestamp_servidor AS time, signal_rssi AS value, id_nodo AS metric FROM mediciones_raw WHERE $__timeFilter(timestamp_servidor) ORDER BY timestamp_servidor ASC;",
-          "refId": "A"
-        }
-      ],
-      "title": "Evolución de Calidad de Señal Celular GSM (CSQ 0-31)",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
-      "id": 102,
-      "title": "TABLA DE DIAGNÓSTICO DE SENSORES Y SALUD DE HARDWARE",
-      "type": "row"
-    },
-    {
-      "datasource": "Sentinel-MySQL",
-      "fieldConfig": {
-        "defaults": { "custom": { "align": "auto", "displayMode": "auto" } }
-      },
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 15 },
-      "id": 20,
-      "options": { "showHeader": true },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT id_nodo AS `Nodo`, timestamp_servidor AS `Último Latido`, battery_v AS `Batería (V)`, signal_rssi AS `GSM (CSQ)`, raw_v_ph AS `V_pH`, raw_v_tds AS `V_TDS`, raw_v_turb AS `V_Turb`, raw_dist_cm AS `Dist (cm)`, temp_agua_c AS `Temp (°C)` FROM mediciones_raw WHERE id_raw IN (SELECT MAX(id_raw) FROM mediciones_raw GROUP BY id_nodo) ORDER BY id_nodo ASC;",
+          "rawSql": "SELECT n.nombre AS `Estación`, n.id_nodo AS `ID Nodo`, n.sector_cuenca AS `Sector`, n.cota_msnm AS `Cota (msnm)`, r.battery_v AS `Batería (V)`, r.signal_rssi AS `GSM RSSI (0-31)`, CASE WHEN r.battery_v >= 12.4 THEN 'Batería Óptima (Solar)' WHEN r.battery_v >= 11.8 THEN 'Batería Normal' ELSE 'Batería Baja / Alerta' END AS `Estado Energético`, r.timestamp_servidor AS `Último Paquete Recibido` FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp_servidor) AS max_t FROM mediciones_raw GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_raw r ON latest.id_nodo = r.id_nodo AND latest.max_t = r.timestamp_servidor WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
           "refId": "A"
         }
       ],
-      "title": "Matriz de Diagnóstico Electrónico de Sensores (Última Transmisión)",
+      "title": "Diagnóstico de Hardware y Telemetría Solar por Estación",
       "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 102,
+      "title": "HISTORIAL DE TENSIÓN SOLAR Y SEÑAL GSM",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "volt"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "min",
+            "max"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT r.timestamp_servidor AS time, r.battery_v AS value, n.nombre AS metric FROM mediciones_raw r JOIN nodos n ON r.id_nodo = n.id_nodo WHERE n.activo = 1 AND $__timeFilter(r.timestamp_servidor) ORDER BY r.timestamp_servidor ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Curva de Carga / Descarga de Baterías Solares (V)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "spanNulls": true
+          },
+          "unit": "short",
+          "min": 0,
+          "max": 31
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "id": 21,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT r.timestamp_servidor AS time, r.signal_rssi AS value, n.nombre AS metric FROM mediciones_raw r JOIN nodos n ON r.id_nodo = n.id_nodo WHERE n.activo = 1 AND $__timeFilter(r.timestamp_servidor) ORDER BY r.timestamp_servidor ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Nivel de Cobertura y Señal Celular (CSQ 0-31)",
+      "type": "timeseries"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["sentinel-h2o", "iot", "hardware", "bateria-solar", "gsm"],
-  "time": { "from": "now-24h", "to": "now" },
-  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"] },
+  "tags": [
+    "sentinel-h2o",
+    "iot-salud",
+    "hardware",
+    "energia-solar"
+  ],
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m"
+    ]
+  },
   "timezone": "browser",
-  "title": "06. Sentinel-H2O — Salud de Red IoT, Energía Solar & Supervisión Off-Grid",
-  "uid": "sentinel-06-iot-energia-red",
-  "version": 1
+  "title": "06. Sentinel-H2O — Telemetría de Hardware, Energía Solar y Enlaces GSM",
+  "uid": "sentinel-06-salud-iot-energia",
+  "version": 3
 }
