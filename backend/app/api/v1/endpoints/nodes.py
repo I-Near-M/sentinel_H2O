@@ -7,7 +7,7 @@ from backend.app.database.session import get_db
 from backend.app.database.models import Nodo, CalibracionNodo, UmbralConfig, Entidad, MedicionProcesada, MedicionRaw
 from backend.app.schemas.nodes import (
     NodeStatusOut, NodeDetailOut, NodeProvisionIn, NodeProvisionOut,
-    NodeUpdateIn, ApiKeyRegenerateOut, EntityOut, EntityCreateIn,
+    NodeUpdateIn, ApiKeyRegenerateOut, EntityOut, EntityCreateIn, EntityUpdateIn,
     CalibrationOut, ThresholdOut
 )
 
@@ -18,31 +18,100 @@ router = APIRouter()
 # 1. GESTIÓN DE ENTIDADES RESPONSABLES (ANA, JUNTAS, COMISIONES)
 # ============================================================================
 @router.get("/entities/all", response_model=List[EntityOut])
-def list_entities(db: Session = Depends(get_db)):
+def list_entities(
+    include_inactive: bool = Query(True, description="Incluir entidades inactivas"),
+    db: Session = Depends(get_db)
+):
     """
-    Retorna la lista de todas las entidades gestoras registradas en el sistema.
+    Retorna la lista de entidades gestoras registradas en el sistema.
     """
-    entidades = db.query(Entidad).order_by(Entidad.id_entidad.asc()).all()
+    query = db.query(Entidad)
+    if not include_inactive:
+        query = query.filter(Entidad.activo == True)
+    entidades = query.order_by(Entidad.id_entidad.asc()).all()
     return entidades
 
 
 @router.post("/entities", response_model=EntityOut, status_code=status.HTTP_201_CREATED)
 def create_entity(entity_in: EntityCreateIn, db: Session = Depends(get_db)):
     """
-    Registra una nueva entidad gestora (para permitir la replicabilidad en cualquier cuenca del mundo).
+    Registra una nueva entidad gestora.
     """
     nueva_entidad = Entidad(
-        nombre_entidad=entity_in.nombre_entidad,
-        tipo_entidad=entity_in.tipo_entidad,
-        ruc=entity_in.ruc,
-        telefono_contacto=entity_in.telefono_contacto,
-        email_contacto=entity_in.email_contacto,
-        direccion=entity_in.direccion
+        nombre_entidad=entity_in.nombre_entidad.strip(),
+        tipo_entidad=entity_in.tipo_entidad.strip() if entity_in.tipo_entidad else "COMISION_REGANTES",
+        ruc=entity_in.ruc.strip() if entity_in.ruc else None,
+        telefono_contacto=entity_in.telefono_contacto.strip() if entity_in.telefono_contacto else None,
+        email_contacto=entity_in.email_contacto.strip() if entity_in.email_contacto else None,
+        direccion=entity_in.direccion.strip() if entity_in.direccion else None,
+        activo=True
     )
     db.add(nueva_entidad)
     db.commit()
     db.refresh(nueva_entidad)
     return nueva_entidad
+
+
+@router.put("/entities/{entity_id}", response_model=EntityOut)
+def update_entity(entity_id: int, entity_in: EntityUpdateIn, db: Session = Depends(get_db)):
+    """
+    Actualiza los datos de una entidad gestora.
+    """
+    entidad = db.query(Entidad).filter(Entidad.id_entidad == entity_id).first()
+    if not entidad:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entidad no encontrada")
+
+    if entity_in.nombre_entidad is not None and entity_in.nombre_entidad.strip():
+        entidad.nombre_entidad = entity_in.nombre_entidad.strip()
+    if entity_in.tipo_entidad is not None:
+        entidad.tipo_entidad = entity_in.tipo_entidad.strip()
+    if entity_in.ruc is not None:
+        entidad.ruc = entity_in.ruc.strip() if entity_in.ruc.strip() else None
+    if entity_in.telefono_contacto is not None:
+        entidad.telefono_contacto = entity_in.telefono_contacto.strip() if entity_in.telefono_contacto.strip() else None
+    if entity_in.email_contacto is not None:
+        entidad.email_contacto = entity_in.email_contacto.strip() if entity_in.email_contacto.strip() else None
+    if entity_in.direccion is not None:
+        entidad.direccion = entity_in.direccion.strip() if entity_in.direccion.strip() else None
+    if entity_in.activo is not None:
+        entidad.activo = entity_in.activo
+
+    entidad.updated_at = datetime.datetime.now(datetime.timezone.utc)
+    db.commit()
+    db.refresh(entidad)
+    return entidad
+
+
+@router.delete("/entities/{entity_id}", response_model=EntityOut)
+def deactivate_entity(entity_id: int, db: Session = Depends(get_db)):
+    """
+    Desactiva lógicamente (soft-delete) una entidad gestora para preservar el historial de nodos y regantes.
+    """
+    entidad = db.query(Entidad).filter(Entidad.id_entidad == entity_id).first()
+    if not entidad:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entidad no encontrada")
+
+    entidad.activo = False
+    entidad.updated_at = datetime.datetime.now(datetime.timezone.utc)
+    db.commit()
+    db.refresh(entidad)
+    return entidad
+
+
+@router.patch("/entities/{entity_id}/toggle-active", response_model=EntityOut)
+def toggle_entity_active(entity_id: int, db: Session = Depends(get_db)):
+    """
+    Alterna el estado activo/inactivo de una entidad gestora.
+    """
+    entidad = db.query(Entidad).filter(Entidad.id_entidad == entity_id).first()
+    if not entidad:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entidad no encontrada")
+
+    entidad.activo = not entidad.activo
+    entidad.updated_at = datetime.datetime.now(datetime.timezone.utc)
+    db.commit()
+    db.refresh(entidad)
+    return entidad
 
 
 # ============================================================================

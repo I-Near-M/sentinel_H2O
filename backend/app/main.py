@@ -6,13 +6,18 @@ from backend.app.api.v1.api import api_router
 from backend.app.database.init_db import init_db
 
 
+from backend.app.services.weather_sync import weather_worker
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Verificar conexión e infraestructura de base de datos limpia (0 registros)
     init_db()
+    # Iniciar sincronizador meteorológico en segundo plano
+    await weather_worker.start()
     yield
-    # Shutdown
-    pass
+    # Shutdown: Detener tareas en segundo plano limpiamente
+    await weather_worker.stop()
 
 
 app = FastAPI(

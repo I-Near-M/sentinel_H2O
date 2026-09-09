@@ -202,7 +202,7 @@
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
       "id": 101,
-      "title": "HISTORIAL DE EXPERIMENTOS Y SIMULACIONES 'WHAT-IF'",
+      "title": "HISTORIAL DE EXPERIMENTOS Y SIMULACIONES WHAT-IF (MULTIVARIABLE & MITA)",
       "type": "row"
     },
     {
@@ -210,24 +210,24 @@
       "fieldConfig": {
         "defaults": { "custom": { "align": "auto", "displayMode": "auto" } }
       },
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 19 },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 19 },
       "id": 30,
       "options": { "showHeader": true },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT id_simulacion AS `ID`, fecha_ejecucion AS `Fecha Simulación`, titulo_escenario AS `Escenario Evaluado`, delta_precipitacion_pct AS `Δ Lluvia (%)`, delta_salinidad_us_cm AS `Δ Salinidad Cabecera`, delta_caudal_cabecera_pct AS `Δ Q Cabecera (%)`, resultado_wqi_valle AS `WQI Valle Resultante`, ROUND(resultado_caudal_valle_m3s, 3) AS `Q Valle (m³/s)`, resumen_impacto AS `Diagnóstico del Modelo` FROM simulaciones_whatif ORDER BY id_simulacion DESC LIMIT 15;",
+          "rawSql": "SELECT id_simulacion AS `ID`, fecha_ejecucion AS `Fecha y Hora`, titulo_escenario AS `Escenario Simulado`, delta_precipitacion_pct AS `Δ Lluvia (%)`, delta_salinidad_us_cm AS `Δ Salinidad (µS/cm)`, delta_caudal_cabecera_pct AS `Δ Q (%)`, resultado_wqi_valle AS `WQI Resultante`, ROUND(resultado_caudal_valle_m3s, 3) AS `Q Proyectado (m³/s)`, resumen_impacto AS `Diagnóstico Prescriptivo & Cultivo`, ejecutado_por AS `Operador` FROM simulaciones_whatif ORDER BY id_simulacion DESC LIMIT 20;",
           "refId": "A"
         }
       ],
-      "title": "Resultados de Simulaciones Hidrológicas What-If",
+      "title": "Registro Forense de Simulaciones What-If & Matriz de Estrés Agronómico",
       "type": "table"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["sentinel-h2o", "ia-predicciones", "what-if", "gru-network"],
+  "tags": ["sentinel-h2o", "ia-predicciones", "what-if", "gru-network", "maas-hoffman", "mita"],
   "templating": {
     "list": [
       {

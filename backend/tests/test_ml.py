@@ -107,9 +107,91 @@ def test_simulate_whatif_endpoint():
     assert "Escenario" in data["resumen_impacto"]
 
 
+def test_simulate_multivariable_endpoint():
+    payload = {
+        "id_nodo_origen": "NODO-01-CABECERA",
+        "titulo_escenario": "Impacto en Paltos por Sequía",
+        "delta_caudal_pct": -40.0,
+        "delta_salinidad_us_cm": 600.0,
+        "delta_ph": -0.5,
+        "delta_precipitacion_pct": -20.0,
+        "cultivo_diana": "PALTOS_AGUACATE",
+        "duracion_horas": 12,
+        "ejecutado_por": "Especialista Agrónomo"
+    }
+    response = client.post("/api/v1/predictions/simulate-multivariable", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["titulo_escenario"] == "Impacto en Paltos por Sequía"
+    assert data["caudal_proyectado_m3s"] > 0.0
+    assert data["salinidad_proyectada_ec"] > 600.0
+    assert "impacto_cultivo" in data
+    assert data["impacto_cultivo"]["cultivo"] == "PALTOS_AGUACATE"
+    assert data["impacto_cultivo"]["perdida_rendimiento_pct"] >= 0.0
+    assert data["impacto_cultivo"]["nivel_estres_osmotico"] in ["CRÍTICO (Severo)", "MODERADO (Precaución)", "CONTROLADO (Óptimo)"]
+
+
+def test_cascade_lead_time_endpoint():
+    payload = {
+        "id_nodo_origen": "NODO-01-CABECERA",
+        "caudal_transporte_m3s": 2.5,
+        "salinidad_origen_ec": 1800.0,
+        "ph_origen": 7.2
+    }
+    response = client.post("/api/v1/predictions/lead-time/cascade", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id_nodo_origen"] == "NODO-01-CABECERA"
+    assert data["total_estaciones_aguas_abajo"] >= 2
+    assert len(data["secuencia_nodos"]) >= 2
+    hop1 = data["secuencia_nodos"][0]
+    assert hop1["orden_secuencia"] == 1
+    assert hop1["lead_time_frente_minutos"] > 0
+    assert hop1["estado_compuerta_recomendado"] in ["CERRAR_COMPUERTAS_INMEDIATO", "ALERTA_PREVENTIVA_VIGILANCIA", "OPERACIÓN_NORMAL"]
+
+
+def test_prescribe_dilution_endpoint():
+    payload = {
+        "salinidad_actual_rio_ec": 2200.0,
+        "caudal_actual_rio_m3s": 2.0,
+        "salinidad_objetivo_ec": 1000.0,
+        "salinidad_agua_represa_ec": 150.0,
+        "duracion_lavado_horas": 8
+    }
+    response = client.post("/api/v1/predictions/prescribe-dilution", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["caudal_descarga_requerido_m3s"] > 0.0
+    assert data["volumen_total_desembalse_m3"] > 0.0
+    assert "descarga de rescate" in data["prescripcion_tecnica"] or "FACTIBLE" in data["factibilidad_operativa"]
+
+
+def test_audit_mita_deficit_endpoint():
+    payload = {
+        "id_nodo_infractor": "NODO-02-CONDUCCION",
+        "caudal_exceso_ls": 350.0,
+        "duracion_sobre_extraccion_horas": 6.0,
+        "caudal_nominal_valle_m3s": 1.5
+    }
+    response = client.post("/api/v1/predictions/audit-mita-deficit", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert pytest.approx(data["volumen_total_sustraido_m3"], 0.1) == 7560.0
+    assert data["retraso_turno_valle_horas"] > 0.5
+    assert "Auditoría Forense" in data["dictamen_auditoria"]
+
+
+def test_simulations_history_endpoint():
+    response = client.get("/api/v1/predictions/simulations-history?limit=5")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+
+
 def test_sync_all_forecasts_batch():
     response = client.post("/api/v1/predictions/sync-all-forecasts")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "SUCCESS"
     assert data["nodos_actualizados"] >= 3
+

@@ -7,7 +7,11 @@ from backend.app.database.models import Nodo, MedicionProcesada
 from backend.app.schemas.predictions import (
     Forecast24hResponse, HourlyForecastItem,
     LeadTimeRequest, LeadTimeResponse,
-    WhatIfRequest, WhatIfResponse
+    WhatIfRequest, WhatIfResponse,
+    MultiVariableWhatIfRequest, MultiVariableWhatIfResponse,
+    CascadeLeadTimeRequest, CascadeLeadTimeResponse,
+    DilutionPrescriptionRequest, DilutionPrescriptionResponse,
+    MitaAuditRequest, MitaAuditResponse
 )
 from backend.app.ml.gru_predictor import GRUTimeSeriesPredictor
 from backend.app.ml.lead_time import HydraulicLeadTimeEstimator
@@ -47,9 +51,9 @@ def get_node_forecast_24h(node_id: str, db: Session = Depends(get_db)):
 @router.post("/lead-time", response_model=LeadTimeResponse)
 def calculate_lead_time(req: LeadTimeRequest, db: Session = Depends(get_db)):
     """
-    **Estimación del Tiempo de Viaje de Contaminación (Lead Time)**:
+    **Estimación del Tiempo de Viaje de Contaminación (Lead Time Punto a Punto)**:
     Calcula la velocidad hidrodinámica y el tiempo que tardará una pluma detectada aguas arriba
-    (ej: en Vichaycocha o Acos) en llegar a la bocatoma de riego (Huayopampa / Huaral).
+    en llegar a la bocatoma de riego destino.
     """
     caudal = req.caudal_origen_m3s
     if caudal is None:
@@ -67,10 +71,43 @@ def calculate_lead_time(req: LeadTimeRequest, db: Session = Depends(get_db)):
     return LeadTimeResponse(**res)
 
 
+@router.post("/lead-time/cascade", response_model=CascadeLeadTimeResponse)
+def calculate_cascade_lead_time(req: CascadeLeadTimeRequest, db: Session = Depends(get_db)):
+    """
+    **Propagación en Cascada Multitramo (Timeline Secuencial de Nodos Aguas Abajo)**:
+    Calcula el tiempo de tránsito (frente, pico, despeje), atenuación de salinidad
+    y recomendación de compuertas para toda la secuencia de estaciones aguas abajo del nodo origen.
+    """
+    caudal = req.caudal_transporte_m3s
+    salinidad = req.salinidad_origen_ec
+    ph = req.ph_origen
+
+    if caudal is None or salinidad is None or ph is None:
+        last_proc = db.query(MedicionProcesada).filter(
+            MedicionProcesada.id_nodo == req.id_nodo_origen
+        ).order_by(MedicionProcesada.timestamp.desc()).first()
+
+        if caudal is None:
+            caudal = last_proc.caudal_m3s if last_proc else 1.5
+        if salinidad is None:
+            salinidad = last_proc.ec_us_cm if last_proc else 1200.0
+        if ph is None:
+            ph = last_proc.ph if last_proc else 7.35
+
+    res = HydraulicLeadTimeEstimator.calculate_cascade_propagation(
+        origen_nodo_id=req.id_nodo_origen,
+        caudal_transporte_m3s=caudal,
+        salinidad_origen_ec=salinidad,
+        ph_origen=ph,
+        db=db
+    )
+    return CascadeLeadTimeResponse(**res)
+
+
 @router.post("/simulate-whatif", response_model=WhatIfResponse)
 def simulate_whatif_scenario(req: WhatIfRequest, db: Session = Depends(get_db)):
     """
-    **Simulador de Escenarios 'What-If'**:
+    **Simulador Clásico de Escenarios 'What-If'**:
     Permite evaluar el impacto teórico de sequías severas (-% precipitación),
     descargas de lagunas o incrementos de salinidad en el valle.
     """
@@ -84,6 +121,70 @@ def simulate_whatif_scenario(req: WhatIfRequest, db: Session = Depends(get_db)):
         ejecutado_por=req.ejecutado_por
     )
     return WhatIfResponse(**res)
+
+
+@router.post("/simulate-multivariable", response_model=MultiVariableWhatIfResponse)
+def simulate_multivariable_scenario(req: MultiVariableWhatIfRequest, db: Session = Depends(get_db)):
+    """
+    **Motor de Simulación Multivariable & Matriz Agronómica (Maas-Hoffman)**:
+    Evalúa en paralelo variaciones de Caudal, Salinidad, pH y Lluvia con
+    diagnóstico de pérdida de rendimiento específico para el cultivo diana.
+    """
+    res = WhatIfSimulator.run_multivariable_simulation(
+        db=db,
+        id_nodo_origen=req.id_nodo_origen or "NODO-01-CABECERA",
+        titulo_escenario=req.titulo_escenario or "Escenario Multivariable",
+        delta_caudal_pct=req.delta_caudal_pct,
+        delta_salinidad_us_cm=req.delta_salinidad_us_cm,
+        delta_ph=req.delta_ph,
+        delta_precipitacion_pct=req.delta_precipitacion_pct,
+        cultivo_diana=req.cultivo_diana,
+        duracion_horas=req.duracion_horas,
+        ejecutado_por=req.ejecutado_por
+    )
+    return MultiVariableWhatIfResponse(**res)
+
+
+@router.post("/prescribe-dilution", response_model=DilutionPrescriptionResponse)
+def prescribe_hydraulic_dilution(req: DilutionPrescriptionRequest):
+    """
+    **Prescriptor de Dilución Hidráulica (Lavado de Cuenca)**:
+    Calcula el caudal y volumen de descarga requeridos desde una represa limpia
+    para diluir una concentración salina en el río antes de las bocatomas.
+    """
+    res = WhatIfSimulator.calculate_dilution_prescription(
+        salinidad_actual_rio_ec=req.salinidad_actual_rio_ec,
+        caudal_actual_rio_m3s=req.caudal_actual_rio_m3s,
+        salinidad_objetivo_ec=req.salinidad_objetivo_ec,
+        salinidad_agua_represa_ec=req.salinidad_agua_represa_ec,
+        duracion_lavado_horas=req.duracion_lavado_horas
+    )
+    return DilutionPrescriptionResponse(**res)
+
+
+@router.post("/audit-mita-deficit", response_model=MitaAuditResponse)
+def audit_mita_deficit(req: MitaAuditRequest):
+    """
+    **Auditoría de Desvíos y Balance de La Mita**:
+    Cuantifica el volumen sustraído en exceso en una bocatoma,
+    el retraso en horas para el siguiente turno de riego y el impacto en caudal ecológico.
+    """
+    res = WhatIfSimulator.calculate_mita_audit(
+        id_nodo_infractor=req.id_nodo_infractor,
+        caudal_exceso_ls=req.caudal_exceso_ls,
+        duracion_sobre_extraccion_horas=req.duracion_sobre_extraccion_horas,
+        caudal_nominal_valle_m3s=req.caudal_nominal_valle_m3s or 1.5
+    )
+    return MitaAuditResponse(**res)
+
+
+@router.get("/simulations-history", response_model=List[Dict[str, Any]])
+def get_simulations_history(limit: int = 20, db: Session = Depends(get_db)):
+    """
+    **Historial de Simulaciones**:
+    Retorna los registros forenses de las simulaciones ejecutadas en el sistema.
+    """
+    return WhatIfSimulator.get_simulations_history(db=db, limit=limit)
 
 
 @router.post("/sync-all-forecasts")
@@ -103,3 +204,4 @@ def sync_all_forecasts_batch(db: Session = Depends(get_db)):
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "mensaje": f"Pronósticos a 24h generados exitosamente para {count} nodos."
     }
+
