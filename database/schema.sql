@@ -280,16 +280,3 @@ CREATE TABLE IF NOT EXISTS `simulaciones_whatif` (
   CONSTRAINT `fk_whatif_entidad` FOREIGN KEY (`id_entidad`) REFERENCES `entidades` (`id_entidad`) ON DELETE SET NULL
 ) ENGINE=InnoDB COMMENT='Registro de simulaciones predictivas What-If ejecutadas';
 
-
--- ========================================================================================
--- SEMILLAS INICIALES (SEED DATA) — GOBERNANZA MULTIENTIDAD
--- Las entidades gestoras permiten mapear a qué autoridad pertenece cada futuro nodo.
--- Los nodos se registran dinámicamente desde la Consola de Implementación Web.
--- ========================================================================================
-
--- Entidades Gestoras Iniciales
-INSERT INTO `entidades` (`id_entidad`, `nombre_entidad`, `tipo_entidad`, `ruc`, `telefono_contacto`, `email_contacto`, `direccion`) VALUES
-(1, 'Autoridad Nacional del Agua - CRHCCH-H', 'GUBERNAMENTAL_ANA', '20520711865', '+51 1 5137100', 'com-stchh@ana.gob.pe', 'Calle Los Álamos 120, Huaral'),
-(2, 'Junta de Usuarios del Sector Hidráulico Chancay-Huaral', 'JUNTA_USUARIOS', '20148202511', '+51 934882190', 'contacto@juntachancayhuaral.pe', 'Av. Chancay 450, Huaral'),
-(3, 'Comisión de Regantes San Agustín de Huayopampa', 'COMISION_REGANTES', NULL, '+51 987112233', 'comision.huayopampa@gmail.com', 'Plaza Principal Huayopampa, Huaral');
-

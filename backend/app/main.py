@@ -8,10 +8,10 @@ from backend.app.database.init_db import init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Inicializar base de datos y sembrar los 3 nodos MVP
+    # Startup: Verificar conexión e infraestructura de base de datos limpia (0 registros)
     init_db()
     yield
-    # Shutdown: Limpieza si se requiere
+    # Shutdown
     pass
 
 

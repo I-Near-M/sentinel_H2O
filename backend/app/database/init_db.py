@@ -182,8 +182,9 @@ def seed_mvp_demo_nodes(db: Session):
 
 def init_db(db: Session = None, seed_demo_nodes: bool = False):
     """
-    Crea las tablas en la base de datos y siembra únicamente las entidades maestras.
-    Por defecto, deja la tabla 'nodos' vacía para el aprovisionamiento manual desde la Web App.
+    Crea las tablas en la base de datos si no existen.
+    Garantiza que la base de datos arranque 100% limpia (0 entidades, 0 nodos, 0 registros)
+    para que el usuario gestione sus propias entidades y nodos desde la Web App.
     """
     Base.metadata.create_all(bind=engine)
     
@@ -193,43 +194,11 @@ def init_db(db: Session = None, seed_demo_nodes: bool = False):
         close_session = True
 
     try:
-        # 1. Sembrar entidades maestras iniciales si no existen
-        if not db.query(Entidad).first():
-            logger.info("Sembrando entidades gestoras iniciales...")
-            e1 = Entidad(
-                id_entidad=1,
-                nombre_entidad="Autoridad Nacional del Agua - CRHCCH-H",
-                tipo_entidad="GUBERNAMENTAL_ANA",
-                ruc="20520711865",
-                telefono_contacto="+51 1 5137100",
-                email_contacto="com-stchh@ana.gob.pe",
-                direccion="Calle Los Álamos 120, Huaral"
-            )
-            e2 = Entidad(
-                id_entidad=2,
-                nombre_entidad="Junta de Usuarios del Sector Hidráulico Chancay-Huaral",
-                tipo_entidad="JUNTA_USUARIOS",
-                ruc="20148202511",
-                telefono_contacto="+51 934882190",
-                email_contacto="contacto@juntachancayhuaral.pe",
-                direccion="Av. Chancay 450, Huaral"
-            )
-            e3 = Entidad(
-                id_entidad=3,
-                nombre_entidad="Comisión de Regantes San Agustín de Huayopampa",
-                tipo_entidad="COMISION_REGANTES",
-                telefono_contacto="+51 987112233",
-                email_contacto="comision.huayopampa@gmail.com",
-                direccion="Plaza Principal Huayopampa, Huaral"
-            )
-            db.add_all([e1, e2, e3])
-            db.commit()
-
-        # 2. Solo sembrar nodos si se solicita explícitamente (ej: en tests)
+        # Solo sembrar nodos si se solicita explícitamente (ej: en suites de tests automatizados)
         if seed_demo_nodes:
             seed_mvp_demo_nodes(db)
             
-        logger.info("Base de datos inicializada correctamente.")
+        logger.info("Base de datos inicializada limpia y lista para registro descentralizado.")
     except Exception as e:
         logger.error(f"Error inicializando base de datos: {e}")
         db.rollback()
