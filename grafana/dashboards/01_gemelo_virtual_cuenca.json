@@ -298,14 +298,14 @@
         "y": 4
       },
       "id": 101,
-      "title": "TOPOLOGÍA GEOESPACIAL Y UBICACIÓN DE ESTACIONES EN LA RED",
+      "title": "TOPOLOGÍA GEOESPACIAL Y ANÁLISIS MULTIDIMENSIONAL DE CALIDAD",
       "type": "row"
     },
     {
       "datasource": "Sentinel-MySQL",
       "gridPos": {
         "h": 10,
-        "w": 24,
+        "w": 14,
         "x": 0,
         "y": 5
       },
@@ -362,6 +362,28 @@
       "type": "geomap"
     },
     {
+      "datasource": "Sentinel-MySQL",
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 14,
+        "y": 5
+      },
+      "id": 7,
+      "options": {
+        "function": "\nconst series = data.series || [];\nconst stations = [];\nconst wqi = [];\nconst ec = [];\nconst turb = [];\nconst ph = [];\nconst flow = [];\n\nif (series.length > 0 && series[0].fields) {\n  const fields = series[0].fields;\n  const nameField = fields.find(f => f.name === 'estacion' || f.name === 'Estacion');\n  const wqiField = fields.find(f => f.name === 'wqi_score');\n  const ecField = fields.find(f => f.name === 'ec_us_cm');\n  const turbField = fields.find(f => f.name === 'turbidez_ntu');\n  const phField = fields.find(f => f.name === 'ph');\n  const flowField = fields.find(f => f.name === 'caudal_m3s');\n\n  const count = nameField ? nameField.values.length : 0;\n  for (let i = 0; i < count; i++) {\n    stations.push(nameField ? nameField.values[i] : 'Estación ' + (i+1));\n  }\n}\n\nconst colors = ['#10b981', '#06b6d4', '#f59e0b', '#ec4899', '#8b5cf6'];\nconst radarSeriesData = [];\n\nif (series.length > 0 && series[0].fields) {\n  const fields = series[0].fields;\n  const nameField = fields.find(f => f.name === 'estacion' || f.name === 'Estacion');\n  const wqiField = fields.find(f => f.name === 'wqi_score');\n  const ecField = fields.find(f => f.name === 'ec_us_cm');\n  const turbField = fields.find(f => f.name === 'turbidez_ntu');\n  const phField = fields.find(f => f.name === 'ph');\n  const flowField = fields.find(f => f.name === 'caudal_m3s');\n\n  const count = nameField ? nameField.values.length : 0;\n  for (let i = 0; i < count; i++) {\n    radarSeriesData.push({\n      value: [\n        wqiField ? wqiField.values[i] : 20,\n        ecField ? (ecField.values[i] / 20) : 30,\n        turbField ? turbField.values[i] : 10,\n        phField ? (phField.values[i] * 10) : 75,\n        flowField ? (flowField.values[i] * 15) : 25\n      ],\n      name: nameField ? nameField.values[i] : 'Estación ' + (i+1),\n      itemStyle: { color: colors[i % colors.length] },\n      areaStyle: { opacity: 0.25 }\n    });\n  }\n}\n\nreturn {\n  backgroundColor: 'transparent',\n  tooltip: { trigger: 'item' },\n  legend: {\n    bottom: 5,\n    textStyle: { color: '#94a3b8', fontSize: 11 },\n    data: stations\n  },\n  radar: {\n    indicator: [\n      { name: 'WQI (Calidad)', max: 100 },\n      { name: 'Salinidad (EC/20)', max: 100 },\n      { name: 'Turbidez (NTU)', max: 80 },\n      { name: 'pH (x10)', max: 100 },\n      { name: 'Caudal Relativo', max: 100 }\n    ],\n    shape: 'polygon',\n    splitNumber: 4,\n    axisName: { color: '#38bdf8', fontSize: 11, fontWeight: 'bold' },\n    splitLine: { lineStyle: { color: 'rgba(56, 189, 248, 0.2)' } },\n    splitArea: { show: false },\n    axisLine: { lineStyle: { color: 'rgba(56, 189, 248, 0.3)' } }\n  },\n  series: [{\n    type: 'radar',\n    data: radarSeriesData\n  }]\n};\n"
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT n.nombre AS estacion, p.wqi_score, p.ec_us_cm, p.turbidez_ntu, p.ph, p.caudal_m3s FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp) AS max_t FROM mediciones_procesadas GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_procesadas p ON latest.id_nodo = p.id_nodo AND latest.max_t = p.timestamp WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "⚡ Perfil Multidimensional WQI por Estación (Apache ECharts)",
+      "type": "volkovlabs-echarts-panel"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -370,80 +392,139 @@
         "y": 15
       },
       "id": 102,
-      "title": "ESTADO Y DINÁMICA DE ESTACIONES HIDROLÓGICAS ACTIVAS",
+      "title": "GEMELO VIRTUAL: ESTADO EN TIEMPO REAL POR ESTACIÓN (TARJETAS DINÁMICAS)",
       "type": "row"
     },
     {
       "datasource": "Sentinel-MySQL",
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto"
-          }
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "blue",
+                "value": 31
+              },
+              {
+                "color": "yellow",
+                "value": 51
+              },
+              {
+                "color": "orange",
+                "value": 71
+              },
+              {
+                "color": "red",
+                "value": 91
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100,
+          "unit": "short"
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "wqi_score"
+              "options": "caudal_m3s"
             },
             "properties": [
               {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
+                "id": "unit",
+                "value": "m³/s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ph"
+            },
+            "properties": [
               {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "blue",
-                      "value": 31
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 51
-                    },
-                    {
-                      "color": "orange",
-                      "value": 71
-                    },
-                    {
-                      "color": "red",
-                      "value": 91
-                    }
-                  ]
-                }
+                "id": "unit",
+                "value": "pH"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ec_us_cm"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "µS/cm"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "turbidez_ntu"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "NTU"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "battery_v"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "volt"
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 7,
-        "w": 24,
+        "h": 6,
+        "w": 6,
         "x": 0,
         "y": 16
       },
       "id": 10,
+      "maxPerRow": 4,
+      "repeat": "id_nodo_card",
+      "repeatDirection": "h",
       "options": {
-        "showHeader": true
+        "colorMode": "value",
+        "graphMode": "area",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
       },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT n.cota_msnm, n.nombre AS estacion, n.sector_cuenca, n.tipo_fuente, p.caudal_m3s, p.ph, p.ec_us_cm, p.turbidez_ntu, p.temp_agua_c, p.wqi_score, p.wqi_categoria, p.timestamp AS ultima_lectura FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp) AS max_t FROM mediciones_procesadas GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_procesadas p ON latest.id_nodo = p.id_nodo AND latest.max_t = p.timestamp WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
+          "rawSql": "SELECT p.wqi_score, p.caudal_m3s, p.ph, p.ec_us_cm, p.turbidez_ntu, r.battery_v FROM mediciones_procesadas p JOIN mediciones_raw r ON p.id_raw = r.id_raw WHERE p.id_nodo = '$id_nodo_card' ORDER BY p.timestamp DESC LIMIT 1;",
           "refId": "A"
         }
       ],
-      "title": "Resumen Integral de Estaciones Activas (Ordenadas de Mayor a Menor Altitud)",
-      "type": "table"
+      "title": "📍 ${id_nodo_card:text}",
+      "description": "Telemetría en tiempo real: WQI (0-100), Caudal, pH, Salinidad (EC), Turbidez y Batería Solar",
+      "type": "stat"
     },
     {
       "collapsed": false,
@@ -451,10 +532,132 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 22
       },
       "id": 103,
-      "title": "SERIES TEMPORALES Y DINÁMICA HIDROLÓGICA MULTIESTACIÓN",
+      "title": "GRADIENTE HIDRÁULICO Y BALANCE DE CUENCA (CABECERA A VALLE)",
+      "type": "row"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "orientation": "horizontal"
+          },
+          "unit": "m³/s"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "id": 20,
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT CONCAT(n.nombre, ' (', n.cota_msnm, ' msnm)') AS estacion, p.caudal_m3s FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp) AS max_t FROM mediciones_procesadas GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_procesadas p ON latest.id_nodo = p.id_nodo AND latest.max_t = p.timestamp WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "🌊 Cascada de Caudales en Tránsito (m³/s) — Gradiente Altitudinal",
+      "type": "bargauge"
+    },
+    {
+      "datasource": "Sentinel-MySQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "blue",
+                "value": 31
+              },
+              {
+                "color": "yellow",
+                "value": 51
+              },
+              {
+                "color": "orange",
+                "value": 71
+              },
+              {
+                "color": "red",
+                "value": 91
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100,
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 23
+      },
+      "id": 21,
+      "options": {
+        "displayMode": "lcd",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT CONCAT(n.nombre, ' (', p.wqi_categoria, ')') AS estacion, p.wqi_score FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp) AS max_t FROM mediciones_procesadas GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_procesadas p ON latest.id_nodo = p.id_nodo AND latest.max_t = p.timestamp WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "🔬 Semáforo WQI por Estación (0-30 Excelente | 31-50 Buena | 51-70 Regular | >70 Mala)",
+      "type": "bargauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "id": 104,
+      "title": "SERIES TEMPORALES Y EVOLUCIÓN HISTÓRICA MULTIESTACIÓN",
       "type": "row"
     },
     {
@@ -474,9 +677,9 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 30
       },
-      "id": 20,
+      "id": 30,
       "options": {
         "legend": {
           "displayMode": "table",
@@ -517,9 +720,9 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 30
       },
-      "id": 21,
+      "id": 31,
       "options": {
         "legend": {
           "displayMode": "table",
@@ -557,9 +760,9 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 37
       },
-      "id": 22,
+      "id": 32,
       "options": {
         "legend": {
           "displayMode": "table",
@@ -599,9 +802,9 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 31
+        "y": 37
       },
-      "id": 23,
+      "id": 33,
       "options": {
         "legend": {
           "displayMode": "table",
@@ -628,9 +831,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 44
       },
-      "id": 104,
+      "id": 105,
       "title": "HISTORIAL DE ALERTAS Y EVENTOS HIDROLÓGICOS",
       "type": "row"
     },
@@ -648,9 +851,9 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 45
       },
-      "id": 30,
+      "id": 40,
       "options": {
         "showHeader": true
       },
@@ -672,8 +875,31 @@
     "sentinel-h2o",
     "gemelo-virtual",
     "cuenca",
-    "tiempo-real"
+    "tiempo-real",
+    "digital-twin"
   ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": "Sentinel-MySQL",
+        "definition": "SELECT id_nodo AS __value, CONCAT(nombre, ' (', cota_msnm, ' msnm)') AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm DESC;",
+        "hide": 2,
+        "includeAll": true,
+        "label": "Estaciones para Cards:",
+        "multi": true,
+        "name": "id_nodo_card",
+        "options": [],
+        "query": "SELECT id_nodo AS __value, CONCAT(nombre, ' (', cota_msnm, ' msnm)') AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm DESC;",
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
   "time": {
     "from": "now-24h",
     "to": "now"
@@ -690,5 +916,5 @@
   "timezone": "browser",
   "title": "01. Sentinel-H2O — Gemelo Virtual y Telemetría Global de Cuenca",
   "uid": "sentinel-01-cuenca",
-  "version": 5
+  "version": 6
 }

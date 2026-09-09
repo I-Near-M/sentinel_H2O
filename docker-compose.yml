@@ -73,6 +73,8 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_NAME=Main Org.
       - GF_PANELS_ENABLE_ALPHA=true
       - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_INSTALL_PLUGINS=volkovlabs-echarts-panel
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=volkovlabs-echarts-panel
       - MYSQL_DATABASE=${MYSQL_DATABASE:-sentinel_h2o_db}
       - MYSQL_USER=${MYSQL_USER:-sentinel_user}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:-sentinel_password_2026}
