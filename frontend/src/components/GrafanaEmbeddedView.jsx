@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useSystemConfig } from '../context/SystemConfigContext';
+import { useAuth } from '../context/AuthContext';
 import { 
   BarChart3, ExternalLink, RefreshCw, Maximize2, 
   Minimize2, Clock, Layers, Sparkles, Info, 
@@ -9,6 +10,7 @@ import {
 
 export const GrafanaEmbeddedView = ({ grafanaBaseUrl = 'http://localhost:3000' }) => {
   const { isDark } = useTheme();
+  const { user } = useAuth();
   const { dashboards_grafana, nombre_cuenca } = useSystemConfig();
 
   const dashboardsList = (dashboards_grafana && dashboards_grafana.length > 0)
@@ -81,9 +83,15 @@ export const GrafanaEmbeddedView = ({ grafanaBaseUrl = 'http://localhost:3000' }
                 <h2 className="text-base font-black text-slate-900 dark:text-white">
                   Gemelo Virtual en Grafana
                 </h2>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-mono font-bold">
-                  VISOR LIBRE (ANÓNIMO)
-                </span>
+                {user ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 font-mono font-bold">
+                    SSO: {user.rol === 'ADMIN_SISTEMA' ? 'ADMIN' : user.rol === 'OPERADOR_JUNTA' ? 'EDITOR' : 'VISOR'}
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-mono font-bold">
+                    VISOR ANÓNIMO
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-600 dark:text-cyan-200/70">
                 {currentDashboard.desc}
