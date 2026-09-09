@@ -17,7 +17,11 @@ try:
     engine = create_engine(
         db_url,
         connect_args=connect_args,
-        pool_pre_ping=True
+        pool_pre_ping=True,
+        pool_size=15,
+        max_overflow=25,
+        pool_recycle=1800,
+        pool_timeout=30
     )
     # Probar conexión si es remota
     if not db_url.startswith("sqlite"):

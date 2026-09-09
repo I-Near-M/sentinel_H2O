@@ -77,6 +77,7 @@ def login(credentials: LoginRequest, request: Request, db: Session = Depends(get
         "sub": str(user.id_usuario),
         "email": user.email,
         "rol": user.rol,
+        "nombre_completo": user.nombre_completo,
         "id_entidad": user.id_entidad
     }
     access_token = create_access_token(token_data)
@@ -436,12 +437,12 @@ def grafana_sso_launcher(
 
 
 @router.get("/auth-proxy-verify")
-def auth_proxy_verify(request: Request, db: Session = Depends(get_db)):
+def auth_proxy_verify(request: Request):
     """
-    Subconsulta de autenticación invocada por Nginx (auth_request).
-    Lee la cookie 'sentinel_sso_token' o la cabecera 'Authorization',
-    valida la sesión activa y retorna las cabeceras de identidad X-WEBAUTH-*
-    para que Grafana auto-cree/autentique al usuario con su rol real (Admin/Editor/Viewer).
+    Subconsulta de autenticación ultrarrápida invocada por Nginx (auth_request).
+    Lee la cookie 'sentinel_sso_token' o la cabecera 'Authorization' o parámetro 'token',
+    valida el JWT de forma puramente in-memory (0 queries a DB) y retorna las cabeceras
+    X-WEBAUTH-* para que Grafana active la sesión y rol del usuario.
     """
     token = None
     if "sentinel_sso_token" in request.cookies:
@@ -461,26 +462,9 @@ def auth_proxy_verify(request: Request, db: Session = Depends(get_db)):
     if not payload or ("sub" not in payload and "email" not in payload):
         return Response(status_code=status.HTTP_200_OK)
 
-    user_id = payload.get("sub")
-    user = None
-    if user_id:
-        try:
-            user_id_int = int(user_id)
-            user = db.query(Usuario).filter(Usuario.id_usuario == user_id_int, Usuario.activo == True).first()
-        except (ValueError, TypeError):
-            user = db.query(Usuario).filter(Usuario.email == str(user_id), Usuario.activo == True).first()
-
-    # Si no se encuentra por id, buscar por email en payload
-    if not user and payload.get("email"):
-        user = db.query(Usuario).filter(Usuario.email == payload.get("email"), Usuario.activo == True).first()
-
-    # Si no está en BD pero el JWT está firmado legítimamente por nuestro servidor (ej. persistencia tras reinicio)
-    email = user.email if user else payload.get("email")
-    nombre = user.nombre_completo if user else (payload.get("nombre_completo") or email)
-    rol = user.rol if user else payload.get("rol", "ADMIN_SISTEMA")
-
-    if not email:
-        return Response(status_code=status.HTTP_200_OK)
+    email = payload.get("email") or str(payload.get("sub"))
+    nombre = payload.get("nombre_completo") or email
+    rol = payload.get("rol", "AUDITOR_VISOR")
 
     # Mapeo de roles de Sentinel-H2O a Grafana
     # ADMIN_SISTEMA -> Admin
@@ -495,9 +479,8 @@ def auth_proxy_verify(request: Request, db: Session = Depends(get_db)):
 
     headers = {
         "X-WEBAUTH-USER": email,
-        "X-WEBAUTH-NAME": nombre or email,
+        "X-WEBAUTH-NAME": nombre,
         "X-WEBAUTH-EMAIL": email,
         "X-WEBAUTH-ROLE": grafana_role,
     }
     return Response(status_code=status.HTTP_200_OK, headers=headers)
-

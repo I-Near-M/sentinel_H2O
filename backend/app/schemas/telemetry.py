@@ -12,7 +12,7 @@ class TelemetryIn(BaseModel):
     battery_v: float = Field(..., ge=0.0, le=20.0, description="Voltaje de la batería en Voltios", json_schema_extra={"example": 3.95})
     signal_rssi: Optional[int] = Field(None, ge=0, le=31, description="Calidad de señal celular CSQ (0-31)", json_schema_extra={"example": 18})
     temp_c: float = Field(..., ge=-10.0, le=60.0, description="Temperatura del agua medida por DS18B20", json_schema_extra={"example": 18.5})
-    raw_dist_cm: float = Field(..., ge=0.0, le=600.0, description="Distancia al espejo de agua medida por JSN-SR04T (cm)", json_schema_extra={"example": 65.4})
+    raw_dist_cm: float = Field(..., ge=0.0, le=2000.0, description="Distancia al espejo de agua medida por JSN-SR04T (cm)", json_schema_extra={"example": 65.4})
     raw_v_ph: float = Field(..., ge=0.0, le=3.3, description="Voltaje analógico del sensor de pH PH-4502C", json_schema_extra={"example": 2.49})
     raw_v_tds: float = Field(..., ge=0.0, le=3.3, description="Voltaje analógico del módulo Keyestudio TDS", json_schema_extra={"example": 0.82})
     raw_v_turb: float = Field(..., ge=0.0, le=3.3, description="Voltaje analógico tras divisor de TS-300B", json_schema_extra={"example": 3.10})
