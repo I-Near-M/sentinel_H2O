@@ -371,7 +371,7 @@
       },
       "id": 7,
       "options": {
-        "function": "\nconst series = data.series || [];\nconst stations = [];\nconst wqi = [];\nconst ec = [];\nconst turb = [];\nconst ph = [];\nconst flow = [];\n\nif (series.length > 0 && series[0].fields) {\n  const fields = series[0].fields;\n  const nameField = fields.find(f => f.name === 'estacion' || f.name === 'Estacion');\n  const wqiField = fields.find(f => f.name === 'wqi_score');\n  const ecField = fields.find(f => f.name === 'ec_us_cm');\n  const turbField = fields.find(f => f.name === 'turbidez_ntu');\n  const phField = fields.find(f => f.name === 'ph');\n  const flowField = fields.find(f => f.name === 'caudal_m3s');\n\n  const count = nameField ? nameField.values.length : 0;\n  for (let i = 0; i < count; i++) {\n    stations.push(nameField ? nameField.values[i] : 'Estación ' + (i+1));\n  }\n}\n\nconst colors = ['#10b981', '#06b6d4', '#f59e0b', '#ec4899', '#8b5cf6'];\nconst radarSeriesData = [];\n\nif (series.length > 0 && series[0].fields) {\n  const fields = series[0].fields;\n  const nameField = fields.find(f => f.name === 'estacion' || f.name === 'Estacion');\n  const wqiField = fields.find(f => f.name === 'wqi_score');\n  const ecField = fields.find(f => f.name === 'ec_us_cm');\n  const turbField = fields.find(f => f.name === 'turbidez_ntu');\n  const phField = fields.find(f => f.name === 'ph');\n  const flowField = fields.find(f => f.name === 'caudal_m3s');\n\n  const count = nameField ? nameField.values.length : 0;\n  for (let i = 0; i < count; i++) {\n    radarSeriesData.push({\n      value: [\n        wqiField ? wqiField.values[i] : 20,\n        ecField ? (ecField.values[i] / 20) : 30,\n        turbField ? turbField.values[i] : 10,\n        phField ? (phField.values[i] * 10) : 75,\n        flowField ? (flowField.values[i] * 15) : 25\n      ],\n      name: nameField ? nameField.values[i] : 'Estación ' + (i+1),\n      itemStyle: { color: colors[i % colors.length] },\n      areaStyle: { opacity: 0.25 }\n    });\n  }\n}\n\nreturn {\n  backgroundColor: 'transparent',\n  tooltip: { trigger: 'item' },\n  legend: {\n    bottom: 5,\n    textStyle: { color: '#94a3b8', fontSize: 11 },\n    data: stations\n  },\n  radar: {\n    indicator: [\n      { name: 'WQI (Calidad)', max: 100 },\n      { name: 'Salinidad (EC/20)', max: 100 },\n      { name: 'Turbidez (NTU)', max: 80 },\n      { name: 'pH (x10)', max: 100 },\n      { name: 'Caudal Relativo', max: 100 }\n    ],\n    shape: 'polygon',\n    splitNumber: 4,\n    axisName: { color: '#38bdf8', fontSize: 11, fontWeight: 'bold' },\n    splitLine: { lineStyle: { color: 'rgba(56, 189, 248, 0.2)' } },\n    splitArea: { show: false },\n    axisLine: { lineStyle: { color: 'rgba(56, 189, 248, 0.3)' } }\n  },\n  series: [{\n    type: 'radar',\n    data: radarSeriesData\n  }]\n};\n"
+        "function": "\nconst series = data.series || [];\nconst stations = [];\n\nif (series.length > 0 && series[0].fields) {\n  const fields = series[0].fields;\n  const nameField = fields.find(f => f.name === 'estacion' || f.name === 'Estacion');\n  const count = nameField ? nameField.values.length : 0;\n  for (let i = 0; i < count; i++) {\n    stations.push(nameField ? nameField.values[i] : 'Estación ' + (i+1));\n  }\n}\n\nconst colors = ['#10b981', '#06b6d4', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6'];\nconst radarSeriesData = [];\n\nif (series.length > 0 && series[0].fields) {\n  const fields = series[0].fields;\n  const nameField = fields.find(f => f.name === 'estacion' || f.name === 'Estacion');\n  const wqiField = fields.find(f => f.name === 'wqi_score');\n  const ecField = fields.find(f => f.name === 'ec_us_cm');\n  const turbField = fields.find(f => f.name === 'turbidez_ntu');\n  const phField = fields.find(f => f.name === 'ph');\n  const flowField = fields.find(f => f.name === 'caudal_m3s');\n\n  const count = nameField ? nameField.values.length : 0;\n  for (let i = 0; i < count; i++) {\n    radarSeriesData.push({\n      value: [\n        wqiField ? Number(wqiField.values[i]) : 20,\n        ecField ? Number(ecField.values[i] / 20) : 30,\n        turbField ? Number(turbField.values[i]) : 10,\n        phField ? Number(phField.values[i] * 10) : 75,\n        flowField ? Number(flowField.values[i] * 10) : 25\n      ],\n      name: nameField ? String(nameField.values[i]) : 'Estación ' + (i+1),\n      itemStyle: { color: colors[i % colors.length] },\n      areaStyle: { opacity: 0.25 }\n    });\n  }\n}\n\nreturn {\n  backgroundColor: 'transparent',\n  tooltip: { trigger: 'item' },\n  legend: {\n    bottom: 5,\n    textStyle: { color: '#94a3b8', fontSize: 11 },\n    data: stations\n  },\n  radar: {\n    indicator: [\n      { name: 'WQI (0-100)', max: 100 },\n      { name: 'Salinidad (EC/20)', max: 100 },\n      { name: 'Turbidez (NTU)', max: 80 },\n      { name: 'pH (x10)', max: 100 },\n      { name: 'Caudal (m³/s x10)', max: 100 }\n    ],\n    shape: 'polygon',\n    splitNumber: 4,\n    axisName: { color: '#38bdf8', fontSize: 11, fontWeight: 'bold' },\n    splitLine: { lineStyle: { color: 'rgba(56, 189, 248, 0.2)' } },\n    splitArea: { show: false },\n    axisLine: { lineStyle: { color: 'rgba(56, 189, 248, 0.3)' } }\n  },\n  series: [{\n    type: 'radar',\n    data: radarSeriesData\n  }]\n};\n"
       },
       "targets": [
         {
@@ -518,7 +518,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT p.wqi_score, p.caudal_m3s, p.ph, p.ec_us_cm, p.turbidez_ntu, r.battery_v FROM mediciones_procesadas p JOIN mediciones_raw r ON p.id_raw = r.id_raw WHERE p.id_nodo = '$id_nodo_card' ORDER BY p.timestamp DESC LIMIT 1;",
+          "rawSql": "SELECT p.wqi_score, p.caudal_m3s, p.ph, p.ec_us_cm, p.turbidez_ntu, r.battery_v FROM mediciones_procesadas p JOIN mediciones_raw r ON p.id_raw = r.id_raw WHERE p.id_nodo IN ($id_nodo_card) ORDER BY p.timestamp DESC LIMIT 1;",
           "refId": "A"
         }
       ],
@@ -884,13 +884,15 @@
         "current": {
           "selected": true,
           "text": "All",
-          "value": "$__all"
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": "Sentinel-MySQL",
         "definition": "SELECT id_nodo AS __value, CONCAT(nombre, ' (', cota_msnm, ' msnm)') AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm DESC;",
-        "hide": 2,
+        "hide": 0,
         "includeAll": true,
-        "label": "Estaciones para Cards:",
+        "label": "Estaciones Activas (Filtro Cards):",
         "multi": true,
         "name": "id_nodo_card",
         "options": [],
@@ -916,5 +918,5 @@
   "timezone": "browser",
   "title": "01. Sentinel-H2O — Gemelo Virtual y Telemetría Global de Cuenca",
   "uid": "sentinel-01-cuenca",
-  "version": 6
+  "version": 7
 }
