@@ -1,0 +1,4197 @@
+{
+  "ICA": {
+    "region": "ICA",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 15488.3,
+        "mean_price_s_kg": 4.49,
+        "avg_harvested_ha": 5367.5
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 40421.3,
+        "mean_price_s_kg": 1.19,
+        "avg_harvested_ha": 1850.6
+      },
+      "vid": {
+        "mean_yield_kg_ha": 22492.6,
+        "mean_price_s_kg": 2.08,
+        "avg_harvested_ha": 15770.1
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 9450.8,
+        "mean_price_s_kg": 1.13,
+        "avg_harvested_ha": 19783.7
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 53935.0,
+        "mean_price_s_kg": 0.12,
+        "avg_harvested_ha": 38.5
+      },
+      "papa": {
+        "mean_yield_kg_ha": 34930.3,
+        "mean_price_s_kg": 0.91,
+        "avg_harvested_ha": 3591.7
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12751.5,
+        "mean_price_s_kg": 3.96,
+        "avg_harvested_ha": 14320.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 8604.2,
+        "mean_price_s_kg": 1.59,
+        "avg_harvested_ha": 144.4
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 62497.9,
+        "mean_price_s_kg": 0.86,
+        "avg_harvested_ha": 1933.7
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 23771.5,
+        "mean_price_s_kg": 0.28,
+        "avg_harvested_ha": 6054.3
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 2180.3,
+        "mean_price_s_kg": 4.54,
+        "avg_harvested_ha": 17.1
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 101,
+      "drought_deficit_count": 7,
+      "excess_water_flood_count": 1,
+      "salinity_soil_count": 78,
+      "pests_count": 14,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 71.0,
+      "drought_deficit_pct": 6.9,
+      "salinity_soil_pct": 77.2,
+      "excess_water_pct": 1.0,
+      "pests_pct": 13.9,
+      "annual_loss_risk_score": 0.84
+    },
+    "irrigation_profile": {
+      "gravity_pct": 66.7,
+      "sprinkler_pct": 16.1,
+      "drip_pct": 17.2,
+      "average_efficiency": 0.61
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 265,
+        "planned_ha": 20767.0
+      },
+      {
+        "crop": "PALLAR",
+        "declaration_count": 108,
+        "planned_ha": 10156.0
+      },
+      {
+        "crop": "ALGODON",
+        "declaration_count": 91,
+        "planned_ha": 212.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 34,
+        "planned_ha": 10051.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 34,
+        "planned_ha": 19.0
+      },
+      {
+        "crop": "ZAPALLO",
+        "declaration_count": 29,
+        "planned_ha": 138.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 27,
+        "planned_ha": 198.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 26,
+        "planned_ha": 86.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 273,
+        "planned_ha": 747.0
+      },
+      {
+        "crop": "ALGODON",
+        "declaration_count": 75,
+        "planned_ha": 176.0
+      },
+      {
+        "crop": "PALLAR",
+        "declaration_count": 73,
+        "planned_ha": 1272.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 41,
+        "planned_ha": 66.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 39,
+        "planned_ha": 69.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 30,
+        "planned_ha": 54.0
+      },
+      {
+        "crop": "FRIJOL CANARIO",
+        "declaration_count": 25,
+        "planned_ha": 43.0
+      },
+      {
+        "crop": "ZAPALLO",
+        "declaration_count": 22,
+        "planned_ha": 37.0
+      }
+    ]
+  },
+  "CUSCO": {
+    "region": "CUSCO",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 8718.2,
+        "mean_price_s_kg": 2.65,
+        "avg_harvested_ha": 848.7
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 8748.7,
+        "mean_price_s_kg": 0.77,
+        "avg_harvested_ha": 805.0
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 1720.3,
+        "mean_price_s_kg": 1.74,
+        "avg_harvested_ha": 3051.9
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 14142.7,
+        "mean_price_s_kg": 1.28,
+        "avg_harvested_ha": 30809.8
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 15990.1,
+        "mean_price_s_kg": 8.02,
+        "avg_harvested_ha": 8.9
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 7174.0,
+        "mean_price_s_kg": 2.66,
+        "avg_harvested_ha": 97.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 13425.9,
+        "mean_price_s_kg": 1.36,
+        "avg_harvested_ha": 491.7
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 64837.6,
+        "mean_price_s_kg": 0.44,
+        "avg_harvested_ha": 2868.8
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1949.6,
+        "mean_price_s_kg": 3.9,
+        "avg_harvested_ha": 3235.6
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 757,
+      "drought_deficit_count": 8,
+      "excess_water_flood_count": 72,
+      "salinity_soil_count": 337,
+      "pests_count": 411,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 599927.0,
+      "drought_deficit_pct": 1.1,
+      "salinity_soil_pct": 44.5,
+      "excess_water_pct": 9.5,
+      "pests_pct": 54.3,
+      "annual_loss_risk_score": 0.46
+    },
+    "irrigation_profile": {
+      "gravity_pct": 45.5,
+      "sprinkler_pct": 30.2,
+      "drip_pct": 24.3,
+      "average_efficiency": 0.67
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1706,
+        "planned_ha": 1899220.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 1085,
+        "planned_ha": 1029560.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 852,
+        "planned_ha": 726918.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 755,
+        "planned_ha": 854001.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 650,
+        "planned_ha": 579521.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 477,
+        "planned_ha": 586330.0
+      },
+      {
+        "crop": "AVENA GRANO",
+        "declaration_count": 400,
+        "planned_ha": 1095720.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 279,
+        "planned_ha": 344846.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1770,
+        "planned_ha": 1877993.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 1199,
+        "planned_ha": 1032957.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 838,
+        "planned_ha": 713489.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 792,
+        "planned_ha": 1351384.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 572,
+        "planned_ha": 543420.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 430,
+        "planned_ha": 362396.0
+      },
+      {
+        "crop": "AVENA GRANO",
+        "declaration_count": 399,
+        "planned_ha": 660277.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 244,
+        "planned_ha": 214070.0
+      }
+    ]
+  },
+  "AREQUIPA": {
+    "region": "AREQUIPA",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 18822.7,
+        "mean_price_s_kg": 4.07,
+        "avg_harvested_ha": 1232.6
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 29732.5,
+        "mean_price_s_kg": 1.8,
+        "avg_harvested_ha": 55.4
+      },
+      "vid": {
+        "mean_yield_kg_ha": 22616.3,
+        "mean_price_s_kg": 4.02,
+        "avg_harvested_ha": 1518.9
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 7945.8,
+        "mean_price_s_kg": 1.17,
+        "avg_harvested_ha": 178.3
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 56984.7,
+        "mean_price_s_kg": 0.17,
+        "avg_harvested_ha": 15812.8
+      },
+      "papa": {
+        "mean_yield_kg_ha": 35773.1,
+        "mean_price_s_kg": 0.92,
+        "avg_harvested_ha": 9112.0
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 4857.9,
+        "mean_price_s_kg": 3.58,
+        "avg_harvested_ha": 106.9
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 6760.2,
+        "mean_price_s_kg": 2.23,
+        "avg_harvested_ha": 141.1
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 42468.1,
+        "mean_price_s_kg": 0.83,
+        "avg_harvested_ha": 8721.0
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 69772.7,
+        "mean_price_s_kg": 0.12,
+        "avg_harvested_ha": 36608.7
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 3606.1,
+        "mean_price_s_kg": 4.59,
+        "avg_harvested_ha": 1701.4
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 353,
+      "drought_deficit_count": 47,
+      "excess_water_flood_count": 22,
+      "salinity_soil_count": 167,
+      "pests_count": 76,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 2409.0,
+      "drought_deficit_pct": 13.3,
+      "salinity_soil_pct": 47.3,
+      "excess_water_pct": 6.2,
+      "pests_pct": 21.5,
+      "annual_loss_risk_score": 0.61
+    },
+    "irrigation_profile": {
+      "gravity_pct": 39.2,
+      "sprinkler_pct": 41.8,
+      "drip_pct": 19.1,
+      "average_efficiency": 0.68
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 420,
+        "planned_ha": 45509.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 332,
+        "planned_ha": 1633.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 260,
+        "planned_ha": 3394.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 215,
+        "planned_ha": 10996.0
+      },
+      {
+        "crop": "MAIZ CHALA",
+        "declaration_count": 203,
+        "planned_ha": 648.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 181,
+        "planned_ha": 4383.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 132,
+        "planned_ha": 8830.0
+      },
+      {
+        "crop": "CEBOLLA",
+        "declaration_count": 117,
+        "planned_ha": 320.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 403,
+        "planned_ha": 11748.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 355,
+        "planned_ha": 1573.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 299,
+        "planned_ha": 4574.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 216,
+        "planned_ha": 2728.0
+      },
+      {
+        "crop": "MAIZ CHALA",
+        "declaration_count": 198,
+        "planned_ha": 8530.0
+      },
+      {
+        "crop": "AJO",
+        "declaration_count": 135,
+        "planned_ha": 339.0
+      },
+      {
+        "crop": "CEBOLLA",
+        "declaration_count": 128,
+        "planned_ha": 244.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 122,
+        "planned_ha": 6901.0
+      }
+    ]
+  },
+  "TUMBES": {
+    "region": "TUMBES",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 14500.0,
+        "mean_price_s_kg": 4.8,
+        "avg_harvested_ha": 0.0
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 14311.7,
+        "mean_price_s_kg": 1.37,
+        "avg_harvested_ha": 8.8
+      },
+      "vid": {
+        "mean_yield_kg_ha": 12420.0,
+        "mean_price_s_kg": 2.41,
+        "avg_harvested_ha": 1.3
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 3286.3,
+        "mean_price_s_kg": 1.21,
+        "avg_harvested_ha": 728.7
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 22000.0,
+        "mean_price_s_kg": 1.3,
+        "avg_harvested_ha": 0.0
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 7470.6,
+        "mean_price_s_kg": 0.94,
+        "avg_harvested_ha": 0.2
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 45000.0,
+        "mean_price_s_kg": 0.4,
+        "avg_harvested_ha": 0.0
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 3200.0,
+        "mean_price_s_kg": 6.8,
+        "avg_harvested_ha": 0.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 34,
+      "drought_deficit_count": 1,
+      "excess_water_flood_count": 24,
+      "salinity_soil_count": 2,
+      "pests_count": 0,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 46.0,
+      "drought_deficit_pct": 2.9,
+      "salinity_soil_pct": 5.9,
+      "excess_water_pct": 70.6,
+      "pests_pct": 0.0,
+      "annual_loss_risk_score": 0.09
+    },
+    "irrigation_profile": {
+      "gravity_pct": 53.8,
+      "sprinkler_pct": 0.0,
+      "drip_pct": 46.2,
+      "average_efficiency": 0.68
+    },
+    "planting_intentions": [
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 398,
+        "planned_ha": 2239.0
+      },
+      {
+        "crop": "LIMON ACIDO",
+        "declaration_count": 23,
+        "planned_ha": 10.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 21,
+        "planned_ha": 7.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 18,
+        "planned_ha": 11.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 18,
+        "planned_ha": 11.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 15,
+        "planned_ha": 19.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 5,
+        "planned_ha": 3.0
+      },
+      {
+        "crop": "MANGO",
+        "declaration_count": 1,
+        "planned_ha": 0.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 377,
+        "planned_ha": 2186.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 22,
+        "planned_ha": 3.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 20,
+        "planned_ha": 14.0
+      },
+      {
+        "crop": "LIMON ACIDO",
+        "declaration_count": 17,
+        "planned_ha": 2.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 15,
+        "planned_ha": 9.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 12,
+        "planned_ha": 11.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 6,
+        "planned_ha": 7.0
+      },
+      {
+        "crop": "PAPAYA",
+        "declaration_count": 3,
+        "planned_ha": 1.0
+      }
+    ]
+  },
+  "AMAZONAS": {
+    "region": "AMAZONAS",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 8276.0,
+        "mean_price_s_kg": 1.73,
+        "avg_harvested_ha": 147.7
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 11184.0,
+        "mean_price_s_kg": 0.94,
+        "avg_harvested_ha": 179.0
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 2488.4,
+        "mean_price_s_kg": 1.18,
+        "avg_harvested_ha": 11647.4
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 17838.1,
+        "mean_price_s_kg": 1.31,
+        "avg_harvested_ha": 3847.1
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 4785.7,
+        "mean_price_s_kg": 1.72,
+        "avg_harvested_ha": 1.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 6976.2,
+        "mean_price_s_kg": 2.63,
+        "avg_harvested_ha": 1.9
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 87472.4,
+        "mean_price_s_kg": 0.47,
+        "avg_harvested_ha": 149.7
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1120.0,
+        "mean_price_s_kg": 7.1,
+        "avg_harvested_ha": 1.1
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 133,
+      "drought_deficit_count": 13,
+      "excess_water_flood_count": 18,
+      "salinity_soil_count": 34,
+      "pests_count": 2,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 200.0,
+      "drought_deficit_pct": 9.8,
+      "salinity_soil_pct": 25.6,
+      "excess_water_pct": 13.5,
+      "pests_pct": 1.5,
+      "annual_loss_risk_score": 0.35
+    },
+    "irrigation_profile": {
+      "gravity_pct": 17.4,
+      "sprinkler_pct": 77.4,
+      "drip_pct": 5.2,
+      "average_efficiency": 0.71
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 180,
+        "planned_ha": 267.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 174,
+        "planned_ha": 27.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 171,
+        "planned_ha": 836.0
+      },
+      {
+        "crop": "CAFE PERGAMINO",
+        "declaration_count": 126,
+        "planned_ha": 41.0
+      },
+      {
+        "crop": "PAPA HUAYRO",
+        "declaration_count": 123,
+        "planned_ha": 46.0
+      },
+      {
+        "crop": "FRIJOL PINTO",
+        "declaration_count": 61,
+        "planned_ha": 7.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 46,
+        "planned_ha": 0.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 44,
+        "planned_ha": 36.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 252,
+        "planned_ha": 280.0
+      },
+      {
+        "crop": "CAFE PERGAMINO",
+        "declaration_count": 182,
+        "planned_ha": 99.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 161,
+        "planned_ha": 31.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 154,
+        "planned_ha": 803.0
+      },
+      {
+        "crop": "PAPA HUAYRO",
+        "declaration_count": 118,
+        "planned_ha": 46.0
+      },
+      {
+        "crop": "FRIJOL PINTO",
+        "declaration_count": 85,
+        "planned_ha": 11.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 67,
+        "planned_ha": 45.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 61,
+        "planned_ha": 33.0
+      }
+    ]
+  },
+  "LA LIBERTAD": {
+    "region": "LA LIBERTAD",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 15073.2,
+        "mean_price_s_kg": 3.6,
+        "avg_harvested_ha": 15043.6
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 10874.8,
+        "mean_price_s_kg": 1.65,
+        "avg_harvested_ha": 240.8
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19897.3,
+        "mean_price_s_kg": 2.11,
+        "avg_harvested_ha": 2899.3
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 8596.3,
+        "mean_price_s_kg": 1.16,
+        "avg_harvested_ha": 13467.6
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 54457.4,
+        "mean_price_s_kg": 0.17,
+        "avg_harvested_ha": 3230.4
+      },
+      "papa": {
+        "mean_yield_kg_ha": 21277.6,
+        "mean_price_s_kg": 1.02,
+        "avg_harvested_ha": 25556.1
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 23123.9,
+        "mean_price_s_kg": 2.29,
+        "avg_harvested_ha": 42.6
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12594.1,
+        "mean_price_s_kg": 3.31,
+        "avg_harvested_ha": 11610.3
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 8249.9,
+        "mean_price_s_kg": 1.4,
+        "avg_harvested_ha": 96.3
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 40847.8,
+        "mean_price_s_kg": 0.91,
+        "avg_harvested_ha": 652.0
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 40444.3,
+        "mean_price_s_kg": 0.31,
+        "avg_harvested_ha": 5497.3
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1540.7,
+        "mean_price_s_kg": 5.26,
+        "avg_harvested_ha": 1181.7
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 577,
+      "drought_deficit_count": 19,
+      "excess_water_flood_count": 23,
+      "salinity_soil_count": 245,
+      "pests_count": 127,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 816.0,
+      "drought_deficit_pct": 3.3,
+      "salinity_soil_pct": 42.5,
+      "excess_water_pct": 4.0,
+      "pests_pct": 22.0,
+      "annual_loss_risk_score": 0.46
+    },
+    "irrigation_profile": {
+      "gravity_pct": 57.1,
+      "sprinkler_pct": 12.7,
+      "drip_pct": 30.2,
+      "average_efficiency": 0.65
+    },
+    "planting_intentions": [
+      {
+        "crop": "TRIGO",
+        "declaration_count": 380,
+        "planned_ha": 17156.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 324,
+        "planned_ha": 3582.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 279,
+        "planned_ha": 5518.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 276,
+        "planned_ha": 648.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 259,
+        "planned_ha": 2126.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 154,
+        "planned_ha": 163.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 152,
+        "planned_ha": 1524.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 96,
+        "planned_ha": 20.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 359,
+        "planned_ha": 44.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 329,
+        "planned_ha": 112.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 261,
+        "planned_ha": 14.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 213,
+        "planned_ha": 92.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 208,
+        "planned_ha": 169.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 198,
+        "planned_ha": 1113.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 173,
+        "planned_ha": 56.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 137,
+        "planned_ha": 69.0
+      }
+    ]
+  },
+  "TACNA": {
+    "region": "TACNA",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 8072.2,
+        "mean_price_s_kg": 5.14,
+        "avg_harvested_ha": 50.6
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 19833.3,
+        "mean_price_s_kg": 1.54,
+        "avg_harvested_ha": 181.5
+      },
+      "vid": {
+        "mean_yield_kg_ha": 10993.7,
+        "mean_price_s_kg": 3.46,
+        "avg_harvested_ha": 612.3
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 3053.4,
+        "mean_price_s_kg": 1.13,
+        "avg_harvested_ha": 7.7
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 45943.5,
+        "mean_price_s_kg": 0.39,
+        "avg_harvested_ha": 2388.2
+      },
+      "papa": {
+        "mean_yield_kg_ha": 19807.0,
+        "mean_price_s_kg": 1.61,
+        "avg_harvested_ha": 457.9
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 9062.7,
+        "mean_price_s_kg": 1.7,
+        "avg_harvested_ha": 176.3
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 34729.0,
+        "mean_price_s_kg": 0.92,
+        "avg_harvested_ha": 377.1
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 24067.9,
+        "mean_price_s_kg": 0.38,
+        "avg_harvested_ha": 11192.6
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 2221.8,
+        "mean_price_s_kg": 4.53,
+        "avg_harvested_ha": 349.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 239,
+      "drought_deficit_count": 7,
+      "excess_water_flood_count": 7,
+      "salinity_soil_count": 158,
+      "pests_count": 19,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 183.0,
+      "drought_deficit_pct": 2.9,
+      "salinity_soil_pct": 66.1,
+      "excess_water_pct": 2.9,
+      "pests_pct": 7.9,
+      "annual_loss_risk_score": 0.69
+    },
+    "irrigation_profile": {
+      "gravity_pct": 39.7,
+      "sprinkler_pct": 41.3,
+      "drip_pct": 19.0,
+      "average_efficiency": 0.68
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 181,
+        "planned_ha": 59.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 72,
+        "planned_ha": 10.0
+      },
+      {
+        "crop": "MAIZ CHALA",
+        "declaration_count": 68,
+        "planned_ha": 13.0
+      },
+      {
+        "crop": "CAMOTE",
+        "declaration_count": 43,
+        "planned_ha": 556.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 34,
+        "planned_ha": 10.0
+      },
+      {
+        "crop": "OREGANO",
+        "declaration_count": 33,
+        "planned_ha": 16.0
+      },
+      {
+        "crop": "SANDIA",
+        "declaration_count": 29,
+        "planned_ha": 37.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 28,
+        "planned_ha": 5.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 195,
+        "planned_ha": 11603.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 83,
+        "planned_ha": 7056.0
+      },
+      {
+        "crop": "AJI",
+        "declaration_count": 68,
+        "planned_ha": 63.0
+      },
+      {
+        "crop": "MAIZ CHALA",
+        "declaration_count": 64,
+        "planned_ha": 35.0
+      },
+      {
+        "crop": "PAPA COLOR",
+        "declaration_count": 60,
+        "planned_ha": 1.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 58,
+        "planned_ha": 17.0
+      },
+      {
+        "crop": "OREGANO",
+        "declaration_count": 54,
+        "planned_ha": 6352.0
+      },
+      {
+        "crop": "SANDIA",
+        "declaration_count": 41,
+        "planned_ha": 64.0
+      }
+    ]
+  },
+  "LORETO": {
+    "region": "LORETO",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 10495.6,
+        "mean_price_s_kg": 0.47,
+        "avg_harvested_ha": 340.7
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 6491.2,
+        "mean_price_s_kg": 0.47,
+        "avg_harvested_ha": 324.6
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 2921.9,
+        "mean_price_s_kg": 0.8,
+        "avg_harvested_ha": 37755.3
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 22000.0,
+        "mean_price_s_kg": 1.3,
+        "avg_harvested_ha": 0.0
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 38000.0,
+        "mean_price_s_kg": 1.15,
+        "avg_harvested_ha": 0.0
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 45000.0,
+        "mean_price_s_kg": 0.4,
+        "avg_harvested_ha": 0.0
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 3200.0,
+        "mean_price_s_kg": 6.8,
+        "avg_harvested_ha": 0.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 76,
+      "drought_deficit_count": 5,
+      "excess_water_flood_count": 59,
+      "salinity_soil_count": 6,
+      "pests_count": 0,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 45.0,
+      "drought_deficit_pct": 6.6,
+      "salinity_soil_pct": 7.9,
+      "excess_water_pct": 77.6,
+      "pests_pct": 0.0,
+      "annual_loss_risk_score": 0.14
+    },
+    "irrigation_profile": {
+      "gravity_pct": 52.0,
+      "sprinkler_pct": 34.3,
+      "drip_pct": 13.7,
+      "average_efficiency": 0.64
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 175,
+        "planned_ha": 194.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 161,
+        "planned_ha": 59.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 103,
+        "planned_ha": 66.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 77,
+        "planned_ha": 105.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 49,
+        "planned_ha": 256.0
+      },
+      {
+        "crop": "PIAA",
+        "declaration_count": 15,
+        "planned_ha": 5.0
+      },
+      {
+        "crop": "AJI",
+        "declaration_count": 14,
+        "planned_ha": 3.0
+      },
+      {
+        "crop": "PALMA ACEITERA",
+        "declaration_count": 13,
+        "planned_ha": 67.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 201,
+        "planned_ha": 63.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 197,
+        "planned_ha": 110.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 186,
+        "planned_ha": 196.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 75,
+        "planned_ha": 98.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 33,
+        "planned_ha": 108.0
+      },
+      {
+        "crop": "PASTO BRIZANTA",
+        "declaration_count": 25,
+        "planned_ha": 112.0
+      },
+      {
+        "crop": "PIAA",
+        "declaration_count": 18,
+        "planned_ha": 6.0
+      },
+      {
+        "crop": "AJI",
+        "declaration_count": 15,
+        "planned_ha": 0.0
+      }
+    ]
+  },
+  "ANCASH": {
+    "region": "ANCASH",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 8420.1,
+        "mean_price_s_kg": 3.66,
+        "avg_harvested_ha": 3217.9
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 7347.3,
+        "mean_price_s_kg": 1.54,
+        "avg_harvested_ha": 106.5
+      },
+      "vid": {
+        "mean_yield_kg_ha": 9549.3,
+        "mean_price_s_kg": 2.34,
+        "avg_harvested_ha": 455.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 10284.0,
+        "mean_price_s_kg": 1.17,
+        "avg_harvested_ha": 15213.0
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 20643.9,
+        "mean_price_s_kg": 0.47,
+        "avg_harvested_ha": 681.5
+      },
+      "papa": {
+        "mean_yield_kg_ha": 11811.8,
+        "mean_price_s_kg": 1.09,
+        "avg_harvested_ha": 8937.9
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 12079.3,
+        "mean_price_s_kg": 3.26,
+        "avg_harvested_ha": 30.7
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 5401.6,
+        "mean_price_s_kg": 3.94,
+        "avg_harvested_ha": 2512.4
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 7460.9,
+        "mean_price_s_kg": 1.37,
+        "avg_harvested_ha": 644.9
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 20846.6,
+        "mean_price_s_kg": 1.06,
+        "avg_harvested_ha": 226.1
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 29941.6,
+        "mean_price_s_kg": 0.4,
+        "avg_harvested_ha": 8648.8
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1086.9,
+        "mean_price_s_kg": 4.95,
+        "avg_harvested_ha": 116.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 535,
+      "drought_deficit_count": 8,
+      "excess_water_flood_count": 17,
+      "salinity_soil_count": 384,
+      "pests_count": 128,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 118301.0,
+      "drought_deficit_pct": 1.5,
+      "salinity_soil_pct": 71.8,
+      "excess_water_pct": 3.2,
+      "pests_pct": 23.9,
+      "annual_loss_risk_score": 0.73
+    },
+    "irrigation_profile": {
+      "gravity_pct": 49.6,
+      "sprinkler_pct": 25.4,
+      "drip_pct": 25.1,
+      "average_efficiency": 0.66
+    },
+    "planting_intentions": [
+      {
+        "crop": "TRIGO",
+        "declaration_count": 1240,
+        "planned_ha": 282722.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 1163,
+        "planned_ha": 216084.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1067,
+        "planned_ha": 231632.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 486,
+        "planned_ha": 121008.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 246,
+        "planned_ha": 18219.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 217,
+        "planned_ha": 38296.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 210,
+        "planned_ha": 51748.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 204,
+        "planned_ha": 8026.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 1258,
+        "planned_ha": 277747.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1074,
+        "planned_ha": 121710.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 1058,
+        "planned_ha": 235879.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 426,
+        "planned_ha": 108545.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 260,
+        "planned_ha": 3565.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 242,
+        "planned_ha": 26286.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 216,
+        "planned_ha": 70755.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 181,
+        "planned_ha": 2234.0
+      }
+    ]
+  },
+  "CALLAO": {
+    "region": "CALLAO",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 14500.0,
+        "mean_price_s_kg": 4.8,
+        "avg_harvested_ha": 0.0
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 28000.0,
+        "mean_price_s_kg": 2.2,
+        "avg_harvested_ha": 0.0
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 8500.0,
+        "mean_price_s_kg": 1.45,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 22000.0,
+        "mean_price_s_kg": 1.3,
+        "avg_harvested_ha": 0.0
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 38000.0,
+        "mean_price_s_kg": 1.15,
+        "avg_harvested_ha": 0.0
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 45000.0,
+        "mean_price_s_kg": 0.4,
+        "avg_harvested_ha": 0.0
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 3200.0,
+        "mean_price_s_kg": 6.8,
+        "avg_harvested_ha": 0.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 3,
+      "drought_deficit_count": 0,
+      "excess_water_flood_count": 2,
+      "salinity_soil_count": 0,
+      "pests_count": 0,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 2.0,
+      "drought_deficit_pct": 0.0,
+      "salinity_soil_pct": 0.0,
+      "excess_water_pct": 66.7,
+      "pests_pct": 0.0,
+      "annual_loss_risk_score": 0.0
+    },
+    "irrigation_profile": {
+      "gravity_pct": 0.0,
+      "sprinkler_pct": 0.0,
+      "drip_pct": 0.0,
+      "average_efficiency": 0.0
+    },
+    "planting_intentions": [
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 1,
+        "planned_ha": 0.0
+      },
+      {
+        "crop": "HIERBA BUENA",
+        "declaration_count": 1,
+        "planned_ha": 0.0
+      },
+      {
+        "crop": "ALBAHACA",
+        "declaration_count": 1,
+        "planned_ha": 1.0
+      },
+      {
+        "crop": "CEBOLLA CHINA",
+        "declaration_count": 1,
+        "planned_ha": 0.0
+      }
+    ]
+  },
+  "MADRE DE DIOS": {
+    "region": "MADRE DE DIOS",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 8346.3,
+        "mean_price_s_kg": 3.61,
+        "avg_harvested_ha": 67.4
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 7958.8,
+        "mean_price_s_kg": 1.04,
+        "avg_harvested_ha": 76.6
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 3538.0,
+        "mean_price_s_kg": 1.27,
+        "avg_harvested_ha": 7168.6
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 22000.0,
+        "mean_price_s_kg": 1.3,
+        "avg_harvested_ha": 0.0
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 38000.0,
+        "mean_price_s_kg": 1.15,
+        "avg_harvested_ha": 0.0
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 45000.0,
+        "mean_price_s_kg": 0.4,
+        "avg_harvested_ha": 0.0
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 3200.0,
+        "mean_price_s_kg": 6.8,
+        "avg_harvested_ha": 0.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 6,
+      "drought_deficit_count": 0,
+      "excess_water_flood_count": 3,
+      "salinity_soil_count": 1,
+      "pests_count": 0,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 16.0,
+      "drought_deficit_pct": 0.0,
+      "salinity_soil_pct": 16.7,
+      "excess_water_pct": 50.0,
+      "pests_pct": 0.0,
+      "annual_loss_risk_score": 0.17
+    },
+    "irrigation_profile": {
+      "gravity_pct": 68.0,
+      "sprinkler_pct": 23.3,
+      "drip_pct": 8.7,
+      "average_efficiency": 0.59
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 127,
+        "planned_ha": 510.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 61,
+        "planned_ha": 53.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 43,
+        "planned_ha": 62.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 42,
+        "planned_ha": 41.0
+      },
+      {
+        "crop": "NARANJO",
+        "declaration_count": 20,
+        "planned_ha": 10.0
+      },
+      {
+        "crop": "PASTO BRIZANTA",
+        "declaration_count": 11,
+        "planned_ha": 76.0
+      },
+      {
+        "crop": "COPOAZU",
+        "declaration_count": 11,
+        "planned_ha": 15.0
+      },
+      {
+        "crop": "LIMON ACIDO",
+        "declaration_count": 10,
+        "planned_ha": 1.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 55,
+        "planned_ha": 151.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 33,
+        "planned_ha": 22.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 23,
+        "planned_ha": 58.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 19,
+        "planned_ha": 15.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 15,
+        "planned_ha": 15.0
+      },
+      {
+        "crop": "PASTO BRIZANTA",
+        "declaration_count": 9,
+        "planned_ha": 38.0
+      },
+      {
+        "crop": "CASTAAA",
+        "declaration_count": 7,
+        "planned_ha": 4.0
+      },
+      {
+        "crop": "COCOTERO",
+        "declaration_count": 5,
+        "planned_ha": 3.0
+      }
+    ]
+  },
+  "LAMBAYEQUE": {
+    "region": "LAMBAYEQUE",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 15177.6,
+        "mean_price_s_kg": 3.31,
+        "avg_harvested_ha": 5193.3
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 6398.5,
+        "mean_price_s_kg": 0.74,
+        "avg_harvested_ha": 119.7
+      },
+      "vid": {
+        "mean_yield_kg_ha": 15776.2,
+        "mean_price_s_kg": 2.77,
+        "avg_harvested_ha": 1830.9
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 6596.7,
+        "mean_price_s_kg": 1.11,
+        "avg_harvested_ha": 12522.6
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 32544.8,
+        "mean_price_s_kg": 0.21,
+        "avg_harvested_ha": 1644.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 6936.8,
+        "mean_price_s_kg": 0.9,
+        "avg_harvested_ha": 521.1
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 6111.9,
+        "mean_price_s_kg": 3.69,
+        "avg_harvested_ha": 1288.3
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 42284.6,
+        "mean_price_s_kg": 1.13,
+        "avg_harvested_ha": 502.2
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 51046.1,
+        "mean_price_s_kg": 0.25,
+        "avg_harvested_ha": 1151.6
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 2093.7,
+        "mean_price_s_kg": 3.87,
+        "avg_harvested_ha": 38.4
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 138,
+      "drought_deficit_count": 1,
+      "excess_water_flood_count": 50,
+      "salinity_soil_count": 62,
+      "pests_count": 5,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 104.0,
+      "drought_deficit_pct": 0.7,
+      "salinity_soil_pct": 44.9,
+      "excess_water_pct": 36.2,
+      "pests_pct": 3.6,
+      "annual_loss_risk_score": 0.46
+    },
+    "irrigation_profile": {
+      "gravity_pct": 66.3,
+      "sprinkler_pct": 6.5,
+      "drip_pct": 27.2,
+      "average_efficiency": 0.62
+    },
+    "planting_intentions": [
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 390,
+        "planned_ha": 791.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 133,
+        "planned_ha": 147.0
+      },
+      {
+        "crop": "PALLAR",
+        "declaration_count": 69,
+        "planned_ha": 161.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 59,
+        "planned_ha": 39.0
+      },
+      {
+        "crop": "ZARANDAJA",
+        "declaration_count": 51,
+        "planned_ha": 64.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 40,
+        "planned_ha": 41.0
+      },
+      {
+        "crop": "CAMOTE",
+        "declaration_count": 34,
+        "planned_ha": 45.0
+      },
+      {
+        "crop": "FRIJOL DE PALO",
+        "declaration_count": 31,
+        "planned_ha": 19.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 343,
+        "planned_ha": 921.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 137,
+        "planned_ha": 114.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 65,
+        "planned_ha": 38.0
+      },
+      {
+        "crop": "CAMOTE",
+        "declaration_count": 61,
+        "planned_ha": 90.0
+      },
+      {
+        "crop": "ZARANDAJA",
+        "declaration_count": 52,
+        "planned_ha": 57.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 49,
+        "planned_ha": 27.0
+      },
+      {
+        "crop": "PALLAR",
+        "declaration_count": 40,
+        "planned_ha": 86.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 35,
+        "planned_ha": 16.0
+      }
+    ]
+  },
+  "NACIONAL": {
+    "region": "NACIONAL",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 13243.5,
+        "mean_price_s_kg": 3.41,
+        "avg_harvested_ha": 52180.0
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 22821.4,
+        "mean_price_s_kg": 0.89,
+        "avg_harvested_ha": 18337.5
+      },
+      "vid": {
+        "mean_yield_kg_ha": 22341.6,
+        "mean_price_s_kg": 2.45,
+        "avg_harvested_ha": 34581.8
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 4875.2,
+        "mean_price_s_kg": 1.1,
+        "avg_harvested_ha": 257119.8
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 50352.6,
+        "mean_price_s_kg": 0.18,
+        "avg_harvested_ha": 36500.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 16589.5,
+        "mean_price_s_kg": 1.07,
+        "avg_harvested_ha": 326660.1
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 17446.1,
+        "mean_price_s_kg": 2.29,
+        "avg_harvested_ha": 1842.3
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 11578.0,
+        "mean_price_s_kg": 3.66,
+        "avg_harvested_ha": 31716.4
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 16863.1,
+        "mean_price_s_kg": 0.92,
+        "avg_harvested_ha": 8329.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 39367.6,
+        "mean_price_s_kg": 0.88,
+        "avg_harvested_ha": 15457.6
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 36771.6,
+        "mean_price_s_kg": 0.25,
+        "avg_harvested_ha": 190748.8
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1499.4,
+        "mean_price_s_kg": 4.28,
+        "avg_harvested_ha": 62348.9
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 150,
+      "drought_deficit_pct": 0.0,
+      "salinity_soil_pct": 0.0,
+      "excess_water_pct": 0.0,
+      "pests_pct": 0.0,
+      "annual_loss_risk_score": 0.0
+    },
+    "irrigation_profile": {
+      "gravity_pct": 60.0,
+      "sprinkler_pct": 10.0,
+      "drip_pct": 30.0,
+      "average_efficiency": 0.64
+    },
+    "planting_intentions": []
+  },
+  "JUNIN": {
+    "region": "JUNIN",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 11600.6,
+        "mean_price_s_kg": 1.11,
+        "avg_harvested_ha": 4243.1
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 17457.2,
+        "mean_price_s_kg": 0.54,
+        "avg_harvested_ha": 6804.2
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 3901.3,
+        "mean_price_s_kg": 1.15,
+        "avg_harvested_ha": 6044.1
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 17026.4,
+        "mean_price_s_kg": 0.7,
+        "avg_harvested_ha": 24028.0
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 8832.2,
+        "mean_price_s_kg": 1.24,
+        "avg_harvested_ha": 13.9
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 19663.9,
+        "mean_price_s_kg": 0.83,
+        "avg_harvested_ha": 195.4
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 39212.5,
+        "mean_price_s_kg": 0.31,
+        "avg_harvested_ha": 3482.6
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1965.9,
+        "mean_price_s_kg": 4.18,
+        "avg_harvested_ha": 2165.7
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 410,
+      "drought_deficit_count": 21,
+      "excess_water_flood_count": 57,
+      "salinity_soil_count": 229,
+      "pests_count": 125,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 372491.0,
+      "drought_deficit_pct": 5.1,
+      "salinity_soil_pct": 55.9,
+      "excess_water_pct": 13.9,
+      "pests_pct": 30.5,
+      "annual_loss_risk_score": 0.61
+    },
+    "irrigation_profile": {
+      "gravity_pct": 32.7,
+      "sprinkler_pct": 54.1,
+      "drip_pct": 13.2,
+      "average_efficiency": 0.69
+    },
+    "planting_intentions": [
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 659,
+        "planned_ha": 714481.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 394,
+        "planned_ha": 302104.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 349,
+        "planned_ha": 688169.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 189,
+        "planned_ha": 212751.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 152,
+        "planned_ha": 143840.0
+      },
+      {
+        "crop": "PAPA COLOR",
+        "declaration_count": 140,
+        "planned_ha": 173792.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 131,
+        "planned_ha": 97851.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 121,
+        "planned_ha": 179098.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 782,
+        "planned_ha": 751996.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 590,
+        "planned_ha": 527940.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 302,
+        "planned_ha": 440096.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 278,
+        "planned_ha": 220924.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 203,
+        "planned_ha": 398217.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 198,
+        "planned_ha": 270058.0
+      },
+      {
+        "crop": "PAPA COLOR",
+        "declaration_count": 150,
+        "planned_ha": 165769.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 144,
+        "planned_ha": 105370.0
+      }
+    ]
+  },
+  "PASCO": {
+    "region": "PASCO",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 13132.7,
+        "mean_price_s_kg": 1.51,
+        "avg_harvested_ha": 369.6
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 13927.5,
+        "mean_price_s_kg": 0.77,
+        "avg_harvested_ha": 22.2
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 1818.7,
+        "mean_price_s_kg": 1.39,
+        "avg_harvested_ha": 3901.3
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 18561.1,
+        "mean_price_s_kg": 0.83,
+        "avg_harvested_ha": 9002.3
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 38000.0,
+        "mean_price_s_kg": 1.15,
+        "avg_harvested_ha": 0.0
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 20160.0,
+        "mean_price_s_kg": 0.46,
+        "avg_harvested_ha": 248.1
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 740.0,
+        "mean_price_s_kg": 3.5,
+        "avg_harvested_ha": 0.7
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 137,
+      "drought_deficit_count": 2,
+      "excess_water_flood_count": 9,
+      "salinity_soil_count": 111,
+      "pests_count": 31,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 65.0,
+      "drought_deficit_pct": 1.5,
+      "salinity_soil_pct": 81.0,
+      "excess_water_pct": 6.6,
+      "pests_pct": 22.6,
+      "annual_loss_risk_score": 0.82
+    },
+    "irrigation_profile": {
+      "gravity_pct": 30.6,
+      "sprinkler_pct": 61.5,
+      "drip_pct": 7.9,
+      "average_efficiency": 0.68
+    },
+    "planting_intentions": [
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 208,
+        "planned_ha": 6.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 156,
+        "planned_ha": 2.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 125,
+        "planned_ha": 57.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 100,
+        "planned_ha": 8.0
+      },
+      {
+        "crop": "PAPA AMARILLA",
+        "declaration_count": 75,
+        "planned_ha": 25.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 71,
+        "planned_ha": 84.0
+      },
+      {
+        "crop": "PAPA HUAYRO",
+        "declaration_count": 61,
+        "planned_ha": 10.0
+      },
+      {
+        "crop": "PAPA COLOR",
+        "declaration_count": 41,
+        "planned_ha": 1.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 176,
+        "planned_ha": 1.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 169,
+        "planned_ha": 100.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 122,
+        "planned_ha": 35.0
+      },
+      {
+        "crop": "PAPA AMARILLA",
+        "declaration_count": 92,
+        "planned_ha": 9.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 88,
+        "planned_ha": 5.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 80,
+        "planned_ha": 164.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 62,
+        "planned_ha": 48.0
+      },
+      {
+        "crop": "PAPA HUAYRO",
+        "declaration_count": 53,
+        "planned_ha": 1.0
+      }
+    ]
+  },
+  "SAN MARTIN": {
+    "region": "SAN MARTIN",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 11759.7,
+        "mean_price_s_kg": 1.05,
+        "avg_harvested_ha": 45.0
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 13211.4,
+        "mean_price_s_kg": 0.53,
+        "avg_harvested_ha": 1591.0
+      },
+      "vid": {
+        "mean_yield_kg_ha": 8670.8,
+        "mean_price_s_kg": 3.2,
+        "avg_harvested_ha": 130.3
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 2861.5,
+        "mean_price_s_kg": 0.93,
+        "avg_harvested_ha": 50158.0
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 22000.0,
+        "mean_price_s_kg": 1.3,
+        "avg_harvested_ha": 0.0
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 38000.0,
+        "mean_price_s_kg": 1.15,
+        "avg_harvested_ha": 0.0
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 45000.0,
+        "mean_price_s_kg": 0.4,
+        "avg_harvested_ha": 0.0
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 3200.0,
+        "mean_price_s_kg": 6.8,
+        "avg_harvested_ha": 0.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 118,
+      "drought_deficit_count": 9,
+      "excess_water_flood_count": 15,
+      "salinity_soil_count": 41,
+      "pests_count": 0,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 204.0,
+      "drought_deficit_pct": 7.6,
+      "salinity_soil_pct": 34.7,
+      "excess_water_pct": 12.7,
+      "pests_pct": 0.0,
+      "annual_loss_risk_score": 0.42
+    },
+    "irrigation_profile": {
+      "gravity_pct": 25.6,
+      "sprinkler_pct": 65.3,
+      "drip_pct": 9.1,
+      "average_efficiency": 0.7
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 380,
+        "planned_ha": 747.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 185,
+        "planned_ha": 2421.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 134,
+        "planned_ha": 125.0
+      },
+      {
+        "crop": "CAFE PERGAMINO",
+        "declaration_count": 99,
+        "planned_ha": 81.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 76,
+        "planned_ha": 40.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 63,
+        "planned_ha": 8.0
+      },
+      {
+        "crop": "PASTO BRIZANTA",
+        "declaration_count": 27,
+        "planned_ha": 136.0
+      },
+      {
+        "crop": "MANI PARA FRUTA",
+        "declaration_count": 13,
+        "planned_ha": 0.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 261,
+        "planned_ha": 660.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 203,
+        "planned_ha": 2035.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 175,
+        "planned_ha": 187.0
+      },
+      {
+        "crop": "CAFE PERGAMINO",
+        "declaration_count": 100,
+        "planned_ha": 120.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 69,
+        "planned_ha": 34.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 33,
+        "planned_ha": 6.0
+      },
+      {
+        "crop": "PASTO BRIZANTA",
+        "declaration_count": 23,
+        "planned_ha": 77.0
+      },
+      {
+        "crop": "NARANJO",
+        "declaration_count": 8,
+        "planned_ha": 2.0
+      }
+    ]
+  },
+  "PUNO": {
+    "region": "PUNO",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 10224.9,
+        "mean_price_s_kg": 2.54,
+        "avg_harvested_ha": 244.9
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 9434.0,
+        "mean_price_s_kg": 0.98,
+        "avg_harvested_ha": 1205.6
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 1673.2,
+        "mean_price_s_kg": 1.99,
+        "avg_harvested_ha": 2550.4
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 13638.7,
+        "mean_price_s_kg": 1.68,
+        "avg_harvested_ha": 60351.6
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 17100.9,
+        "mean_price_s_kg": 0.98,
+        "avg_harvested_ha": 410.9
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 21022.3,
+        "mean_price_s_kg": 0.38,
+        "avg_harvested_ha": 73635.3
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1070.3,
+        "mean_price_s_kg": 4.27,
+        "avg_harvested_ha": 32391.6
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 3337,
+      "drought_deficit_count": 20,
+      "excess_water_flood_count": 1667,
+      "salinity_soil_count": 1304,
+      "pests_count": 2293,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 136340.0,
+      "drought_deficit_pct": 0.6,
+      "salinity_soil_pct": 39.1,
+      "excess_water_pct": 50.0,
+      "pests_pct": 68.7,
+      "annual_loss_risk_score": 0.4
+    },
+    "irrigation_profile": {
+      "gravity_pct": 35.6,
+      "sprinkler_pct": 37.9,
+      "drip_pct": 26.6,
+      "average_efficiency": 0.7
+    },
+    "planting_intentions": [
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 3903,
+        "planned_ha": 488831.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 2384,
+        "planned_ha": 205333.0
+      },
+      {
+        "crop": "QUINUA",
+        "declaration_count": 1147,
+        "planned_ha": 106484.0
+      },
+      {
+        "crop": "CEBADA FORRAJERA",
+        "declaration_count": 485,
+        "planned_ha": 12179.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 442,
+        "planned_ha": 34550.0
+      },
+      {
+        "crop": "CAAIHUA",
+        "declaration_count": 366,
+        "planned_ha": 1149.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 322,
+        "planned_ha": 35800.0
+      },
+      {
+        "crop": "AVENA GRANO",
+        "declaration_count": 299,
+        "planned_ha": 92005.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 3422,
+        "planned_ha": 181017.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 2400,
+        "planned_ha": 88075.0
+      },
+      {
+        "crop": "QUINUA",
+        "declaration_count": 1226,
+        "planned_ha": 60199.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 475,
+        "planned_ha": 22167.0
+      },
+      {
+        "crop": "CEBADA FORRAJERA",
+        "declaration_count": 358,
+        "planned_ha": 7537.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 217,
+        "planned_ha": 15799.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 193,
+        "planned_ha": 3355.0
+      },
+      {
+        "crop": "OCA",
+        "declaration_count": 186,
+        "planned_ha": 402.0
+      }
+    ]
+  },
+  "AYACUCHO": {
+    "region": "AYACUCHO",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 9313.2,
+        "mean_price_s_kg": 4.09,
+        "avg_harvested_ha": 3068.9
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 6801.7,
+        "mean_price_s_kg": 1.18,
+        "avg_harvested_ha": 171.0
+      },
+      "vid": {
+        "mean_yield_kg_ha": 5156.9,
+        "mean_price_s_kg": 2.33,
+        "avg_harvested_ha": 8.4
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 2494.5,
+        "mean_price_s_kg": 1.66,
+        "avg_harvested_ha": 871.0
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 17032.8,
+        "mean_price_s_kg": 0.91,
+        "avg_harvested_ha": 25893.6
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 6090.5,
+        "mean_price_s_kg": 1.37,
+        "avg_harvested_ha": 127.1
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 9592.4,
+        "mean_price_s_kg": 1.26,
+        "avg_harvested_ha": 340.6
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 25133.9,
+        "mean_price_s_kg": 0.36,
+        "avg_harvested_ha": 9922.0
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1640.8,
+        "mean_price_s_kg": 4.37,
+        "avg_harvested_ha": 13335.6
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 1136,
+      "drought_deficit_count": 43,
+      "excess_water_flood_count": 89,
+      "salinity_soil_count": 647,
+      "pests_count": 403,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 10129.0,
+      "drought_deficit_pct": 3.8,
+      "salinity_soil_pct": 57.0,
+      "excess_water_pct": 7.8,
+      "pests_pct": 35.5,
+      "annual_loss_risk_score": 0.61
+    },
+    "irrigation_profile": {
+      "gravity_pct": 48.3,
+      "sprinkler_pct": 23.9,
+      "drip_pct": 27.8,
+      "average_efficiency": 0.67
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1869,
+        "planned_ha": 51805.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 987,
+        "planned_ha": 32412.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 520,
+        "planned_ha": 263.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 499,
+        "planned_ha": 20382.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 481,
+        "planned_ha": 8974.0
+      },
+      {
+        "crop": "QUINUA",
+        "declaration_count": 371,
+        "planned_ha": 426.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 241,
+        "planned_ha": 7964.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 153,
+        "planned_ha": 2336.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1686,
+        "planned_ha": 19152.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 1010,
+        "planned_ha": 17256.0
+      },
+      {
+        "crop": "QUINUA",
+        "declaration_count": 513,
+        "planned_ha": 43244.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 464,
+        "planned_ha": 506.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 404,
+        "planned_ha": 312.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 374,
+        "planned_ha": 308.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 246,
+        "planned_ha": 1726.0
+      },
+      {
+        "crop": "PAPA AMARILLA",
+        "declaration_count": 182,
+        "planned_ha": 78.0
+      }
+    ]
+  },
+  "MOQUEGUA": {
+    "region": "MOQUEGUA",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 6601.1,
+        "mean_price_s_kg": 5.32,
+        "avg_harvested_ha": 1157.3
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 6049.8,
+        "mean_price_s_kg": 2.35,
+        "avg_harvested_ha": 4.5
+      },
+      "vid": {
+        "mean_yield_kg_ha": 15049.7,
+        "mean_price_s_kg": 2.83,
+        "avg_harvested_ha": 456.4
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 3326.6,
+        "mean_price_s_kg": 1.24,
+        "avg_harvested_ha": 60.1
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 62043.2,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 84.3
+      },
+      "papa": {
+        "mean_yield_kg_ha": 12421.2,
+        "mean_price_s_kg": 1.31,
+        "avg_harvested_ha": 557.3
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 6314.9,
+        "mean_price_s_kg": 2.7,
+        "avg_harvested_ha": 1.9
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 5595.2,
+        "mean_price_s_kg": 2.14,
+        "avg_harvested_ha": 102.1
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 29738.3,
+        "mean_price_s_kg": 0.72,
+        "avg_harvested_ha": 68.9
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 63002.9,
+        "mean_price_s_kg": 0.11,
+        "avg_harvested_ha": 9957.1
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1022.4,
+        "mean_price_s_kg": 5.42,
+        "avg_harvested_ha": 40.4
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 328,
+      "drought_deficit_count": 22,
+      "excess_water_flood_count": 6,
+      "salinity_soil_count": 216,
+      "pests_count": 60,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 16638.0,
+      "drought_deficit_pct": 6.7,
+      "salinity_soil_pct": 65.9,
+      "excess_water_pct": 1.8,
+      "pests_pct": 18.3,
+      "annual_loss_risk_score": 0.73
+    },
+    "irrigation_profile": {
+      "gravity_pct": 43.0,
+      "sprinkler_pct": 40.6,
+      "drip_pct": 16.4,
+      "average_efficiency": 0.66
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 293,
+        "planned_ha": 76887.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 150,
+        "planned_ha": 8873.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 125,
+        "planned_ha": 8533.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 78,
+        "planned_ha": 12244.0
+      },
+      {
+        "crop": "PAPA COLOR",
+        "declaration_count": 78,
+        "planned_ha": 21091.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 40,
+        "planned_ha": 7121.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 32,
+        "planned_ha": 2800.0
+      },
+      {
+        "crop": "PALTO",
+        "declaration_count": 31,
+        "planned_ha": 1771.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 333,
+        "planned_ha": 111787.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 138,
+        "planned_ha": 18906.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 122,
+        "planned_ha": 26572.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 105,
+        "planned_ha": 22970.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 102,
+        "planned_ha": 17658.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 68,
+        "planned_ha": 3250.0
+      },
+      {
+        "crop": "PALTO",
+        "declaration_count": 56,
+        "planned_ha": 8661.0
+      },
+      {
+        "crop": "PAPA COLOR",
+        "declaration_count": 40,
+        "planned_ha": 12668.0
+      }
+    ]
+  },
+  "PIURA": {
+    "region": "PIURA",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 10177.2,
+        "mean_price_s_kg": 2.28,
+        "avg_harvested_ha": 677.0
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 4757.6,
+        "mean_price_s_kg": 0.74,
+        "avg_harvested_ha": 159.7
+      },
+      "vid": {
+        "mean_yield_kg_ha": 27735.3,
+        "mean_price_s_kg": 3.26,
+        "avg_harvested_ha": 7501.3
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 4032.8,
+        "mean_price_s_kg": 1.26,
+        "avg_harvested_ha": 16169.9
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 10850.4,
+        "mean_price_s_kg": 1.06,
+        "avg_harvested_ha": 2040.0
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 20076.6,
+        "mean_price_s_kg": 1.12,
+        "avg_harvested_ha": 207.3
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 28768.2,
+        "mean_price_s_kg": 0.59,
+        "avg_harvested_ha": 178.4
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 3200.0,
+        "mean_price_s_kg": 6.8,
+        "avg_harvested_ha": 0.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 420,
+      "drought_deficit_count": 11,
+      "excess_water_flood_count": 84,
+      "salinity_soil_count": 146,
+      "pests_count": 11,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 303.0,
+      "drought_deficit_pct": 2.6,
+      "salinity_soil_pct": 34.8,
+      "excess_water_pct": 20.0,
+      "pests_pct": 2.6,
+      "annual_loss_risk_score": 0.37
+    },
+    "irrigation_profile": {
+      "gravity_pct": 60.2,
+      "sprinkler_pct": 24.5,
+      "drip_pct": 15.4,
+      "average_efficiency": 0.62
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 497,
+        "planned_ha": 329.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 378,
+        "planned_ha": 144.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 299,
+        "planned_ha": 739.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 153,
+        "planned_ha": 35.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 102,
+        "planned_ha": 11.0
+      },
+      {
+        "crop": "FRIJOL CAUPI",
+        "declaration_count": 101,
+        "planned_ha": 88.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 99,
+        "planned_ha": 68.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 89,
+        "planned_ha": 68.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 626,
+        "planned_ha": 411.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 395,
+        "planned_ha": 156.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 309,
+        "planned_ha": 385.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 144,
+        "planned_ha": 46.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 142,
+        "planned_ha": 37.0
+      },
+      {
+        "crop": "FRIJOL CAUPI",
+        "declaration_count": 126,
+        "planned_ha": 138.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 51,
+        "planned_ha": 2.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 48,
+        "planned_ha": 3.0
+      }
+    ]
+  },
+  "CAJAMARCA": {
+    "region": "CAJAMARCA",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 7798.9,
+        "mean_price_s_kg": 2.35,
+        "avg_harvested_ha": 640.9
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 5092.9,
+        "mean_price_s_kg": 0.69,
+        "avg_harvested_ha": 331.2
+      },
+      "vid": {
+        "mean_yield_kg_ha": 13788.3,
+        "mean_price_s_kg": 1.91,
+        "avg_harvested_ha": 162.3
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 3627.5,
+        "mean_price_s_kg": 1.11,
+        "avg_harvested_ha": 17655.9
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 7652.4,
+        "mean_price_s_kg": 1.02,
+        "avg_harvested_ha": 234.8
+      },
+      "papa": {
+        "mean_yield_kg_ha": 12778.1,
+        "mean_price_s_kg": 1.08,
+        "avg_harvested_ha": 27526.4
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 12035.4,
+        "mean_price_s_kg": 1.14,
+        "avg_harvested_ha": 34.4
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 9985.7,
+        "mean_price_s_kg": 1.21,
+        "avg_harvested_ha": 170.6
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 58526.7,
+        "mean_price_s_kg": 0.25,
+        "avg_harvested_ha": 3378.6
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1211.9,
+        "mean_price_s_kg": 5.0,
+        "avg_harvested_ha": 654.7
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 545,
+      "drought_deficit_count": 32,
+      "excess_water_flood_count": 43,
+      "salinity_soil_count": 228,
+      "pests_count": 115,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 1106.0,
+      "drought_deficit_pct": 5.9,
+      "salinity_soil_pct": 41.8,
+      "excess_water_pct": 7.9,
+      "pests_pct": 21.1,
+      "annual_loss_risk_score": 0.48
+    },
+    "irrigation_profile": {
+      "gravity_pct": 34.4,
+      "sprinkler_pct": 51.2,
+      "drip_pct": 14.4,
+      "average_efficiency": 0.68
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 972,
+        "planned_ha": 7811.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 831,
+        "planned_ha": 3924.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 390,
+        "planned_ha": 67.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 374,
+        "planned_ha": 1580.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 353,
+        "planned_ha": 1044.0
+      },
+      {
+        "crop": "OCA",
+        "declaration_count": 195,
+        "planned_ha": 4.0
+      },
+      {
+        "crop": "CAFE PERGAMINO",
+        "declaration_count": 195,
+        "planned_ha": 60.0
+      },
+      {
+        "crop": "OLLUCO",
+        "declaration_count": 190,
+        "planned_ha": 1.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 711,
+        "planned_ha": 42.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 645,
+        "planned_ha": 49.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 359,
+        "planned_ha": 177.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 315,
+        "planned_ha": 32.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 289,
+        "planned_ha": 52.0
+      },
+      {
+        "crop": "OCA",
+        "declaration_count": 197,
+        "planned_ha": 0.0
+      },
+      {
+        "crop": "PAPA AMARILLA",
+        "declaration_count": 171,
+        "planned_ha": 17.0
+      },
+      {
+        "crop": "OLLUCO",
+        "declaration_count": 167,
+        "planned_ha": 1.0
+      }
+    ]
+  },
+  "LIMA": {
+    "region": "LIMA",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 15477.9,
+        "mean_price_s_kg": 3.2,
+        "avg_harvested_ha": 6995.8
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 38490.6,
+        "mean_price_s_kg": 1.41,
+        "avg_harvested_ha": 2923.7
+      },
+      "vid": {
+        "mean_yield_kg_ha": 20313.5,
+        "mean_price_s_kg": 1.33,
+        "avg_harvested_ha": 3199.8
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 9822.3,
+        "mean_price_s_kg": 1.1,
+        "avg_harvested_ha": 15040.9
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 48566.7,
+        "mean_price_s_kg": 0.16,
+        "avg_harvested_ha": 10864.6
+      },
+      "papa": {
+        "mean_yield_kg_ha": 25581.1,
+        "mean_price_s_kg": 0.86,
+        "avg_harvested_ha": 5519.4
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 18545.8,
+        "mean_price_s_kg": 2.19,
+        "avg_harvested_ha": 1522.3
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 9265.0,
+        "mean_price_s_kg": 3.36,
+        "avg_harvested_ha": 1985.5
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 19737.3,
+        "mean_price_s_kg": 0.86,
+        "avg_harvested_ha": 6440.5
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 26333.0,
+        "mean_price_s_kg": 1.12,
+        "avg_harvested_ha": 668.6
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 28058.0,
+        "mean_price_s_kg": 0.33,
+        "avg_harvested_ha": 5889.6
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 3837.9,
+        "mean_price_s_kg": 2.93,
+        "avg_harvested_ha": 3.3
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 226,
+      "drought_deficit_count": 26,
+      "excess_water_flood_count": 14,
+      "salinity_soil_count": 141,
+      "pests_count": 62,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 2072.0,
+      "drought_deficit_pct": 11.5,
+      "salinity_soil_pct": 62.4,
+      "excess_water_pct": 6.2,
+      "pests_pct": 27.4,
+      "annual_loss_risk_score": 0.74
+    },
+    "irrigation_profile": {
+      "gravity_pct": 28.9,
+      "sprinkler_pct": 60.8,
+      "drip_pct": 10.3,
+      "average_efficiency": 0.69
+    },
+    "planting_intentions": [
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 202,
+        "planned_ha": 188.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 194,
+        "planned_ha": 383.0
+      },
+      {
+        "crop": "MAIZ CHALA",
+        "declaration_count": 147,
+        "planned_ha": 8138.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 138,
+        "planned_ha": 3.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 119,
+        "planned_ha": 52.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 117,
+        "planned_ha": 2.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 104,
+        "planned_ha": 16.0
+      },
+      {
+        "crop": "CAMOTE",
+        "declaration_count": 86,
+        "planned_ha": 160.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 247,
+        "planned_ha": 8397.0
+      },
+      {
+        "crop": "MAIZ CHALA",
+        "declaration_count": 168,
+        "planned_ha": 273.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 135,
+        "planned_ha": 7809.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 110,
+        "planned_ha": 10102.0
+      },
+      {
+        "crop": "ALFALFA",
+        "declaration_count": 103,
+        "planned_ha": 7114.0
+      },
+      {
+        "crop": "PALTO",
+        "declaration_count": 84,
+        "planned_ha": 2185.0
+      },
+      {
+        "crop": "CAMOTE",
+        "declaration_count": 72,
+        "planned_ha": 3432.0
+      },
+      {
+        "crop": "MAIZ CHOCLO",
+        "declaration_count": 66,
+        "planned_ha": 137.0
+      }
+    ]
+  },
+  "APURIMAC": {
+    "region": "APURIMAC",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 6648.0,
+        "mean_price_s_kg": 2.78,
+        "avg_harvested_ha": 1168.2
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 4608.3,
+        "mean_price_s_kg": 0.96,
+        "avg_harvested_ha": 25.1
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 2850.6,
+        "mean_price_s_kg": 1.37,
+        "avg_harvested_ha": 1921.9
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 18419.0,
+        "mean_price_s_kg": 0.99,
+        "avg_harvested_ha": 22360.2
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 10169.9,
+        "mean_price_s_kg": 5.46,
+        "avg_harvested_ha": 41.8
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 4857.7,
+        "mean_price_s_kg": 1.0,
+        "avg_harvested_ha": 184.8
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 7560.4,
+        "mean_price_s_kg": 1.25,
+        "avg_harvested_ha": 175.2
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 47885.3,
+        "mean_price_s_kg": 0.38,
+        "avg_harvested_ha": 3046.9
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 2227.7,
+        "mean_price_s_kg": 4.06,
+        "avg_harvested_ha": 4876.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 319,
+      "drought_deficit_count": 12,
+      "excess_water_flood_count": 23,
+      "salinity_soil_count": 177,
+      "pests_count": 103,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 6464.0,
+      "drought_deficit_pct": 3.8,
+      "salinity_soil_pct": 55.5,
+      "excess_water_pct": 7.2,
+      "pests_pct": 32.3,
+      "annual_loss_risk_score": 0.59
+    },
+    "irrigation_profile": {
+      "gravity_pct": 52.4,
+      "sprinkler_pct": 27.9,
+      "drip_pct": 19.7,
+      "average_efficiency": 0.64
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1883,
+        "planned_ha": 51534.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 652,
+        "planned_ha": 16533.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 409,
+        "planned_ha": 3520.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 252,
+        "planned_ha": 4.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 238,
+        "planned_ha": 1063.0
+      },
+      {
+        "crop": "QUINUA",
+        "declaration_count": 134,
+        "planned_ha": 25.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 124,
+        "planned_ha": 304.0
+      },
+      {
+        "crop": "OLLUCO",
+        "declaration_count": 101,
+        "planned_ha": 4.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1817,
+        "planned_ha": 28619.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 571,
+        "planned_ha": 14188.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 467,
+        "planned_ha": 13500.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 256,
+        "planned_ha": 3291.0
+      },
+      {
+        "crop": "QUINUA",
+        "declaration_count": 215,
+        "planned_ha": 39529.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 202,
+        "planned_ha": 3808.0
+      },
+      {
+        "crop": "OLLUCO",
+        "declaration_count": 107,
+        "planned_ha": 4468.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 107,
+        "planned_ha": 8187.0
+      }
+    ]
+  },
+  "HUANUCO": {
+    "region": "HUANUCO",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 8561.0,
+        "mean_price_s_kg": 2.02,
+        "avg_harvested_ha": 460.2
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 10449.3,
+        "mean_price_s_kg": 0.65,
+        "avg_harvested_ha": 345.7
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 3911.8,
+        "mean_price_s_kg": 1.11,
+        "avg_harvested_ha": 10353.4
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 21996.3,
+        "mean_price_s_kg": 0.23,
+        "avg_harvested_ha": 355.5
+      },
+      "papa": {
+        "mean_yield_kg_ha": 16801.6,
+        "mean_price_s_kg": 0.94,
+        "avg_harvested_ha": 43325.6
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 7471.2,
+        "mean_price_s_kg": 3.17,
+        "avg_harvested_ha": 16.3
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 5922.8,
+        "mean_price_s_kg": 2.37,
+        "avg_harvested_ha": 16.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 13765.1,
+        "mean_price_s_kg": 1.25,
+        "avg_harvested_ha": 85.2
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 22460.0,
+        "mean_price_s_kg": 0.26,
+        "avg_harvested_ha": 1237.2
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1018.6,
+        "mean_price_s_kg": 5.17,
+        "avg_harvested_ha": 672.8
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 495,
+      "drought_deficit_count": 31,
+      "excess_water_flood_count": 15,
+      "salinity_soil_count": 311,
+      "pests_count": 147,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 1739.0,
+      "drought_deficit_pct": 6.3,
+      "salinity_soil_pct": 62.8,
+      "excess_water_pct": 3.0,
+      "pests_pct": 29.7,
+      "annual_loss_risk_score": 0.69
+    },
+    "irrigation_profile": {
+      "gravity_pct": 46.4,
+      "sprinkler_pct": 29.7,
+      "drip_pct": 24.0,
+      "average_efficiency": 0.67
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 704,
+        "planned_ha": 3033.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 647,
+        "planned_ha": 368.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 538,
+        "planned_ha": 836.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 393,
+        "planned_ha": 296.0
+      },
+      {
+        "crop": "PAPA AMARILLA",
+        "declaration_count": 316,
+        "planned_ha": 7583.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 316,
+        "planned_ha": 1213.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 213,
+        "planned_ha": 559.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 203,
+        "planned_ha": 8.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 608,
+        "planned_ha": 60.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 565,
+        "planned_ha": 16.0
+      },
+      {
+        "crop": "PAPA NATIVA",
+        "declaration_count": 547,
+        "planned_ha": 12.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 370,
+        "planned_ha": 335.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 278,
+        "planned_ha": 8.0
+      },
+      {
+        "crop": "PAPA AMARILLA",
+        "declaration_count": 238,
+        "planned_ha": 58.0
+      },
+      {
+        "crop": "PAPA HUAYRO",
+        "declaration_count": 175,
+        "planned_ha": 68.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 148,
+        "planned_ha": 7.0
+      }
+    ]
+  },
+  "HUANCAVELICA": {
+    "region": "HUANCAVELICA",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 9969.0,
+        "mean_price_s_kg": 3.02,
+        "avg_harvested_ha": 1154.1
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 6313.0,
+        "mean_price_s_kg": 0.67,
+        "avg_harvested_ha": 16.6
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 1731.1,
+        "mean_price_s_kg": 1.36,
+        "avg_harvested_ha": 364.5
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 12662.7,
+        "mean_price_s_kg": 0.78,
+        "avg_harvested_ha": 23178.3
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 5627.3,
+        "mean_price_s_kg": 0.77,
+        "avg_harvested_ha": 36.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 6376.1,
+        "mean_price_s_kg": 1.18,
+        "avg_harvested_ha": 41.9
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 28331.9,
+        "mean_price_s_kg": 0.29,
+        "avg_harvested_ha": 7574.4
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 1289.4,
+        "mean_price_s_kg": 3.91,
+        "avg_harvested_ha": 1563.5
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 479,
+      "drought_deficit_count": 14,
+      "excess_water_flood_count": 15,
+      "salinity_soil_count": 271,
+      "pests_count": 213,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 26607.0,
+      "drought_deficit_pct": 2.9,
+      "salinity_soil_pct": 56.6,
+      "excess_water_pct": 3.1,
+      "pests_pct": 44.5,
+      "annual_loss_risk_score": 0.59
+    },
+    "irrigation_profile": {
+      "gravity_pct": 53.8,
+      "sprinkler_pct": 19.5,
+      "drip_pct": 26.8,
+      "average_efficiency": 0.65
+    },
+    "planting_intentions": [
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1190,
+        "planned_ha": 171195.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 641,
+        "planned_ha": 60863.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 579,
+        "planned_ha": 56291.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 446,
+        "planned_ha": 40962.0
+      },
+      {
+        "crop": "PAPA COLOR",
+        "declaration_count": 351,
+        "planned_ha": 4121.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 256,
+        "planned_ha": 9267.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 203,
+        "planned_ha": 41457.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 178,
+        "planned_ha": 3812.0
+      },
+      {
+        "crop": "MAIZ AMILACEO",
+        "declaration_count": 1184,
+        "planned_ha": 180142.0
+      },
+      {
+        "crop": "PAPA BLANCA",
+        "declaration_count": 663,
+        "planned_ha": 51180.0
+      },
+      {
+        "crop": "CEBADA GRANO",
+        "declaration_count": 470,
+        "planned_ha": 47231.0
+      },
+      {
+        "crop": "HABA",
+        "declaration_count": 364,
+        "planned_ha": 36667.0
+      },
+      {
+        "crop": "PAPA COLOR",
+        "declaration_count": 306,
+        "planned_ha": 45226.0
+      },
+      {
+        "crop": "ARVEJA",
+        "declaration_count": 164,
+        "planned_ha": 21429.0
+      },
+      {
+        "crop": "AVENA FORRAJERA",
+        "declaration_count": 131,
+        "planned_ha": 12178.0
+      },
+      {
+        "crop": "TRIGO",
+        "declaration_count": 128,
+        "planned_ha": 8854.0
+      }
+    ]
+  },
+  "UCAYALI": {
+    "region": "UCAYALI",
+    "crops_stats": {
+      "palto": {
+        "mean_yield_kg_ha": 8524.0,
+        "mean_price_s_kg": 0.93,
+        "avg_harvested_ha": 332.9
+      },
+      "mandarina": {
+        "mean_yield_kg_ha": 10209.2,
+        "mean_price_s_kg": 0.97,
+        "avg_harvested_ha": 688.8
+      },
+      "vid": {
+        "mean_yield_kg_ha": 19500.0,
+        "mean_price_s_kg": 3.4,
+        "avg_harvested_ha": 0.0
+      },
+      "maiz_amarillo": {
+        "mean_yield_kg_ha": 2758.2,
+        "mean_price_s_kg": 1.09,
+        "avg_harvested_ha": 10478.0
+      },
+      "maiz_chala": {
+        "mean_yield_kg_ha": 35000.0,
+        "mean_price_s_kg": 0.35,
+        "avg_harvested_ha": 0.0
+      },
+      "papa": {
+        "mean_yield_kg_ha": 22000.0,
+        "mean_price_s_kg": 1.3,
+        "avg_harvested_ha": 0.0
+      },
+      "fresa": {
+        "mean_yield_kg_ha": 32000.0,
+        "mean_price_s_kg": 3.8,
+        "avg_harvested_ha": 0.0
+      },
+      "esparrago": {
+        "mean_yield_kg_ha": 12000.0,
+        "mean_price_s_kg": 6.5,
+        "avg_harvested_ha": 0.0
+      },
+      "manzano": {
+        "mean_yield_kg_ha": 18000.0,
+        "mean_price_s_kg": 2.1,
+        "avg_harvested_ha": 0.0
+      },
+      "cebolla": {
+        "mean_yield_kg_ha": 38000.0,
+        "mean_price_s_kg": 1.15,
+        "avg_harvested_ha": 0.0
+      },
+      "alfalfa": {
+        "mean_yield_kg_ha": 45000.0,
+        "mean_price_s_kg": 0.4,
+        "avg_harvested_ha": 0.0
+      },
+      "quinua": {
+        "mean_yield_kg_ha": 3200.0,
+        "mean_price_s_kg": 6.8,
+        "avg_harvested_ha": 0.0
+      }
+    },
+    "loss_profile": {
+      "total_incidents": 87,
+      "drought_deficit_count": 7,
+      "excess_water_flood_count": 62,
+      "salinity_soil_count": 25,
+      "pests_count": 0,
+      "other_causes_count": 0,
+      "total_area_lost_ha": 175.0,
+      "drought_deficit_pct": 8.0,
+      "salinity_soil_pct": 28.7,
+      "excess_water_pct": 71.3,
+      "pests_pct": 0.0,
+      "annual_loss_risk_score": 0.37
+    },
+    "irrigation_profile": {
+      "gravity_pct": 16.4,
+      "sprinkler_pct": 79.1,
+      "drip_pct": 4.5,
+      "average_efficiency": 0.71
+    },
+    "planting_intentions": [
+      {
+        "crop": "CACAO",
+        "declaration_count": 206,
+        "planned_ha": 484.0
+      },
+      {
+        "crop": "PALMA ACEITERA",
+        "declaration_count": 117,
+        "planned_ha": 858.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 102,
+        "planned_ha": 202.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 84,
+        "planned_ha": 881.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 78,
+        "planned_ha": 100.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 51,
+        "planned_ha": 114.0
+      },
+      {
+        "crop": "CAFE PERGAMINO",
+        "declaration_count": 12,
+        "planned_ha": 20.0
+      },
+      {
+        "crop": "PASTO BRIZANTA",
+        "declaration_count": 11,
+        "planned_ha": 45.0
+      },
+      {
+        "crop": "CACAO",
+        "declaration_count": 177,
+        "planned_ha": 469.0
+      },
+      {
+        "crop": "MAIZ AMARILLO DURO",
+        "declaration_count": 160,
+        "planned_ha": 394.0
+      },
+      {
+        "crop": "PALMA ACEITERA",
+        "declaration_count": 82,
+        "planned_ha": 667.0
+      },
+      {
+        "crop": "YUCA",
+        "declaration_count": 73,
+        "planned_ha": 131.0
+      },
+      {
+        "crop": "PLATANO",
+        "declaration_count": 72,
+        "planned_ha": 106.0
+      },
+      {
+        "crop": "ARROZ CASCARA",
+        "declaration_count": 42,
+        "planned_ha": 245.0
+      },
+      {
+        "crop": "PASTO BRAQUIARIA",
+        "declaration_count": 14,
+        "planned_ha": 177.0
+      },
+      {
+        "crop": "CAFE PERGAMINO",
+        "declaration_count": 14,
+        "planned_ha": 47.0
+      }
+    ]
+  }
+}

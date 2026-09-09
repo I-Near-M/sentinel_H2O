@@ -70,7 +70,7 @@ class WhatIfResponse(BaseModel):
 
 
 # =========================================================================
-# NUEVOS ESQUEMAS PARA MOTOR WHAT-IF AVANZADO
+# ESQUEMAS PARA MOTOR WHAT-IF AVANZADO MULTIVARIABLE
 # =========================================================================
 
 class MultiVariableWhatIfRequest(BaseModel):
@@ -210,3 +210,128 @@ class MitaAuditResponse(BaseModel):
     impacto_caudal_ecologico: str
     dictamen_auditoria: str
 
+
+# =========================================================================
+# ESQUEMAS PARA INTELIGENCIA AGRO-HÍDRICA & DECISIONES MIDAGRI
+# =========================================================================
+
+class AgroCropItem(BaseModel):
+    crop_id: str
+    name: str
+    category: str
+    water_demand_m3_ha: float
+    ec_threshold_us_cm: float
+    salinity_slope_pct: float
+    ph_min: float
+    ph_max: float
+    wqi_min: float
+    growth_cycle_days: int
+    base_yield_kg_ha: float
+    base_price_s_kg: float
+    resilience_level: str
+    description: str
+
+
+class AgroRegionalBenchmarkResponse(BaseModel):
+    region: str
+    crops_stats: Dict[str, Any]
+    loss_profile: Dict[str, Any]
+    irrigation_profile: Dict[str, Any]
+    planting_intentions: List[Dict[str, Any]]
+
+
+class CropSuitabilityRequest(BaseModel):
+    crop_id: Optional[str] = Field(None, description="ID del cultivo (opcional; si se omite evalúa todo el catálogo)")
+    ec_us_cm: float = Field(..., ge=50.0, le=12000.0, description="Conductividad eléctrica del agua en uS/cm")
+    ph: float = Field(7.2, ge=3.0, le=11.0, description="pH del agua de riego")
+    wqi: float = Field(75.0, ge=0.0, le=100.0, description="Índice de Calidad del Agua WQI")
+    water_availability_ratio: float = Field(1.0, ge=0.0, le=2.0, description="Ratio Oferta/Demanda de agua (1.0 = 100% abastecimiento)")
+    region: str = Field("LIMA", description="Región o departamento de referencia")
+
+
+class CropSuitabilityItem(BaseModel):
+    crop_id: str
+    crop_name: str
+    category: str
+    suitability_score: float
+    status: str
+    status_color: str
+    resilience_level: str
+    stress_factor_ks: float
+    salinity_retention_pct: float
+    water_availability_pct: float
+    wqi_factor_pct: float
+    ph_factor_pct: float
+    expected_yield_kg_ha: float
+    base_yield_kg_ha: float
+    regional_mean_yield_kg_ha: float
+    farmgate_price_s_kg: float
+    water_demand_m3_ha: float
+    ec_threshold_us_cm: float
+    recommendation: str
+
+
+class CropSuitabilityResponse(BaseModel):
+    ec_us_cm: float
+    ph: float
+    wqi: float
+    water_availability_ratio: float
+    region: str
+    evaluated_crops: List[CropSuitabilityItem]
+
+
+class AgroScenarioWhatIfRequest(BaseModel):
+    titulo_escenario: Optional[str] = Field("Simulación Agro-Hídrica MIDAGRI", description="Título descriptivo del escenario")
+    crop_distribution_ha: Dict[str, float] = Field(..., description="Distribución de hectáreas por cultivo (ej: {'palto': 120, 'mandarina': 80})")
+    available_flow_m3s: float = Field(..., ge=0.01, le=100.0, description="Caudal disponible de río/canal para agricultura en m³/s")
+    ec_us_cm: float = Field(..., ge=50.0, le=12000.0, description="Conductividad eléctrica del agua en uS/cm")
+    ph: Optional[float] = Field(7.2, ge=3.0, le=11.0, description="pH del agua de riego")
+    wqi: Optional[float] = Field(75.0, ge=0.0, le=100.0, description="Índice WQI")
+    irrigation_type: Optional[str] = Field("gravity", description="Tipo de riego: 'gravity', 'sprinkler', 'drip'")
+    water_tariff_s_m3: Optional[float] = Field(0.045, ge=0.0, le=1.0, description="Tarifa del agua de riego en S/. por m³")
+    region: Optional[str] = Field("LIMA", description="Región de referencia")
+    simulated_duration_days: Optional[int] = Field(365, ge=1, le=730, description="Horizonte de simulación en días (365 = campaña anual)")
+
+
+class AgroCropSummaryItem(BaseModel):
+    crop_id: str
+    crop_name: str
+    category: str
+    planned_ha: float
+    suitability_score: float
+    status: str
+    status_color: str
+    water_demand_mmc: float
+    potential_revenue_s: float
+    stressed_revenue_s: float
+    economic_loss_s: float
+    loss_pct: float
+    water_cost_s: float
+    net_margin_s: float
+    substitutes: List[Dict[str, Any]]
+
+
+class AgroScenarioWhatIfResponse(BaseModel):
+    region: str
+    simulated_duration_days: int
+    irrigation_type: str
+    irrigation_efficiency: float
+    total_planned_ha: float
+    available_flow_m3s: float
+    water_availability_mmc: float
+    gross_water_demand_mmc: float
+    net_water_demand_mmc: float
+    water_deficit_mmc: float
+    water_coverage_pct: float
+    water_balance_status: str
+    water_balance_color: str
+    total_potential_revenue_s: float
+    total_stressed_revenue_s: float
+    total_economic_loss_s: float
+    total_loss_pct: float
+    total_water_cost_s: float
+    net_agricultural_margin_s: float
+    at_risk_crops_count: int
+    loss_attribution: Dict[str, Any]
+    tech_upgrade_potential: Dict[str, Any]
+    crops_summary: List[AgroCropSummaryItem]

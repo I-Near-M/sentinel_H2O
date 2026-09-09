@@ -98,6 +98,10 @@ export const predictionsApi = {
   auditMitaDeficit: (data) => api.post('/predictions/audit-mita-deficit', data),
   getSimulationsHistory: (limit = 20) => api.get(`/predictions/simulations-history?limit=${limit}`),
   syncAllForecasts: () => api.post('/predictions/sync-all-forecasts'),
+  getAgroCrops: () => api.get('/predictions/agro/crops'),
+  getAgroRegionalBenchmarks: (region = 'LIMA') => api.get(`/predictions/agro/regional-benchmarks?region=${region}`),
+  evaluateAgroSuitability: (data) => api.post('/predictions/agro/suitability', data),
+  simulateAgroWhatIf: (data) => api.post('/predictions/agro/what-if', data),
 };
 
 export default api;
