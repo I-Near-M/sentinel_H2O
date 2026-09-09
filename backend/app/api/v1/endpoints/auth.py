@@ -414,10 +414,16 @@ def grafana_sso_launcher(
 
     response = RedirectResponse(url=redirect_to, status_code=status.HTTP_302_FOUND)
     
+    # Limpiar cookies de sesión antiguas de Grafana para evitar conflictos de rotación de tokens
+    response.delete_cookie(key="grafana_session", path="/")
+    response.delete_cookie(key="grafana_session", path="/grafana/")
+    response.delete_cookie(key="grafana_session_expiry", path="/")
+    response.delete_cookie(key="grafana_session_expiry", path="/grafana/")
+
     if target_token:
         # Validar que el token sea legítimo antes de setear la cookie
         payload = decode_access_token(target_token)
-        if payload and "sub" in payload:
+        if payload and ("sub" in payload or "email" in payload):
             response.set_cookie(
                 key="sentinel_sso_token",
                 value=target_token,
@@ -452,35 +458,45 @@ def auth_proxy_verify(request: Request, db: Session = Depends(get_db)):
         return Response(status_code=status.HTTP_200_OK)
 
     payload = decode_access_token(token)
-    if not payload or "sub" not in payload:
+    if not payload or ("sub" not in payload and "email" not in payload):
         return Response(status_code=status.HTTP_200_OK)
 
     user_id = payload.get("sub")
     user = None
-    try:
-        user_id_int = int(user_id)
-        user = db.query(Usuario).filter(Usuario.id_usuario == user_id_int, Usuario.activo == True).first()
-    except (ValueError, TypeError):
-        user = db.query(Usuario).filter(Usuario.email == str(user_id), Usuario.activo == True).first()
+    if user_id:
+        try:
+            user_id_int = int(user_id)
+            user = db.query(Usuario).filter(Usuario.id_usuario == user_id_int, Usuario.activo == True).first()
+        except (ValueError, TypeError):
+            user = db.query(Usuario).filter(Usuario.email == str(user_id), Usuario.activo == True).first()
 
-    if not user:
+    # Si no se encuentra por id, buscar por email en payload
+    if not user and payload.get("email"):
+        user = db.query(Usuario).filter(Usuario.email == payload.get("email"), Usuario.activo == True).first()
+
+    # Si no está en BD pero el JWT está firmado legítimamente por nuestro servidor (ej. persistencia tras reinicio)
+    email = user.email if user else payload.get("email")
+    nombre = user.nombre_completo if user else (payload.get("nombre_completo") or email)
+    rol = user.rol if user else payload.get("rol", "ADMIN_SISTEMA")
+
+    if not email:
         return Response(status_code=status.HTTP_200_OK)
 
     # Mapeo de roles de Sentinel-H2O a Grafana
     # ADMIN_SISTEMA -> Admin
     # OPERADOR_JUNTA -> Editor
     # TOMERO_COMISION, AUDITOR_VISOR -> Viewer
-    if user.rol == "ADMIN_SISTEMA":
+    if rol == "ADMIN_SISTEMA":
         grafana_role = "Admin"
-    elif user.rol == "OPERADOR_JUNTA":
+    elif rol == "OPERADOR_JUNTA":
         grafana_role = "Editor"
     else:
         grafana_role = "Viewer"
 
     headers = {
-        "X-WEBAUTH-USER": user.email,
-        "X-WEBAUTH-NAME": user.nombre_completo or user.email,
-        "X-WEBAUTH-EMAIL": user.email,
+        "X-WEBAUTH-USER": email,
+        "X-WEBAUTH-NAME": nombre or email,
+        "X-WEBAUTH-EMAIL": email,
         "X-WEBAUTH-ROLE": grafana_role,
     }
     return Response(status_code=status.HTTP_200_OK, headers=headers)
