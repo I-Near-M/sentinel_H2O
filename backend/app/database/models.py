@@ -26,9 +26,57 @@ class Entidad(Base):
     created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
 
+    usuarios = relationship("Usuario", back_populates="entidad")
     nodos = relationship("Nodo", back_populates="entidad")
     destinatarios = relationship("DestinatarioAlerta", back_populates="entidad")
     turnos = relationship("TurnoRiego", back_populates="entidad")
+
+
+# ========================================================================================
+# 1.1 USUARIOS (Autenticación JWT y RBAC de 4 Niveles)
+# ========================================================================================
+class Usuario(Base):
+    __tablename__ = "usuarios"
+
+    id_usuario = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id_entidad = Column(Integer, ForeignKey("entidades.id_entidad", ondelete="SET NULL"), nullable=True)
+    email = Column(String(120), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    nombre_completo = Column(String(150), nullable=False)
+    telefono_contacto = Column(String(30), nullable=True)
+    cargo_institucional = Column(String(100), nullable=True)
+    rol = Column(String(50), default="AUDITOR_VISOR", nullable=False)  # ADMIN_SISTEMA, OPERADOR_JUNTA, TOMERO_COMISION, AUDITOR_VISOR
+    activo = Column(Boolean, default=True, nullable=False)
+    ultimo_login = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
+
+    entidad = relationship("Entidad", back_populates="usuarios")
+    nodos_creados = relationship("Nodo", back_populates="creador")
+    calibraciones = relationship("CalibracionNodo", back_populates="calibrador")
+    destinatarios_registrados = relationship("DestinatarioAlerta", back_populates="registrador")
+    simulaciones_ejecutadas = relationship("SimulacionWhatIf", back_populates="ejecutor")
+    auditorias = relationship("AuditoriaLog", back_populates="usuario")
+
+
+# ========================================================================================
+# 1.2 LOGS DE AUDITORÍA FORENSE (Trazabilidad Inmutable)
+# ========================================================================================
+class AuditoriaLog(Base):
+    __tablename__ = "auditoria_logs"
+
+    id_audit = Column(AutoBigIntPK, primary_key=True, index=True, autoincrement=True)
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True, index=True)
+    email_usuario = Column(String(120), nullable=True)
+    accion = Column(String(50), nullable=False, index=True)
+    tabla_afectada = Column(String(50), nullable=False, index=True)
+    id_registro_afectado = Column(String(100), nullable=True)
+    valores_previos_json = Column(JSON, nullable=True)
+    valores_nuevos_json = Column(JSON, nullable=True)
+    ip_origen = Column(String(45), nullable=True)
+    timestamp = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False, index=True)
+
+    usuario = relationship("Usuario", back_populates="auditorias")
 
 
 # ========================================================================================
@@ -39,6 +87,7 @@ class Nodo(Base):
 
     id_nodo = Column(String(50), primary_key=True, index=True)
     id_entidad_responsable = Column(Integer, ForeignKey("entidades.id_entidad"), nullable=True)
+    creado_por_usuario_id = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
     nombre = Column(String(100), nullable=False)
     sector_cuenca = Column(String(50), nullable=False)
     subcuenca = Column(String(100), nullable=False)
@@ -54,6 +103,7 @@ class Nodo(Base):
     updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
 
     entidad = relationship("Entidad", back_populates="nodos")
+    creador = relationship("Usuario", back_populates="nodos_creados")
     calibraciones = relationship("CalibracionNodo", back_populates="nodo", cascade="all, delete-orphan")
     mediciones_raw = relationship("MedicionRaw", back_populates="nodo", cascade="all, delete-orphan")
     mediciones_procesadas = relationship("MedicionProcesada", back_populates="nodo", cascade="all, delete-orphan")
@@ -73,6 +123,7 @@ class CalibracionNodo(Base):
 
     id_calibracion = Column(Integer, primary_key=True, index=True, autoincrement=True)
     id_nodo = Column(String(50), ForeignKey("nodos.id_nodo", ondelete="CASCADE"), nullable=False)
+    calibrado_por_usuario_id = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
     ph_offset_v = Column(Float, default=2.5000, nullable=False)
     ph_slope = Column(Float, default=-0.1800, nullable=False)
     tds_factor_k = Column(Float, default=0.5000, nullable=False)
@@ -87,6 +138,7 @@ class CalibracionNodo(Base):
     es_vigente = Column(Boolean, default=True, nullable=False)
 
     nodo = relationship("Nodo", back_populates="calibraciones")
+    calibrador = relationship("Usuario", back_populates="calibraciones")
 
 
 # ========================================================================================
@@ -195,6 +247,7 @@ class DestinatarioAlerta(Base):
     id_destinatario = Column(Integer, primary_key=True, index=True, autoincrement=True)
     id_entidad = Column(Integer, ForeignKey("entidades.id_entidad", ondelete="CASCADE"), nullable=False, index=True)
     id_nodo_suscrito = Column(String(50), ForeignKey("nodos.id_nodo", ondelete="CASCADE"), nullable=False, index=True)
+    registrado_por_usuario_id = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
     nombre_completo = Column(String(150), nullable=False)
     dni_ruc = Column(String(20), nullable=True)
     telefono_whatsapp = Column(String(30), nullable=False)
@@ -211,6 +264,7 @@ class DestinatarioAlerta(Base):
 
     entidad = relationship("Entidad", back_populates="destinatarios")
     nodo = relationship("Nodo", back_populates="destinatarios")
+    registrador = relationship("Usuario", back_populates="destinatarios_registrados")
     turnos = relationship("TurnoRiego", back_populates="destinatario")
 
 
@@ -295,6 +349,7 @@ class SimulacionWhatIf(Base):
 
     id_simulacion = Column(Integer, primary_key=True, index=True, autoincrement=True)
     id_entidad = Column(Integer, ForeignKey("entidades.id_entidad", ondelete="SET NULL"), nullable=True)
+    ejecutado_por_usuario_id = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
     titulo_escenario = Column(String(150), nullable=False)
     fecha_ejecucion = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     delta_precipitacion_pct = Column(Float, default=0.0, nullable=False)
@@ -304,3 +359,26 @@ class SimulacionWhatIf(Base):
     resultado_caudal_valle_m3s = Column(Float, nullable=False)
     resumen_impacto = Column(Text, nullable=False)
     ejecutado_por = Column(String(100), nullable=True)
+
+    ejecutor = relationship("Usuario", back_populates="simulaciones_ejecutadas")
+
+
+# ========================================================================================
+# 13. CONFIGURACIÓN DINÁMICA DEL SISTEMA Y CUENCA (Open Source Agnóstico)
+# ========================================================================================
+class ConfiguracionSistema(Base):
+    __tablename__ = "configuracion_sistema"
+
+    id_config = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    nombre_cuenca = Column(String(150), nullable=False, default="Cuenca Chancay-Huaral")
+    pais_region = Column(String(100), nullable=False, default="Lima, Perú")
+    descripcion_cuenca = Column(Text, nullable=True)
+    latitud_centro = Column(Float, nullable=False, default=-11.49)
+    longitud_centro = Column(Float, nullable=False, default=-77.05)
+    zoom_inicial = Column(Integer, nullable=False, default=10)
+    dashboards_grafana_json = Column(JSON, nullable=True)
+    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
+    actualizado_por_usuario_id = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
+
+    actualizador = relationship("Usuario")
+

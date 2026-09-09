@@ -18,7 +18,7 @@ USE `sentinel_h2o_db`;
 CREATE TABLE IF NOT EXISTS `entidades` (
   `id_entidad` INT AUTO_INCREMENT PRIMARY KEY,
   `nombre_entidad` VARCHAR(150) NOT NULL COMMENT 'Nombre oficial de la institución o junta',
-  `tipo_entidad` ENUM('GUBERNAMENTAL_ANA', 'JUNTA_USUARIOS', 'COMISION_REGANTES', 'COOPERATIVA_AGRARIA', 'OTRO') NOT NULL,
+  `tipo_entidad` VARCHAR(50) NOT NULL DEFAULT 'COMISION_REGANTES' COMMENT 'Tipo de institución (JUNTA_USUARIOS, COMISION_REGANTES, AUTORIDAD_NACIONAL, etc.)',
   `ruc` VARCHAR(20) NULL COMMENT 'RUC institucional opcional',
   `telefono_contacto` VARCHAR(30) NULL,
   `email_contacto` VARCHAR(100) NULL,
@@ -29,26 +29,69 @@ CREATE TABLE IF NOT EXISTS `entidades` (
 ) ENGINE=InnoDB COMMENT='Catálogo de entidades gestoras del agua (ANA, Juntas, Comisiones)';
 
 -- ========================================================================================
+-- 1.1 TABLA: USUARIOS (Autenticación JWT y RBAC de 4 Niveles)
+-- ========================================================================================
+CREATE TABLE IF NOT EXISTS `usuarios` (
+  `id_usuario` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_entidad` INT NULL COMMENT 'Entidad a la que pertenece (NULL para Superadmins ANA)',
+  `email` VARCHAR(120) NOT NULL UNIQUE,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `nombre_completo` VARCHAR(150) NOT NULL,
+  `telefono_contacto` VARCHAR(30) NULL,
+  `cargo_institucional` VARCHAR(100) NULL,
+  `rol` VARCHAR(50) NOT NULL DEFAULT 'AUDITOR_VISOR',
+  `activo` BOOLEAN NOT NULL DEFAULT TRUE,
+  `ultimo_login` DATETIME NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_usuario_email` (`email`),
+  INDEX `idx_usuario_rol` (`rol`),
+  CONSTRAINT `fk_usuario_entidad` FOREIGN KEY (`id_entidad`) REFERENCES `entidades` (`id_entidad`) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='Usuarios institucionales y operadores del sistema de gobernanza';
+
+-- ========================================================================================
+-- 1.2 TABLA: LOGS DE AUDITORÍA FORENSE (Trazabilidad de Modificaciones)
+-- ========================================================================================
+CREATE TABLE IF NOT EXISTS `auditoria_logs` (
+  `id_audit` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `id_usuario` INT NULL,
+  `email_usuario` VARCHAR(120) NULL,
+  `accion` VARCHAR(50) NOT NULL COMMENT 'CREATE_NODE, UPDATE_CALIBRATION, DELETE_RECIPIENT, etc.',
+  `tabla_afectada` VARCHAR(50) NOT NULL,
+  `id_registro_afectado` VARCHAR(100) NULL,
+  `valores_previos_json` JSON NULL,
+  `valores_nuevos_json` JSON NULL,
+  `ip_origen` VARCHAR(45) NULL,
+  `timestamp` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_audit_usuario` (`id_usuario`),
+  INDEX `idx_audit_tabla` (`tabla_afectada`),
+  INDEX `idx_audit_timestamp` (`timestamp`),
+  CONSTRAINT `fk_audit_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='Historial inmutable de auditoría forense para trazabilidad de cuenca';
+
+-- ========================================================================================
 -- 2. TABLA: NODOS TELEMÉTRICOS (Infraestructura IoT de Campo)
 -- Catálogo agnóstico a la cantidad de nodos (Soporta 3 MVP o 50+ nodos sin cambios)
 -- ========================================================================================
 CREATE TABLE IF NOT EXISTS `nodos` (
   `id_nodo` VARCHAR(50) PRIMARY KEY COMMENT 'Identificador único (ej: NODO-01-CABECERA)',
   `id_entidad_responsable` INT NULL COMMENT 'Entidad que custodia el nodo',
+  `creado_por_usuario_id` INT NULL COMMENT 'Usuario que aprovisionó la estación',
   `nombre` VARCHAR(100) NOT NULL COMMENT 'Nombre legible del punto de monitoreo',
-  `sector_cuenca` ENUM('CUENCA_ALTA', 'CUENCA_MEDIA', 'CUENCA_BAJA', 'PARCELA_PILOTO') NOT NULL,
+  `sector_cuenca` VARCHAR(50) NOT NULL COMMENT 'Sector hidrográfico',
   `subcuenca` VARCHAR(100) NOT NULL COMMENT 'Subcuenca hidrográfica (ej: Vichaycocha, Baños, Añasmayo)',
   `latitud` DECIMAL(10, 7) NOT NULL COMMENT 'Latitud geográfica decimal WGS84',
   `longitud` DECIMAL(10, 7) NOT NULL COMMENT 'Longitud geográfica decimal WGS84',
   `cota_msnm` DECIMAL(7, 2) NOT NULL COMMENT 'Altitud en msnm',
-  `tipo_fuente` ENUM('RIO_PRINCIPAL', 'LAGUNA_REPRESADA', 'CANAL_DERIVACION', 'BOCATOMA_PARCELA', 'DRENAJE') NOT NULL,
+  `tipo_fuente` VARCHAR(50) NOT NULL COMMENT 'Tipo de fuente (RIO_PRINCIPAL, MANANTIAL, CANAL_DERIVACION, etc.)',
   `api_key_hash` VARCHAR(128) NOT NULL COMMENT 'Hash o token seguro para autenticación HTTP del ESP32',
   `intervalo_envio_min` INT NOT NULL DEFAULT 15 COMMENT 'Frecuencia de telemetría esperada en minutos',
   `activo` BOOLEAN NOT NULL DEFAULT TRUE,
   `descripcion` TEXT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT `fk_nodos_entidad` FOREIGN KEY (`id_entidad_responsable`) REFERENCES `entidades` (`id_entidad`) ON DELETE SET NULL
+  CONSTRAINT `fk_nodos_entidad` FOREIGN KEY (`id_entidad_responsable`) REFERENCES `entidades` (`id_entidad`) ON DELETE SET NULL,
+  CONSTRAINT `fk_nodos_usuario` FOREIGN KEY (`creado_por_usuario_id`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL
 ) ENGINE=InnoDB COMMENT='Puntos de monitoreo físico IoT desplegados a lo largo de la cuenca';
 
 -- ========================================================================================
@@ -58,6 +101,7 @@ CREATE TABLE IF NOT EXISTS `nodos` (
 CREATE TABLE IF NOT EXISTS `calibraciones_nodo` (
   `id_calibracion` INT AUTO_INCREMENT PRIMARY KEY,
   `id_nodo` VARCHAR(50) NOT NULL,
+  `calibrado_por_usuario_id` INT NULL COMMENT 'Usuario que aplicó la calibración',
   `ph_offset_v` DECIMAL(6, 4) NOT NULL DEFAULT 2.5000 COMMENT 'Voltaje analógico a pH neutro 7.00',
   `ph_slope` DECIMAL(6, 4) NOT NULL DEFAULT -0.1800 COMMENT 'Delta Voltaje por unidad de pH',
   `tds_factor_k` DECIMAL(6, 4) NOT NULL DEFAULT 0.5000 COMMENT 'Relación TDS (ppm) a EC (uS/cm)',
@@ -70,7 +114,8 @@ CREATE TABLE IF NOT EXISTS `calibraciones_nodo` (
   `fecha_calibracion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `calibrado_por` VARCHAR(100) NULL,
   `es_vigente` BOOLEAN NOT NULL DEFAULT TRUE,
-  CONSTRAINT `fk_calib_nodo` FOREIGN KEY (`id_nodo`) REFERENCES `nodos` (`id_nodo`) ON DELETE CASCADE
+  CONSTRAINT `fk_calib_nodo` FOREIGN KEY (`id_nodo`) REFERENCES `nodos` (`id_nodo`) ON DELETE CASCADE,
+  CONSTRAINT `fk_calib_usuario` FOREIGN KEY (`calibrado_por_usuario_id`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL
 ) ENGINE=InnoDB COMMENT='Parámetros de calibración física y curvas hidráulicas por nodo';
 
 -- ========================================================================================
@@ -171,11 +216,12 @@ CREATE TABLE IF NOT EXISTS `destinatarios_alertas` (
   `id_destinatario` INT AUTO_INCREMENT PRIMARY KEY,
   `id_entidad` INT NOT NULL COMMENT 'Entidad que registró al usuario (ANA, Junta de Usuarios, etc.)',
   `id_nodo_suscrito` VARCHAR(50) NOT NULL COMMENT 'Nodo o canal del que recibe información directa',
+  `registrado_por_usuario_id` INT NULL COMMENT 'Usuario que dio de alta al destinatario',
   `nombre_completo` VARCHAR(150) NOT NULL,
   `dni_ruc` VARCHAR(20) NULL,
   `telefono_whatsapp` VARCHAR(30) NOT NULL COMMENT 'Número con código de país (ej: +51987654321)',
   `email` VARCHAR(100) NULL,
-  `rol_usuario` ENUM('AGRICULTOR', 'TOMERO', 'DIRIGENTE_JUNTA', 'ESPECIALISTA_ANA', 'ADMIN_SISTEMA') NOT NULL,
+  `rol_usuario` VARCHAR(50) NOT NULL DEFAULT 'AGRICULTOR',
   `tipo_cultivo` VARCHAR(100) NULL COMMENT 'ej: Melocotón Blanquillo, Manzana, Cítricos, Palto',
   `sector_predio` VARCHAR(100) NULL COMMENT 'ej: Sector Huayopampa - Parcela El Naranjal',
   `recibe_alertas_calidad` BOOLEAN NOT NULL DEFAULT TRUE COMMENT 'Alertas de pH, salinidad y contaminantes',
@@ -187,7 +233,8 @@ CREATE TABLE IF NOT EXISTS `destinatarios_alertas` (
   INDEX `idx_dest_entidad` (`id_entidad`),
   INDEX `idx_dest_nodo` (`id_nodo_suscrito`),
   CONSTRAINT `fk_dest_entidad` FOREIGN KEY (`id_entidad`) REFERENCES `entidades` (`id_entidad`) ON DELETE CASCADE,
-  CONSTRAINT `fk_dest_nodo` FOREIGN KEY (`id_nodo_suscrito`) REFERENCES `nodos` (`id_nodo`) ON DELETE CASCADE
+  CONSTRAINT `fk_dest_nodo` FOREIGN KEY (`id_nodo_suscrito`) REFERENCES `nodos` (`id_nodo`) ON DELETE CASCADE,
+  CONSTRAINT `fk_dest_usuario` FOREIGN KEY (`registrado_por_usuario_id`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL
 ) ENGINE=InnoDB COMMENT='Usuarios finales suscritos a alertas segmentadas según entidad y nodo';
 
 -- ========================================================================================
@@ -268,6 +315,7 @@ CREATE TABLE IF NOT EXISTS `predicciones_ia` (
 CREATE TABLE IF NOT EXISTS `simulaciones_whatif` (
   `id_simulacion` INT AUTO_INCREMENT PRIMARY KEY,
   `id_entidad` INT NULL,
+  `ejecutado_por_usuario_id` INT NULL COMMENT 'Usuario responsable de la simulación',
   `titulo_escenario` VARCHAR(150) NOT NULL,
   `fecha_ejecucion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `delta_precipitacion_pct` DECIMAL(5, 2) NOT NULL DEFAULT 0.00 COMMENT 'Variación porcentual de lluvia (ej: -40.0%)',
@@ -277,6 +325,25 @@ CREATE TABLE IF NOT EXISTS `simulaciones_whatif` (
   `resultado_caudal_valle_m3s` DECIMAL(8, 4) NOT NULL,
   `resumen_impacto` TEXT NOT NULL,
   `ejecutado_por` VARCHAR(100) NULL,
-  CONSTRAINT `fk_whatif_entidad` FOREIGN KEY (`id_entidad`) REFERENCES `entidades` (`id_entidad`) ON DELETE SET NULL
+  CONSTRAINT `fk_whatif_entidad` FOREIGN KEY (`id_entidad`) REFERENCES `entidades` (`id_entidad`) ON DELETE SET NULL,
+  CONSTRAINT `fk_whatif_usuario` FOREIGN KEY (`ejecutado_por_usuario_id`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL
 ) ENGINE=InnoDB COMMENT='Registro de simulaciones predictivas What-If ejecutadas';
+
+-- ========================================================================================
+-- 13. TABLA: CONFIGURACIÓN DEL SISTEMA Y CUENCA (Agnóstico Open Source)
+-- Permite personalizar el nombre de la cuenca, país y tableros sin modificar el código fuente.
+-- ========================================================================================
+CREATE TABLE IF NOT EXISTS `configuracion_sistema` (
+  `id_config` INT AUTO_INCREMENT PRIMARY KEY,
+  `nombre_cuenca` VARCHAR(150) NOT NULL DEFAULT 'Cuenca Chancay-Huaral',
+  `pais_region` VARCHAR(100) NOT NULL DEFAULT 'Lima, Perú',
+  `descripcion_cuenca` TEXT NULL,
+  `latitud_centro` DECIMAL(10, 7) NOT NULL DEFAULT -11.4900000,
+  `longitud_centro` DECIMAL(10, 7) NOT NULL DEFAULT -77.0500000,
+  `zoom_inicial` TINYINT NOT NULL DEFAULT 10,
+  `dashboards_grafana_json` JSON NULL,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `actualizado_por_usuario_id` INT NULL,
+  CONSTRAINT `fk_config_usuario` FOREIGN KEY (`actualizado_por_usuario_id`) REFERENCES `usuarios` (`id_usuario`) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='Parámetros dinámicos y metadata del gemelo digital de cuenca';
 

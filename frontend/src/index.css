@@ -1,3 +1,5 @@
+@import "leaflet/dist/leaflet.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -32,6 +34,17 @@
     background-attachment: fixed;
     min-height: 100vh;
   }
+
+  html.dark body {
+    background-color: #030d12;
+    color: #f1f5f9;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(7, 49, 69, 0.7) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(5, 28, 39, 0.8) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(3, 19, 28, 0.9) 0px, transparent 70%),
+      radial-gradient(at 100% 100%, rgba(2, 178, 216, 0.08) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(7, 49, 69, 0.5) 0px, transparent 50%);
+  }
 }
 
 /* Custom Scrollbars */
@@ -42,18 +55,28 @@
 ::-webkit-scrollbar-track {
   background: #eefbff;
 }
+html.dark ::-webkit-scrollbar-track {
+  background: #051c27;
+}
 ::-webkit-scrollbar-thumb {
   background: #a3f2fe;
   border-radius: 6px;
   border: 2px solid #eefbff;
 }
+html.dark ::-webkit-scrollbar-thumb {
+  background: #0b7193;
+  border: 2px solid #051c27;
+}
 ::-webkit-scrollbar-thumb:hover {
   background: #64e5fc;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #1ecff2;
 }
 
 /* 3D Spatial & Crystalline Glassmorphism */
 .spatial-card {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(163, 242, 254, 0.7);
@@ -61,99 +84,101 @@
     0 20px 40px -15px rgba(2, 178, 216, 0.10),
     0 1px 3px 0 rgba(7, 49, 69, 0.04),
     0 0 0 1px rgba(255, 255, 255, 0.9) inset;
-  border-radius: 1.75rem;
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+html.dark .spatial-card {
+  background: rgba(7, 36, 51, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  box-shadow: 
+    0 20px 40px -15px rgba(0, 0, 0, 0.5),
+    0 1px 3px 0 rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 }
 
 .spatial-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   border-color: rgba(30, 207, 242, 0.9);
-  box-shadow: 
-    0 30px 60px -15px rgba(2, 178, 216, 0.20),
-    0 10px 20px -5px rgba(7, 49, 69, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 1) inset;
 }
 
-.spatial-card-hero {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(163, 242, 254, 0.85);
-  box-shadow: 
-    0 35px 70px -20px rgba(2, 178, 216, 0.22),
-    0 0 0 1px rgba(255, 255, 255, 0.95) inset;
-  border-radius: 2.25rem;
-}
-
-.spatial-badge {
-  background: rgba(204, 249, 255, 0.8);
-  border: 1px solid rgba(100, 229, 252, 0.8);
-  color: #0b7193;
-  box-shadow: 0 4px 14px 0 rgba(2, 178, 216, 0.12);
+html.dark .spatial-card:hover {
+  border-color: rgba(34, 211, 238, 0.4);
 }
 
 .spatial-header {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(163, 242, 254, 0.6);
   box-shadow: 0 4px 20px -4px rgba(2, 178, 216, 0.08);
 }
 
+html.dark .spatial-header {
+  background: rgba(5, 28, 39, 0.92);
+  border-bottom: 1px solid rgba(6, 182, 212, 0.2);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.4);
+}
+
 .spatial-sidebar {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-right: 1px solid rgba(163, 242, 254, 0.7);
+  border: 1px solid rgba(163, 242, 254, 0.7);
   box-shadow: 8px 0 30px -10px rgba(2, 178, 216, 0.10);
 }
 
-/* Ambient Floating Glow Orbs */
-.glow-orb-cyan {
-  position: absolute;
-  width: 380px;
-  height: 380px;
-  background: radial-gradient(circle, rgba(100, 229, 252, 0.35) 0%, rgba(2, 178, 216, 0.08) 50%, transparent 70%);
-  filter: blur(40px);
-  pointer-events: none;
-  z-index: 0;
+html.dark .spatial-sidebar {
+  background: rgba(7, 36, 51, 0.85);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  box-shadow: 8px 0 30px -10px rgba(0, 0, 0, 0.5);
 }
 
-.glow-orb-blue {
-  position: absolute;
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(30, 207, 242, 0.28) 0%, rgba(11, 113, 147, 0.06) 60%, transparent 75%);
-  filter: blur(50px);
-  pointer-events: none;
-  z-index: 0;
+/* Leaflet Custom Marker & Pulsing Glows */
+.pulse-emerald {
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulseEmerald 2s infinite;
+}
+@keyframes pulseEmerald {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-/* Animations */
-@keyframes floatSlow {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(0.5deg);
-  }
+.pulse-amber {
+  box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  animation: pulseAmber 2s infinite;
+}
+@keyframes pulseAmber {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
 }
 
-.animate-float-slow {
-  animation: floatSlow 6s ease-in-out infinite;
+.pulse-rose {
+  box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7);
+  animation: pulseRose 1.5s infinite;
+}
+@keyframes pulseRose {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(244, 63, 94, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
 }
 
-@keyframes pulseSubtle {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.03);
-  }
+.pulse-slate {
+  box-shadow: 0 0 0 0 rgba(148, 163, 184, 0.5);
 }
 
-.animate-pulse-subtle {
-  animation: pulseSubtle 3s ease-in-out infinite;
+.leaflet-popup-content-wrapper {
+  background: rgba(7, 36, 51, 0.95) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  border-radius: 1rem !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.6) !important;
+}
+.leaflet-popup-tip {
+  background: rgba(7, 36, 51, 0.95) !important;
 }

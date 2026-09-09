@@ -1,27 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { SystemConfigProvider } from './context/SystemConfigContext';
+import { LoginPage } from './components/LoginPage';
+import { OpsHeader } from './components/OpsHeader';
 import OpsSidebar from './components/OpsSidebar';
-import HeroSection from './components/HeroSection';
+import { DashboardOverview } from './components/DashboardOverview';
+import { GrafanaEmbeddedView } from './components/GrafanaEmbeddedView';
 import EntitiesManagement from './components/EntitiesManagement';
+import { UserManagement } from './components/UserManagement';
 import NodeManagement from './components/NodeManagement';
 import NodeProvisionWizard from './components/NodeProvisionWizard';
 import RecipientsManagement from './components/RecipientsManagement';
 import WhatIfSimulatorView from './components/WhatIfSimulatorView';
-import Footer from './components/Footer';
+import { AuditManagement } from './components/AuditManagement';
+import { SystemSettingsManagement } from './components/SystemSettingsManagement';
+import { ProfileModal } from './components/ProfileModal';
 import { nodesApi, alertsApi } from './services/api';
+import { Droplets } from 'lucide-react';
 
-export default function App() {
-  // 'public' (Landing Page) | 'ops' (Console Backoffice & Implementation)
-  const [viewMode, setViewMode] = useState('public');
-  
-  // Pasos dentro de 'ops': 'entities' | 'wizard' | 'nodes' | 'recipients' | 'simulator'
-  const [activeOpsTab, setActiveOpsTab] = useState('entities');
+function OpsConsoleContent() {
+  const { isAuthenticated, loading, user, hasRole } = useAuth();
+  const [activeOpsTab, setActiveOpsTab] = useState('dashboard');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const [stats, setStats] = useState({
     totalNodes: 0,
     onlineNodes: 0,
     totalSubscribers: 0,
-    leadTimeMin: 35
   });
 
   const getDynamicGrafanaUrl = () => {
@@ -29,11 +35,10 @@ export default function App() {
       return import.meta.env.VITE_GRAFANA_URL;
     }
     if (typeof window === 'undefined') return 'http://localhost:3000';
-    
+
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
-    
-    // Si estamos navegando por dominio (ej. sentinel.mguillermo.com)
+
     if (hostname.includes('.') && !/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
       const parts = hostname.split('.');
       if (parts.length >= 2) {
@@ -42,18 +47,18 @@ export default function App() {
       }
       return `${protocol}//grafana.${hostname}`;
     }
-    
-    // Si estamos navegando por IP pública directa (ej. 217.216.94.194)
+
     if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
       return `${protocol}//${hostname}:3000`;
     }
-    
+
     return `${protocol}//${hostname}:3000`;
   };
 
   const grafanaUrl = getDynamicGrafanaUrl();
 
   const fetchGlobalStats = async () => {
+    if (!isAuthenticated) return;
     try {
       const [nodesRes, recRes] = await Promise.all([
         nodesApi.getNodes(),
@@ -65,87 +70,130 @@ export default function App() {
         totalNodes: nodes.length,
         onlineNodes: online,
         totalSubscribers: (recRes.data || []).length,
-        leadTimeMin: 35
       });
     } catch (err) {
-      console.error("Error cargando estadísticas globales:", err);
+      console.error("Error cargando estadísticas de cuenca:", err);
     }
   };
 
   useEffect(() => {
-    fetchGlobalStats();
-  }, [viewMode, activeOpsTab]);
+    if (isAuthenticated) {
+      fetchGlobalStats();
+    }
+  }, [isAuthenticated]);
 
-  const handleStartImplementation = (targetTab = 'entities') => {
-    setActiveOpsTab(targetTab);
-    setViewMode('ops');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  return (
-    <div className="min-h-screen flex flex-col bg-[#f3fdfe] text-[#073145] font-['Plus_Jakarta_Sans',sans-serif]">
-      
-      {/* VISTA 1: PORTAL PÚBLICO (LANDING PAGE) */}
-      {viewMode === 'public' && (
-        <>
-          <Navbar setViewMode={setViewMode} />
-          
-          <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-            <HeroSection onStartImplementation={handleStartImplementation} />
-          </main>
-
-          <Footer 
-            grafanaUrl={grafanaUrl} 
-            onStartImplementation={handleStartImplementation} 
-          />
-        </>
-      )}
-
-      {/* VISTA 2: CONSOLA DE OPERACIONES & IMPLEMENTACIÓN (OPS SIDEBAR LAYOUT) */}
-      {viewMode === 'ops' && (
-        <div className="min-h-screen flex flex-col lg:flex-row p-3 sm:p-5 gap-6 max-w-[1600px] mx-auto w-full">
-          {/* Sidebar lateral en escritorio / Barra inferior en móvil */}
-          <OpsSidebar 
-            activeOpsTab={activeOpsTab}
-            setActiveOpsTab={setActiveOpsTab}
-            setViewMode={setViewMode}
-            grafanaUrl={grafanaUrl}
-          />
-
-          {/* Área de Trabajo de Gestión e Implementación */}
-          <main className="flex-1 w-full pb-20 lg:pb-6 overflow-y-auto">
-            {activeOpsTab === 'entities' && (
-              <EntitiesManagement onEntityCreated={fetchGlobalStats} />
-            )}
-
-            {activeOpsTab === 'wizard' && (
-              <NodeProvisionWizard 
-                setActiveTab={setActiveOpsTab}
-                onNodeCreated={() => {
-                  fetchGlobalStats();
-                  setActiveOpsTab('nodes');
-                }}
-              />
-            )}
-
-            {activeOpsTab === 'nodes' && (
-              <NodeManagement 
-                setActiveTab={setActiveOpsTab}
-                grafanaUrl={grafanaUrl}
-              />
-            )}
-
-            {activeOpsTab === 'recipients' && (
-              <RecipientsManagement />
-            )}
-
-            {activeOpsTab === 'simulator' && (
-              <WhatIfSimulatorView />
-            )}
-          </main>
+  // Pantalla de carga mientras se verifica la sesión
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#073145] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="inline-flex p-4 bg-cyan-950/80 border border-cyan-500/30 rounded-2xl animate-pulse">
+            <Droplets className="w-10 h-10 text-cyan-400" />
+          </div>
+          <div className="text-sm font-mono text-cyan-200/80 tracking-widest uppercase">
+            Cargando Consola Sentinel-H2O...
+          </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
+  // Si no está autenticado, renderizar la pantalla de Login
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  // Usuario autenticado: Consola de Operaciones y Gobernanza Pura
+  return (
+    <div className="min-h-screen font-sans flex flex-col transition-colors duration-300">
+      <OpsHeader 
+        onOpenProfile={() => setIsProfileOpen(true)} 
+        grafanaUrl={grafanaUrl}
+      />
+
+      <div className="flex-1 flex flex-col lg:flex-row p-3 sm:p-5 gap-6 max-w-[1750px] mx-auto w-full">
+        {/* Barra lateral con filtrado de roles RBAC y colapso inteligente */}
+        <OpsSidebar
+          activeOpsTab={activeOpsTab}
+          setActiveOpsTab={setActiveOpsTab}
+          grafanaUrl={grafanaUrl}
+        />
+
+        {/* Espacio de trabajo activo */}
+        <main className="flex-1 w-full pb-20 lg:pb-6 overflow-y-auto">
+          {activeOpsTab === 'dashboard' && (
+            <DashboardOverview
+              setActiveTab={setActiveOpsTab}
+              grafanaUrl={grafanaUrl}
+            />
+          )}
+
+          {activeOpsTab === 'grafana_embed' && (
+            <GrafanaEmbeddedView
+              grafanaBaseUrl={grafanaUrl}
+            />
+          )}
+
+          {activeOpsTab === 'entities' && hasRole('ADMIN_SISTEMA') && (
+            <EntitiesManagement onEntityCreated={fetchGlobalStats} />
+          )}
+
+          {activeOpsTab === 'users' && hasRole(['ADMIN_SISTEMA', 'OPERADOR_JUNTA']) && (
+            <UserManagement />
+          )}
+
+          {activeOpsTab === 'wizard' && hasRole(['ADMIN_SISTEMA', 'OPERADOR_JUNTA']) && (
+            <NodeProvisionWizard
+              setActiveTab={setActiveOpsTab}
+              onNodeCreated={() => {
+                fetchGlobalStats();
+                setActiveOpsTab('nodes');
+              }}
+            />
+          )}
+
+          {activeOpsTab === 'nodes' && (
+            <NodeManagement
+              setActiveTab={setActiveOpsTab}
+              grafanaUrl={grafanaUrl}
+            />
+          )}
+
+          {activeOpsTab === 'recipients' && hasRole(['ADMIN_SISTEMA', 'OPERADOR_JUNTA', 'TOMERO_COMISION']) && (
+            <RecipientsManagement />
+          )}
+
+          {activeOpsTab === 'simulator' && (
+            <WhatIfSimulatorView />
+          )}
+
+          {activeOpsTab === 'audit' && hasRole('ADMIN_SISTEMA') && (
+            <AuditManagement />
+          )}
+
+          {activeOpsTab === 'settings' && hasRole('ADMIN_SISTEMA') && (
+            <SystemSettingsManagement />
+          )}
+        </main>
+      </div>
+
+      {/* Modal de Edición de Perfil */}
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <SystemConfigProvider>
+        <AuthProvider>
+          <OpsConsoleContent />
+        </AuthProvider>
+      </SystemConfigProvider>
+    </ThemeProvider>
   );
 }

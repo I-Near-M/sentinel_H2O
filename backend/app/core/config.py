@@ -28,8 +28,11 @@ class Settings(BaseSettings):
     # Hardware SIM800L SMS Fallback
     ENABLE_SIM800L_EDGE_SMS: bool = True
 
-    # Seguridad y Clave Maestra de API
+    # Seguridad, JWT y Clave Maestra de API
     MASTER_API_KEY: str = "sentinel_h2o_master_secret_2026"
+    JWT_SECRET_KEY: str = "sentinel_h2o_jwt_super_secret_key_2026_cuenca"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 horas de vigencia
     ALLOWED_ORIGINS: Union[List[str], str] = ["*"]
 
     @field_validator("ALLOWED_ORIGINS", mode="before")

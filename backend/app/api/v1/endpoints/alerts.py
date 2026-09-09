@@ -98,11 +98,14 @@ def register_recipient(dest_in: DestinatarioCreate, db: Session = Depends(get_db
 
 
 @router.get("/recipients", response_model=List[DestinatarioOut])
-def list_recipients(db: Session = Depends(get_db)):
+def list_recipients(include_inactive: bool = False, db: Session = Depends(get_db)):
     """
     Lista todos los usuarios suscritos a alertas segmentadas por entidad y nodo.
     """
-    destinatarios = db.query(DestinatarioAlerta).order_by(DestinatarioAlerta.id_destinatario.desc()).all()
+    query = db.query(DestinatarioAlerta)
+    if not include_inactive:
+        query = query.filter(DestinatarioAlerta.activo == True)
+    destinatarios = query.order_by(DestinatarioAlerta.id_destinatario.desc()).all()
     return destinatarios
 
 
@@ -121,6 +124,7 @@ def update_recipient(id_destinatario: int, update_in: DestinatarioUpdate, db: Se
     for field, value in update_in.model_dump(exclude_unset=True).items():
         setattr(dest, field, value)
 
+    dest.updated_at = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
     db.refresh(dest)
     return dest
@@ -129,7 +133,7 @@ def update_recipient(id_destinatario: int, update_in: DestinatarioUpdate, db: Se
 @router.delete("/recipients/{id_destinatario}", status_code=status.HTTP_200_OK)
 def delete_recipient(id_destinatario: int, db: Session = Depends(get_db)):
     """
-    Elimina o desuscribe a un destinatario de alertas.
+    Desactiva lógicamente (soft-delete) a un destinatario de alertas para mantener el historial de turnos y eventos.
     """
     dest = db.query(DestinatarioAlerta).filter(DestinatarioAlerta.id_destinatario == id_destinatario).first()
     if not dest:
@@ -138,9 +142,10 @@ def delete_recipient(id_destinatario: int, db: Session = Depends(get_db)):
             detail=f"El destinatario con ID {id_destinatario} no existe."
         )
 
-    db.delete(dest)
+    dest.activo = False
+    dest.updated_at = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
-    return {"status": "SUCCESS", "message": f"Destinatario '{dest.nombre_completo}' eliminado con éxito."}
+    return {"status": "SUCCESS", "message": f"Destinatario '{dest.nombre_completo}' desactivado con éxito."}
 
 
 @router.post("/test-whatsapp")

@@ -7,12 +7,22 @@ from pydantic import BaseModel, ConfigDict, Field
 # SCHEMAS DE ENTIDADES GESTORAS
 # ============================================================================
 class EntityCreateIn(BaseModel):
-    nombre_entidad: str = Field(..., description="Nombre oficial de la entidad (ej: Junta de Usuarios del Sector Hidráulico Chancay-Huaral)")
-    tipo_entidad: str = Field(default="JUNTA_USUARIOS", description="GUBERNAMENTAL_ANA, JUNTA_USUARIOS, COMISION_REGANTES, ASOCIACION_AGRICULTORES, PRIVADO")
+    nombre_entidad: str = Field(..., description="Nombre oficial de la entidad (ej: Junta de Usuarios del Sector Hidráulico)")
+    tipo_entidad: str = Field(default="JUNTA_USUARIOS", description="Tipo de entidad gestora")
     ruc: Optional[str] = Field(None, description="RUC o Identificador Fiscal de la Entidad")
     telefono_contacto: Optional[str] = Field(None, description="Teléfono de contacto")
     email_contacto: Optional[str] = Field(None, description="Email de contacto")
     direccion: Optional[str] = Field(None, description="Dirección de la sede")
+
+
+class EntityUpdateIn(BaseModel):
+    nombre_entidad: Optional[str] = None
+    tipo_entidad: Optional[str] = None
+    ruc: Optional[str] = None
+    telefono_contacto: Optional[str] = None
+    email_contacto: Optional[str] = None
+    direccion: Optional[str] = None
+    activo: Optional[bool] = None
 
 
 class EntityOut(BaseModel):
@@ -23,6 +33,7 @@ class EntityOut(BaseModel):
     telefono_contacto: Optional[str] = None
     email_contacto: Optional[str] = None
     direccion: Optional[str] = None
+    activo: bool = True
 
     model_config = ConfigDict(from_attributes=True)
 

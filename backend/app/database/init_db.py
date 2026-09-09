@@ -14,7 +14,13 @@ def seed_mvp_demo_nodes(db: Session):
     if db.query(Nodo).first():
         return
 
-    logger.info("Sembrando los 3 nodos MVP de demostración...")
+    logger.info("Sembrando entidades y los 3 nodos MVP de demostración para pruebas...")
+    if db.query(Entidad).count() == 0:
+        e1 = Entidad(id_entidad=1, nombre_entidad="Autoridad Nacional del Agua (ANA)", tipo_entidad="GUBERNAMENTAL_ANA")
+        e2 = Entidad(id_entidad=2, nombre_entidad="Junta de Usuarios del Sector Hidráulico Chancay-Huaral", tipo_entidad="JUNTA_USUARIOS")
+        e3 = Entidad(id_entidad=3, nombre_entidad="Comisión de Regantes Huayopampa", tipo_entidad="COMISION_REGANTES")
+        db.add_all([e1, e2, e3])
+        db.commit()
     n1 = Nodo(
         id_nodo="NODO-01-CABECERA",
         id_entidad_responsable=1,
