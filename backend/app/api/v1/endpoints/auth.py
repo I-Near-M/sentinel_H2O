@@ -1,11 +1,12 @@
 import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Query
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from backend.app.database.session import get_db
 from backend.app.database.models import Usuario, Entidad, AuditoriaLog, ConfiguracionSistema
-from backend.app.core.security import hash_password, verify_password, create_access_token
+from backend.app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 from backend.app.core.config import settings
 from backend.app.schemas.auth import (
     LoginRequest, TokenResponse, UserResponse, UserCreate, UserUpdate, ProfileUpdate, AdminBootstrap, AuditLogResponse
@@ -387,3 +388,100 @@ def get_audit_logs(
     
     logs = query.order_by(AuditoriaLog.timestamp.desc()).offset(offset).limit(limit).all()
     return logs
+
+
+# -------------------------------------------------------------------------------------------------
+# SINGLE SIGN-ON (SSO) & AUTH PROXY INTEGRATION CON GRAFANA
+# -------------------------------------------------------------------------------------------------
+@router.get("/grafana-sso")
+def grafana_sso_launcher(
+    token: Optional[str] = Query(None),
+    redirect_to: Optional[str] = Query("/grafana/"),
+    request: Request = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Punto de entrada SSO para acceder a Grafana con un solo clic.
+    Establece la cookie segura 'sentinel_sso_token' y redirige a la interfaz de Grafana.
+    """
+    target_token = token
+    if not target_token and request:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            target_token = auth_header.replace("Bearer ", "").strip()
+        elif "sentinel_sso_token" in request.cookies:
+            target_token = request.cookies.get("sentinel_sso_token")
+
+    response = RedirectResponse(url=redirect_to, status_code=status.HTTP_302_FOUND)
+    
+    if target_token:
+        # Validar que el token sea legítimo antes de setear la cookie
+        payload = decode_access_token(target_token)
+        if payload and "sub" in payload:
+            response.set_cookie(
+                key="sentinel_sso_token",
+                value=target_token,
+                httponly=True,
+                samesite="lax",
+                max_age=86400 * 7,
+                path="/"
+            )
+    return response
+
+
+@router.get("/auth-proxy-verify")
+def auth_proxy_verify(request: Request, db: Session = Depends(get_db)):
+    """
+    Subconsulta de autenticación invocada por Nginx (auth_request).
+    Lee la cookie 'sentinel_sso_token' o la cabecera 'Authorization',
+    valida la sesión activa y retorna las cabeceras de identidad X-WEBAUTH-*
+    para que Grafana auto-cree/autentique al usuario con su rol real (Admin/Editor/Viewer).
+    """
+    token = None
+    if "sentinel_sso_token" in request.cookies:
+        token = request.cookies.get("sentinel_sso_token")
+    elif "Authorization" in request.headers:
+        auth_header = request.headers["Authorization"]
+        if auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "").strip()
+    elif "token" in request.query_params:
+        token = request.query_params.get("token")
+
+    if not token:
+        # Retornar 200 sin cabeceras para que Grafana active el usuario anónimo (Viewer)
+        return Response(status_code=status.HTTP_200_OK)
+
+    payload = decode_access_token(token)
+    if not payload or "sub" not in payload:
+        return Response(status_code=status.HTTP_200_OK)
+
+    user_id = payload.get("sub")
+    user = None
+    try:
+        user_id_int = int(user_id)
+        user = db.query(Usuario).filter(Usuario.id_usuario == user_id_int, Usuario.activo == True).first()
+    except (ValueError, TypeError):
+        user = db.query(Usuario).filter(Usuario.email == str(user_id), Usuario.activo == True).first()
+
+    if not user:
+        return Response(status_code=status.HTTP_200_OK)
+
+    # Mapeo de roles de Sentinel-H2O a Grafana
+    # ADMIN_SISTEMA -> Admin
+    # OPERADOR_JUNTA -> Editor
+    # TOMERO_COMISION, AUDITOR_VISOR -> Viewer
+    if user.rol == "ADMIN_SISTEMA":
+        grafana_role = "Admin"
+    elif user.rol == "OPERADOR_JUNTA":
+        grafana_role = "Editor"
+    else:
+        grafana_role = "Viewer"
+
+    headers = {
+        "X-WEBAUTH-USER": user.email,
+        "X-WEBAUTH-NAME": user.nombre_completo or user.email,
+        "X-WEBAUTH-EMAIL": user.email,
+        "X-WEBAUTH-ROLE": grafana_role,
+    }
+    return Response(status_code=status.HTTP_200_OK, headers=headers)
+

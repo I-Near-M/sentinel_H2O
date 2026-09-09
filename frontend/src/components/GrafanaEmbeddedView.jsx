@@ -57,7 +57,9 @@ export const GrafanaEmbeddedView = ({ grafanaBaseUrl = 'http://localhost:3000' }
   
   // URL exacta del dashboard seleccionado
   const iframeSrc = `${cleanBaseUrl}/d/${selectedUid}?orgId=1&from=${timeRange}&to=now${refreshParam}&theme=${grafanaTheme}${kioskParam}`;
-  const externalHref = `${cleanBaseUrl}/d/${selectedUid}?orgId=1&from=${timeRange}&to=now`;
+  const token = (typeof localStorage !== 'undefined' && localStorage.getItem('sentinel_token')) || '';
+  const directHref = `${cleanBaseUrl}/d/${selectedUid}?orgId=1&from=${timeRange}&to=now`;
+  const externalHref = `/api/v1/auth/grafana-sso?token=${encodeURIComponent(token)}&redirect_to=${encodeURIComponent(directHref)}`;
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);

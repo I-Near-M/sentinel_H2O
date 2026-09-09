@@ -111,31 +111,17 @@ function OpsConsoleContent() {
   });
 
   const getDynamicGrafanaUrl = () => {
-    if (import.meta.env.VITE_GRAFANA_URL && import.meta.env.VITE_GRAFANA_URL !== 'http://localhost:3000') {
-      return import.meta.env.VITE_GRAFANA_URL;
-    }
-    if (typeof window === 'undefined') return 'http://localhost:3000';
-
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
-
-    if (hostname.includes('.') && !/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      const parts = hostname.split('.');
-      if (parts.length >= 2) {
-        parts[0] = 'grafana';
-        return `${protocol}//${parts.join('.')}`;
-      }
-      return `${protocol}//grafana.${hostname}`;
-    }
-
-    if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      return `${protocol}//${hostname}:3000`;
-    }
-
-    return `${protocol}//${hostname}:3000`;
+    return '/grafana';
   };
 
-  const grafanaUrl = getDynamicGrafanaUrl();
+  const getGrafanaSsoUrl = (targetPath = '/grafana/') => {
+    const token = (typeof localStorage !== 'undefined' && localStorage.getItem('sentinel_token')) || '';
+    const redirectTarget = targetPath.startsWith('/grafana') ? targetPath : `/grafana${targetPath.startsWith('/') ? '' : '/'}${targetPath}`;
+    return `/api/v1/auth/grafana-sso?token=${encodeURIComponent(token)}&redirect_to=${encodeURIComponent(redirectTarget)}`;
+  };
+
+  const grafanaBaseUrl = getDynamicGrafanaUrl();
+  const grafanaSsoUrl = getGrafanaSsoUrl('/grafana/');
 
   const fetchGlobalStats = async () => {
     if (!isAuthenticated) return;
@@ -188,7 +174,7 @@ function OpsConsoleContent() {
     <div className="min-h-screen font-sans flex flex-col transition-colors duration-300">
       <OpsHeader 
         onOpenProfile={() => setIsProfileOpen(true)} 
-        grafanaUrl={grafanaUrl}
+        grafanaUrl={grafanaSsoUrl}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row p-3 sm:p-5 gap-6 max-w-[1750px] mx-auto w-full">
@@ -196,7 +182,7 @@ function OpsConsoleContent() {
         <OpsSidebar
           activeOpsTab={activeOpsTab}
           setActiveOpsTab={setActiveOpsTab}
-          grafanaUrl={grafanaUrl}
+          grafanaUrl={grafanaSsoUrl}
         />
 
         {/* Espacio de trabajo activo */}
@@ -204,13 +190,13 @@ function OpsConsoleContent() {
           {activeOpsTab === 'dashboard' && (
             <DashboardOverview
               setActiveTab={setActiveOpsTab}
-              grafanaUrl={grafanaUrl}
+              grafanaUrl={grafanaSsoUrl}
             />
           )}
 
           {activeOpsTab === 'grafana_embed' && (
             <GrafanaEmbeddedView
-              grafanaBaseUrl={grafanaUrl}
+              grafanaBaseUrl={grafanaBaseUrl}
             />
           )}
 
@@ -235,7 +221,7 @@ function OpsConsoleContent() {
           {activeOpsTab === 'nodes' && (
             <NodeManagement
               setActiveTab={setActiveOpsTab}
-              grafanaUrl={grafanaUrl}
+              grafanaUrl={grafanaSsoUrl}
             />
           )}
 
