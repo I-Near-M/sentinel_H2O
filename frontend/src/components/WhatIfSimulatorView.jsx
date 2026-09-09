@@ -148,7 +148,7 @@ const WhatIfSimulatorView = () => {
   // -------------------------------------------------------------------------
   // 6. ENA INTENTIONS FEASIBILITY STATE
   // -------------------------------------------------------------------------
-  const [enaFlow, setEnaFlow] = useState(1.10);
+  const [enaFlow, setEnaFlow] = useState(18.5);
   const [enaIrrigation, setEnaIrrigation] = useState('gravity');
   const [enaResult, setEnaResult] = useState(null);
   const [loadingEna, setLoadingEna] = useState(false);
@@ -617,20 +617,35 @@ const WhatIfSimulatorView = () => {
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-600 dark:text-slate-300 font-medium">Caudal de Transporte (Q):</span>
-                    <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">{cascadeFlow.toFixed(2)} m³/s</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-700 dark:text-slate-300 font-bold">Caudal de Transporte (Q):</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0.1"
+                        max="100"
+                        step="0.25"
+                        value={cascadeFlow}
+                        onChange={(e) => setCascadeFlow(Math.max(0.05, parseFloat(e.target.value) || 0.1))}
+                        className="w-20 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-right text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 focus:outline-none"
+                      />
+                      <span className="font-mono font-bold text-slate-700 dark:text-slate-300">m³/s</span>
+                    </div>
                   </div>
                   <input
                     type="range"
                     min="0.10"
-                    max="8.00"
-                    step="0.05"
-                    value={cascadeFlow}
+                    max="50.00"
+                    step="0.25"
+                    value={Math.min(50.0, cascadeFlow)}
                     onChange={(e) => setCascadeFlow(parseFloat(e.target.value))}
                     className="w-full accent-cyan-500 bg-slate-200 dark:bg-slate-950 h-2 rounded-lg cursor-pointer"
                   />
+                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    <span>Estiaje (0.1 m³/s)</span>
+                    <span>Crecida Ordinaria (50.0 m³/s)</span>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -992,17 +1007,28 @@ const WhatIfSimulatorView = () => {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-600 dark:text-slate-300 font-medium">Caudal Base en Río:</span>
-                    <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">{dilutionCurrentFlow.toFixed(2)} m³/s</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-700 dark:text-slate-300 font-bold">Caudal Base en Río:</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0.1"
+                        max="100"
+                        step="0.25"
+                        value={dilutionCurrentFlow}
+                        onChange={(e) => setDilutionCurrentFlow(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                        className="w-20 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-right text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 focus:outline-none"
+                      />
+                      <span className="font-mono font-bold text-slate-700 dark:text-slate-300">m³/s</span>
+                    </div>
                   </div>
                   <input
                     type="range"
                     min="0.20"
-                    max="5.00"
-                    step="0.05"
-                    value={dilutionCurrentFlow}
+                    max="50.00"
+                    step="0.25"
+                    value={Math.min(50.0, dilutionCurrentFlow)}
                     onChange={(e) => setDilutionCurrentFlow(parseFloat(e.target.value))}
                     className="w-full accent-cyan-500 bg-slate-200 dark:bg-slate-950 h-2 rounded-lg cursor-pointer"
                   />
@@ -1124,20 +1150,36 @@ const WhatIfSimulatorView = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-600 dark:text-slate-300 font-medium">Caudal Asignado (Q):</span>
-                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{availableFlow.toFixed(2)} m³/s ({(availableFlow * 1000).toFixed(0)} l/s)</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-700 dark:text-slate-300 font-bold">Caudal Asignado (Q):</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0.1"
+                        max="150"
+                        step="0.25"
+                        value={availableFlow}
+                        onChange={(e) => setAvailableFlow(Math.max(0.05, parseFloat(e.target.value) || 0.1))}
+                        className="w-20 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-right text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 focus:outline-none"
+                      />
+                      <span className="font-mono font-bold text-slate-700 dark:text-slate-300">m³/s</span>
+                    </div>
                   </div>
                   <input
                     type="range"
                     min="0.10"
-                    max="5.00"
-                    step="0.05"
-                    value={availableFlow}
+                    max="50.00"
+                    step="0.25"
+                    value={Math.min(50.0, availableFlow)}
                     onChange={(e) => setAvailableFlow(parseFloat(e.target.value))}
                     className="w-full accent-emerald-500 bg-slate-200 dark:bg-slate-950 h-2 rounded-lg cursor-pointer"
                   />
+                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    <span>Canal Menor (0.1 m³/s)</span>
+                    <span className="text-cyan-600 dark:text-cyan-400 font-bold">≈ {((availableFlow * 86400 * 365) / 1000000).toFixed(1)} MMC/año</span>
+                    <span>Río Principal (50.0 m³/s)</span>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -1690,20 +1732,36 @@ const WhatIfSimulatorView = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-600 dark:text-slate-300 font-medium">Caudal Asignado a la Cuenca:</span>
-                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{enaFlow.toFixed(2)} m³/s</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-700 dark:text-slate-300 font-bold">Caudal Asignado a la Cuenca / Región (Q):</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0.1"
+                        max="300"
+                        step="0.5"
+                        value={enaFlow}
+                        onChange={(e) => setEnaFlow(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                        className="w-20 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-right text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 focus:outline-none"
+                      />
+                      <span className="font-mono font-bold text-slate-700 dark:text-slate-300">m³/s</span>
+                    </div>
                   </div>
                   <input
                     type="range"
-                    min="0.20"
-                    max="5.00"
-                    step="0.05"
-                    value={enaFlow}
+                    min="0.5"
+                    max="100.0"
+                    step="0.5"
+                    value={Math.min(100.0, enaFlow)}
                     onChange={(e) => setEnaFlow(parseFloat(e.target.value))}
                     className="w-full accent-emerald-500 bg-slate-200 dark:bg-slate-950 h-2 rounded-lg cursor-pointer"
                   />
+                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    <span>Estiaje Valle (0.5 m³/s)</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">≈ {((enaFlow * 86400 * 365) / 1000000).toFixed(1)} MMC / año</span>
+                    <span>Macro-Cuenca (100.0 m³/s)</span>
+                  </div>
                 </div>
 
                 <div className="space-y-1">

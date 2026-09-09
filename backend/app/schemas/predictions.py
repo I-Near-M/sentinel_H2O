@@ -168,7 +168,7 @@ class CascadeLeadTimeResponse(BaseModel):
 class DilutionPrescriptionRequest(BaseModel):
     id_nodo_cabecera: Optional[str] = Field("NODO-01-CABECERA", description="Nodo de cabecera")
     salinidad_actual_rio_ec: float = Field(..., ge=200.0, le=10000.0, description="Salinidad actual detectada en río (uS/cm)")
-    caudal_actual_rio_m3s: float = Field(..., ge=0.1, le=100.0, description="Caudal actual del río (m³/s)")
+    caudal_actual_rio_m3s: float = Field(..., ge=0.1, le=500.0, description="Caudal actual del río (m³/s)")
     salinidad_objetivo_ec: float = Field(1000.0, ge=200.0, le=3000.0, description="Salinidad meta para entrega segura (uS/cm)")
     salinidad_agua_represa_ec: float = Field(150.0, ge=50.0, le=500.0, description="Salinidad de reserva pura en represa (uS/cm)")
     duracion_lavado_horas: int = Field(8, ge=1, le=48, description="Ventana de lavado deseada en horas")
@@ -294,7 +294,7 @@ class CropSuitabilityResponse(BaseModel):
 class AgroScenarioWhatIfRequest(BaseModel):
     titulo_escenario: Optional[str] = Field("Simulación Agro-Hídrica MIDAGRI", description="Título descriptivo del escenario")
     crop_distribution_ha: Dict[str, float] = Field(..., description="Distribución de hectáreas por cultivo (ej: {'palto': 120, 'mandarina': 80})")
-    available_flow_m3s: float = Field(..., ge=0.01, le=100.0, description="Caudal disponible de río/canal para agricultura en m³/s")
+    available_flow_m3s: float = Field(..., ge=0.01, le=500.0, description="Caudal disponible de río/canal para agricultura en m³/s")
     ec_us_cm: float = Field(..., ge=50.0, le=15000.0, description="Conductividad eléctrica del agua en uS/cm")
     ph: Optional[float] = Field(7.2, ge=3.0, le=11.0, description="pH del agua de riego")
     turbidity_ntu: Optional[float] = Field(20.0, ge=0.0, le=3000.0, description="Turbidez en NTU")
@@ -394,7 +394,7 @@ class WaterQualityStressSimulationResponse(BaseModel):
 
 class PlantingIntentionsFeasibilityRequest(BaseModel):
     region: str = Field("LIMA", description="Departamento a evaluar")
-    available_flow_m3s: float = Field(1.20, ge=0.01, le=100.0, description="Caudal asignado al valle/región en m³/s")
+    available_flow_m3s: float = Field(15.0, ge=0.01, le=500.0, description="Caudal asignado al valle/región en m³/s")
     irrigation_type: str = Field("gravity", description="Tecnología de riego ('gravity', 'sprinkler', 'drip')")
     simulated_duration_days: int = Field(365, ge=30, le=730, description="Días de campaña agraria")
 
