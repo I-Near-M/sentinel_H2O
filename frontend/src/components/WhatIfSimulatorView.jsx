@@ -73,13 +73,53 @@ const REGIONS_BY_ZONE = {
   ]
 };
 
+const VALID_SIMULATOR_TABS = [
+  'cascade_leadtime',
+  'mita_audit',
+  'dilution_prescribe',
+  'cedula_whatif',
+  'stress_whatif',
+  'ena_intentions',
+  'midagri_kpis'
+];
+
+const getInitialSimulatorTab = () => {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('sentinel_simulator_tab');
+    if (stored && VALID_SIMULATOR_TABS.includes(stored)) {
+      return stored;
+    }
+  }
+  return 'cascade_leadtime';
+};
+
 const WhatIfSimulatorView = () => {
   // Navigation: 7 prioritized simulation modules
-  const [activeTab, setActiveTab] = useState('cascade_leadtime'); 
+  const [activeTab, setActiveTabState] = useState(getInitialSimulatorTab); 
   // 'cascade_leadtime' | 'mita_audit' | 'dilution_prescribe' | 'cedula_whatif' | 'stress_whatif' | 'ena_intentions' | 'midagri_kpis'
 
-  const [selectedRegion, setSelectedRegion] = useState('LIMA');
-  const [naturalZoneFilter, setNaturalZoneFilter] = useState('TODAS');
+  const setActiveTab = (tab) => {
+    if (VALID_SIMULATOR_TABS.includes(tab)) {
+      setActiveTabState(tab);
+      localStorage.setItem('sentinel_simulator_tab', tab);
+    }
+  };
+
+  const [selectedRegion, setSelectedRegionState] = useState(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('sentinel_simulator_region')) || 'LIMA';
+  });
+  const setSelectedRegion = (reg) => {
+    setSelectedRegionState(reg);
+    localStorage.setItem('sentinel_simulator_region', reg);
+  };
+
+  const [naturalZoneFilter, setNaturalZoneFilterState] = useState(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('sentinel_simulator_zone')) || 'TODAS';
+  });
+  const setNaturalZoneFilter = (zone) => {
+    setNaturalZoneFilterState(zone);
+    localStorage.setItem('sentinel_simulator_zone', zone);
+  };
   const [nodes, setNodes] = useState([]);
   const [cropsCatalog, setCropsCatalog] = useState([]);
   const [regionalBenchmark, setRegionalBenchmark] = useState(null);

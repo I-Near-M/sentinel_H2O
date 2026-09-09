@@ -21,7 +21,19 @@ export const GrafanaEmbeddedView = ({ grafanaBaseUrl = 'http://localhost:3000' }
         }
       ];
 
-  const [selectedUid, setSelectedUid] = useState(dashboardsList[0]?.uid || 'sentinel-01-cuenca');
+  const [selectedUid, setSelectedUidState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('sentinel_grafana_dashboard_uid');
+      if (stored) return stored;
+    }
+    return dashboardsList[0]?.uid || 'sentinel-01-cuenca';
+  });
+
+  const setSelectedUid = (uid) => {
+    setSelectedUidState(uid);
+    localStorage.setItem('sentinel_grafana_dashboard_uid', uid);
+  };
+
   const [timeRange, setTimeRange] = useState('now-24h');
   const [refreshInterval, setRefreshInterval] = useState('30s');
   const [isKiosk, setIsKiosk] = useState(true);

@@ -19,10 +19,90 @@ import { ProfileModal } from './components/ProfileModal';
 import { nodesApi, alertsApi } from './services/api';
 import { Droplets } from 'lucide-react';
 
+const VALID_OPS_TABS = [
+  'dashboard',
+  'entities',
+  'users',
+  'wizard',
+  'nodes',
+  'grafana_embed',
+  'recipients',
+  'simulator',
+  'audit',
+  'settings'
+];
+
+const getInitialOpsTab = () => {
+  if (typeof window !== 'undefined') {
+    const hash = window.location.hash.replace(/^#\/?/, '').trim();
+    if (hash && VALID_OPS_TABS.includes(hash)) {
+      return hash;
+    }
+    const stored = localStorage.getItem('sentinel_active_tab');
+    if (stored && VALID_OPS_TABS.includes(stored)) {
+      return stored;
+    }
+  }
+  return 'dashboard';
+};
+
 function OpsConsoleContent() {
   const { isAuthenticated, loading, user, hasRole } = useAuth();
-  const [activeOpsTab, setActiveOpsTab] = useState('dashboard');
+  const [activeOpsTab, setActiveOpsTabState] = useState(getInitialOpsTab);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const setActiveOpsTab = (tab) => {
+    if (VALID_OPS_TABS.includes(tab)) {
+      setActiveOpsTabState(tab);
+      localStorage.setItem('sentinel_active_tab', tab);
+      if (typeof window !== 'undefined' && window.location.hash !== `#${tab}`) {
+        window.history.replaceState(null, '', `#${tab}`);
+      }
+    }
+  };
+
+  // Sincronizar si el usuario navega con botones de atrás/adelante del navegador
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (hash && VALID_OPS_TABS.includes(hash) && hash !== activeOpsTab) {
+        setActiveOpsTabState(hash);
+        localStorage.setItem('sentinel_active_tab', hash);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [activeOpsTab]);
+
+  // Asegurar que el hash refleje la pestaña activa inicial
+  useEffect(() => {
+    if (isAuthenticated && activeOpsTab) {
+      localStorage.setItem('sentinel_active_tab', activeOpsTab);
+      if (typeof window !== 'undefined' && window.location.hash !== `#${activeOpsTab}`) {
+        window.history.replaceState(null, '', `#${activeOpsTab}`);
+      }
+    }
+  }, [isAuthenticated, activeOpsTab]);
+
+  // Validar permisos RBAC y redirigir si el rol no tiene acceso a la pestaña solicitada
+  useEffect(() => {
+    if (!isAuthenticated || loading) return;
+
+    const roleRequirements = {
+      entities: ['ADMIN_SISTEMA'],
+      users: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA'],
+      wizard: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA'],
+      recipients: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA', 'TOMERO_COMISION'],
+      audit: ['ADMIN_SISTEMA'],
+      settings: ['ADMIN_SISTEMA'],
+    };
+
+    const required = roleRequirements[activeOpsTab];
+    if (required && !hasRole(required)) {
+      setActiveOpsTab('dashboard');
+    }
+  }, [isAuthenticated, loading, activeOpsTab, hasRole]);
 
   const [stats, setStats] = useState({
     totalNodes: 0,
