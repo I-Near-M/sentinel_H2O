@@ -49,7 +49,7 @@ class WeatherSyncWorker:
     async def sync_all_nodes(self):
         db: Session = SessionLocal()
         try:
-            nodos = db.query(Nodo).filter(Nodo.estado == "ACTIVO").all()
+            nodos = db.query(Nodo).filter(Nodo.activo == True).all()
             if not nodos:
                 # Si no hay nodos activos explícitos, buscar todos los nodos
                 nodos = db.query(Nodo).all()
