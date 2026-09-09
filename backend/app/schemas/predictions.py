@@ -211,19 +211,23 @@ class MitaAuditResponse(BaseModel):
     dictamen_auditoria: str
 
 
-# =========================================================================
+# # =========================================================================
 # ESQUEMAS PARA INTELIGENCIA AGRO-HÍDRICA & DECISIONES MIDAGRI
 # =========================================================================
 
 class AgroCropItem(BaseModel):
     crop_id: str
     name: str
+    region_natural: Optional[str] = "Costa"
     category: str
     water_demand_m3_ha: float
     ec_threshold_us_cm: float
     salinity_slope_pct: float
     ph_min: float
     ph_max: float
+    turbidity_max_ntu: Optional[float] = 100.0
+    temp_min_c: Optional[float] = 12.0
+    temp_max_c: Optional[float] = 30.0
     wqi_min: float
     growth_cycle_days: int
     base_yield_kg_ha: float
@@ -242,16 +246,20 @@ class AgroRegionalBenchmarkResponse(BaseModel):
 
 class CropSuitabilityRequest(BaseModel):
     crop_id: Optional[str] = Field(None, description="ID del cultivo (opcional; si se omite evalúa todo el catálogo)")
-    ec_us_cm: float = Field(..., ge=50.0, le=12000.0, description="Conductividad eléctrica del agua en uS/cm")
+    ec_us_cm: float = Field(..., ge=50.0, le=15000.0, description="Conductividad eléctrica del agua en uS/cm")
     ph: float = Field(7.2, ge=3.0, le=11.0, description="pH del agua de riego")
-    wqi: float = Field(75.0, ge=0.0, le=100.0, description="Índice de Calidad del Agua WQI")
+    turbidity_ntu: Optional[float] = Field(20.0, ge=0.0, le=3000.0, description="Turbidez en NTU")
+    temp_water_c: Optional[float] = Field(18.5, ge=5.0, le=45.0, description="Temperatura del agua en °C")
+    wqi: Optional[float] = Field(75.0, ge=0.0, le=100.0, description="Índice de Calidad del Agua WQI")
     water_availability_ratio: float = Field(1.0, ge=0.0, le=2.0, description="Ratio Oferta/Demanda de agua (1.0 = 100% abastecimiento)")
     region: str = Field("LIMA", description="Región o departamento de referencia")
+    natural_region: Optional[str] = Field(None, description="Filtrar por región natural ('Costa', 'Sierra', 'Selva')")
 
 
 class CropSuitabilityItem(BaseModel):
     crop_id: str
     crop_name: str
+    region_natural: Optional[str] = "Costa"
     category: str
     suitability_score: float
     status: str
@@ -259,15 +267,18 @@ class CropSuitabilityItem(BaseModel):
     resilience_level: str
     stress_factor_ks: float
     salinity_retention_pct: float
-    water_availability_pct: float
-    wqi_factor_pct: float
     ph_factor_pct: float
+    turbidity_factor_pct: Optional[float] = 100.0
+    temperature_factor_pct: Optional[float] = 100.0
+    water_availability_pct: float
     expected_yield_kg_ha: float
     base_yield_kg_ha: float
     regional_mean_yield_kg_ha: float
     farmgate_price_s_kg: float
     water_demand_m3_ha: float
     ec_threshold_us_cm: float
+    extra_filtration_cost_s_ha: Optional[float] = 0.0
+    diagnostics: Optional[Dict[str, Any]] = None
     recommendation: str
 
 
@@ -284,8 +295,10 @@ class AgroScenarioWhatIfRequest(BaseModel):
     titulo_escenario: Optional[str] = Field("Simulación Agro-Hídrica MIDAGRI", description="Título descriptivo del escenario")
     crop_distribution_ha: Dict[str, float] = Field(..., description="Distribución de hectáreas por cultivo (ej: {'palto': 120, 'mandarina': 80})")
     available_flow_m3s: float = Field(..., ge=0.01, le=100.0, description="Caudal disponible de río/canal para agricultura en m³/s")
-    ec_us_cm: float = Field(..., ge=50.0, le=12000.0, description="Conductividad eléctrica del agua en uS/cm")
+    ec_us_cm: float = Field(..., ge=50.0, le=15000.0, description="Conductividad eléctrica del agua en uS/cm")
     ph: Optional[float] = Field(7.2, ge=3.0, le=11.0, description="pH del agua de riego")
+    turbidity_ntu: Optional[float] = Field(20.0, ge=0.0, le=3000.0, description="Turbidez en NTU")
+    temp_water_c: Optional[float] = Field(18.5, ge=5.0, le=45.0, description="Temperatura del agua en °C")
     wqi: Optional[float] = Field(75.0, ge=0.0, le=100.0, description="Índice WQI")
     irrigation_type: Optional[str] = Field("gravity", description="Tipo de riego: 'gravity', 'sprinkler', 'drip'")
     water_tariff_s_m3: Optional[float] = Field(0.045, ge=0.0, le=1.0, description="Tarifa del agua de riego en S/. por m³")
@@ -296,6 +309,7 @@ class AgroScenarioWhatIfRequest(BaseModel):
 class AgroCropSummaryItem(BaseModel):
     crop_id: str
     crop_name: str
+    region_natural: Optional[str] = "Costa"
     category: str
     planned_ha: float
     suitability_score: float
@@ -307,7 +321,9 @@ class AgroCropSummaryItem(BaseModel):
     economic_loss_s: float
     loss_pct: float
     water_cost_s: float
+    filtration_extra_cost_s: Optional[float] = 0.0
     net_margin_s: float
+    diagnostics: Optional[Dict[str, Any]] = None
     substitutes: List[Dict[str, Any]]
 
 
@@ -330,8 +346,70 @@ class AgroScenarioWhatIfResponse(BaseModel):
     total_economic_loss_s: float
     total_loss_pct: float
     total_water_cost_s: float
+    total_extra_filtration_cost_s: Optional[float] = 0.0
     net_agricultural_margin_s: float
     at_risk_crops_count: int
     loss_attribution: Dict[str, Any]
     tech_upgrade_potential: Dict[str, Any]
     crops_summary: List[AgroCropSummaryItem]
+
+
+class WaterQualityStressSimulationRequest(BaseModel):
+    crop_id: str = Field(..., description="ID del cultivo a evaluar bajo estrés")
+    ec_us_cm: float = Field(..., ge=50.0, le=15000.0, description="Conductividad eléctrica (uS/cm)")
+    ph: float = Field(7.2, ge=3.0, le=11.0, description="pH del agua de riego")
+    turbidity_ntu: float = Field(20.0, ge=0.0, le=3000.0, description="Turbidez en NTU")
+    temp_water_c: float = Field(18.5, ge=5.0, le=45.0, description="Temperatura del agua (°C)")
+    water_availability_ratio: float = Field(1.0, ge=0.0, le=2.0, description="Ratio de disponibilidad de caudal (1.0 = 100%)")
+    region: str = Field("LIMA", description="Región departamental de referencia")
+
+
+class WaterQualityStressSimulationResponse(BaseModel):
+    crop_id: str
+    crop_name: str
+    region_natural: str
+    category: str
+    suitability_score: float
+    status: str
+    status_color: str
+    resilience_level: str
+    stress_factor_ks: float
+    expected_yield_kg_ha: float
+    base_yield_kg_ha: float
+    regional_mean_yield_kg_ha: float
+    farmgate_price_s_kg: float
+    potential_revenue_ha_s: float
+    stressed_revenue_ha_s: float
+    economic_loss_ha_s: float
+    extra_filtration_cost_s_ha: float
+    salinity_retention_pct: float
+    ph_factor_pct: float
+    turbidity_factor_pct: float
+    temperature_factor_pct: float
+    water_availability_pct: float
+    diagnostics: Dict[str, Any]
+    recommendation: str
+    substitutes: List[Dict[str, Any]]
+
+
+class PlantingIntentionsFeasibilityRequest(BaseModel):
+    region: str = Field("LIMA", description="Departamento a evaluar")
+    available_flow_m3s: float = Field(1.20, ge=0.01, le=100.0, description="Caudal asignado al valle/región en m³/s")
+    irrigation_type: str = Field("gravity", description="Tecnología de riego ('gravity', 'sprinkler', 'drip')")
+    simulated_duration_days: int = Field(365, ge=30, le=730, description="Días de campaña agraria")
+
+
+class PlantingIntentionsFeasibilityResponse(BaseModel):
+    region: str
+    total_declared_ha: float
+    available_flow_m3s: float
+    water_availability_mmc: float
+    total_intentions_demand_mmc: float
+    water_deficit_mmc: float
+    campaign_coverage_pct: float
+    hectares_secured_ha: float
+    hectares_at_risk_ha: float
+    verdict: str
+    verdict_color: str
+    recommendation: str
+    intentions_breakdown: List[Dict[str, Any]]

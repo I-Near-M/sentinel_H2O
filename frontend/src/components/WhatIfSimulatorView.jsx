@@ -1,1561 +1,1500 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Cpu, Play, Clock, ArrowRight, ShieldAlert, Sparkles, 
-  Sliders, Waves, Droplets, Zap, ChevronRight, Activity, 
-  Layers, AlertTriangle, CheckCircle2, RefreshCw, BarChart3, 
-  FileText, ShieldCheck, TrendingDown, TrendingUp, History, 
-  Scale, Compass, ArrowDownCircle, Info, Sprout, Leaf,
-  DollarSign, PieChart, Landmark, ArrowUpRight, Check,
-  BadgeAlert, Gauge, HelpCircle
+import {
+  Sprout,
+  Droplets,
+  AlertTriangle,
+  TrendingDown,
+  TrendingUp,
+  Sliders,
+  DollarSign,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  ShieldAlert,
+  ArrowRight,
+  Info,
+  RefreshCw,
+  Layers,
+  Thermometer,
+  Zap,
+  PieChart,
+  BarChart3,
+  Calendar,
+  Sparkles,
+  Award,
+  BookOpen,
+  Filter
 } from 'lucide-react';
-import { predictionsApi, nodesApi } from '../services/api';
-import { formatDateTime } from '../utils/dateUtils';
+import { predictionsApi } from '../services/api';
 
-export default function WhatIfSimulatorView() {
-  const [activeTab, setActiveTab] = useState('agro');
-  const [nodes, setNodes] = useState([]);
-  const [loadingNodes, setLoadingNodes] = useState(true);
+const REGIONS_BY_ZONE = {
+  Costa: [
+    { id: 'LIMA', name: 'Lima (Chancay - Huaral / Chillón)' },
+    { id: 'ICA', name: 'Ica (Ica / Pisco / Chincha)' },
+    { id: 'LA LIBERTAD', name: 'La Libertad (Chicama / Moche / Virú)' },
+    { id: 'PIURA', name: 'Piura (Chira / Piura)' },
+    { id: 'LAMBAYEQUE', name: 'Lambayeque (Chancay-Lambayeque / La Leche)' },
+    { id: 'AREQUIPA', name: 'Arequipa (Majes / Camaná / Tambo)' },
+    { id: 'ANCASH', name: 'Áncash (Santa / Nepeña)' },
+    { id: 'TACNA', name: 'Tacna (Caplina / Sama / Locumba)' },
+    { id: 'MOQUEGUA', name: 'Moquegua (Osmore / Moquegua)' },
+    { id: 'TUMBES', name: 'Tumbes (Tumbes / Zarumilla)' }
+  ],
+  Sierra: [
+    { id: 'JUNIN', name: 'Junín (Valle del Mantaro / Tarma)' },
+    { id: 'CUSCO', name: 'Cusco (Valle Sagrado / Vilcanota)' },
+    { id: 'PUNO', name: 'Puno (Altiplano / Cuenca Titicaca)' },
+    { id: 'AYACUCHO', name: 'Ayacucho (Cachi / Huamanga)' },
+    { id: 'CAJAMARCA', name: 'Cajamarca (Crisnejas / Chota)' },
+    { id: 'HUANUCO', name: 'Huánuco (Huallaga Alto)' },
+    { id: 'APURIMAC', name: 'Apurímac (Pampas / Abancay)' },
+    { id: 'HUANCAVELICA', name: 'Huancavelica (Ichu / Tayacaja)' },
+    { id: 'PASCO', name: 'Pasco (Oxapampa / Pasco Alto)' }
+  ],
+  Selva: [
+    { id: 'SAN MARTIN', name: 'San Martín (Huallaga Central / Mayo)' },
+    { id: 'UCAYALI', name: 'Ucayali (Coronel Portillo / Padre Abad)' },
+    { id: 'LORETO', name: 'Loreto (Amazonas / Nanay)' },
+    { id: 'MADRE DE DIOS', name: 'Madre de Dios (Madre de Dios / Tambopata)' },
+    { id: 'AMAZONAS', name: 'Amazonas (Utcubamba / Bagua)' }
+  ],
+  Nacional: [
+    { id: 'NACIONAL', name: 'Promedio Nacional (Perú)' }
+  ]
+};
 
-  // -------------------------------------------------------------
-  // ESTADOS DEL SIMULADOR MULTIVARIABLE (TAB 1)
-  // -------------------------------------------------------------
-  const [multiForm, setMultiForm] = useState({
-    id_nodo_origen: '',
-    titulo_escenario: 'Simulación de Estiaje y Salinidad en Valle',
-    delta_caudal_pct: -35,
-    delta_salinidad_us_cm: 650,
-    delta_ph: -0.3,
-    delta_precipitacion_pct: -20,
-    cultivo_diana: 'PALTOS_AGUACATE',
-    duracion_horas: 12
-  });
-  const [multiResult, setMultiResult] = useState(null);
-  const [simulatingPhase, setSimulatingPhase] = useState(null);
+const WhatIfSimulatorView = () => {
+  // Navigation & Region State
+  const [activeTab, setActiveTab] = useState('cedula_whatif'); // 'cedula_whatif' | 'stress_whatif' | 'ena_intentions' | 'midagri_kpis'
+  const [selectedRegion, setSelectedRegion] = useState('LIMA');
+  const [naturalZoneFilter, setNaturalZoneFilter] = useState('TODAS'); // 'TODAS' | 'Costa' | 'Sierra' | 'Selva'
 
-  // -------------------------------------------------------------
-  // ESTADOS DE INTELIGENCIA AGRO-HÍDRICA & MIDAGRI (TAB 2 - NUEVO)
-  // -------------------------------------------------------------
-  const [agroRegion, setAgroRegion] = useState('LIMA');
-  const [agroCropsCatalog, setAgroCropsCatalog] = useState([]);
-  const [agroBenchmarks, setAgroBenchmarks] = useState(null);
-  const [loadingAgroData, setLoadingAgroData] = useState(false);
+  // Catalog & Benchmarks
+  const [cropsCatalog, setCropsCatalog] = useState([]);
+  const [regionalBenchmark, setRegionalBenchmark] = useState(null);
+  const [loadingInitial, setLoadingInitial] = useState(true);
 
-  const [agroForm, setAgroForm] = useState({
-    titulo_escenario: 'Plan de Siembra Valle Chancay - Campaña 2026',
-    available_flow_m3s: 1.25,
-    ec_us_cm: 1850,
-    ph: 7.3,
-    wqi: 72,
-    irrigation_type: 'gravity',
-    water_tariff_s_m3: 0.045,
-    simulated_duration_days: 365,
-    crop_distribution_ha: {
-      palto: 120,
-      mandarina: 80,
-      vid: 50,
-      maiz_amarillo: 100,
-      papa: 40,
-      fresa: 20
-    }
-  });
+  // Tab 1: Cédula What-If State
+  const [cropDistribution, setCropDistribution] = useState({});
+  const [availableFlow, setAvailableFlow] = useState(1.20);
+  const [ecParam, setEcParam] = useState(1200);
+  const [phParam, setPhParam] = useState(7.2);
+  const [turbidityParam, setTurbidityParam] = useState(25);
+  const [tempWaterParam, setTempWaterParam] = useState(19.0);
+  const [irrigationType, setIrrigationType] = useState('gravity');
+  const [waterTariff, setWaterTariff] = useState(0.045);
+  const [simDuration, setSimDuration] = useState(365);
+  const [simResult, setSimResult] = useState(null);
+  const [loadingSim, setLoadingSim] = useState(false);
 
-  const [agroResult, setAgroResult] = useState(null);
-  const [simulatingAgroPhase, setSimulatingAgroPhase] = useState(null);
+  // Tab 2: Monoculture Water Quality Stress What-If State
+  const [stressCropId, setStressCropId] = useState('palto');
+  const [stressEc, setStressEc] = useState(2200);
+  const [stressPh, setStressPh] = useState(8.2);
+  const [stressTurbidity, setStressTurbidity] = useState(85);
+  const [stressTemp, setStressTemp] = useState(26.5);
+  const [stressWaterRatio, setStressWaterRatio] = useState(0.85);
+  const [stressResult, setStressResult] = useState(null);
+  const [loadingStress, setLoadingStress] = useState(false);
 
-  // -------------------------------------------------------------
-  // ESTADOS DE CASCADA MULTITRAMO 3D (TAB 3)
-  // -------------------------------------------------------------
-  const [cascadeOrigin, setCascadeOrigin] = useState('');
-  const [cascadeCaudal, setCascadeCaudal] = useState(2.2);
-  const [cascadeSalinidad, setCascadeSalinidad] = useState(1650);
-  const [cascadePh, setCascadePh] = useState(7.35);
-  const [cascadeResult, setCascadeResult] = useState(null);
-  const [loadingCascade, setLoadingCascade] = useState(false);
-  const [isCascadeAnimating, setIsCascadeAnimating] = useState(false);
+  // Tab 3: ENA Intentions Feasibility State
+  const [enaFlow, setEnaFlow] = useState(1.10);
+  const [enaIrrigation, setEnaIrrigation] = useState('gravity');
+  const [enaResult, setEnaResult] = useState(null);
+  const [loadingEna, setLoadingEna] = useState(false);
 
-  // -------------------------------------------------------------
-  // ESTADOS DE PRESCRIPCIÓN DE DILUCIÓN (TAB 4)
-  // -------------------------------------------------------------
-  const [dilutionForm, setDilutionForm] = useState({
-    salinidad_actual_rio_ec: 2200,
-    caudal_actual_rio_m3s: 1.8,
-    salinidad_objetivo_ec: 1000,
-    salinidad_agua_represa_ec: 150,
-    duracion_lavado_horas: 8
-  });
-  const [dilutionResult, setDilutionResult] = useState(null);
-  const [loadingDilution, setLoadingDilution] = useState(false);
-
-  // -------------------------------------------------------------
-  // ESTADOS DE AUDITORÍA DE LA MITA (TAB 5)
-  // -------------------------------------------------------------
-  const [mitaForm, setMitaForm] = useState({
-    id_nodo_infractor: '',
-    caudal_exceso_ls: 400,
-    duracion_sobre_extraccion_horas: 6,
-    caudal_nominal_valle_m3s: 1.5
-  });
-  const [mitaResult, setMitaResult] = useState(null);
-  const [loadingMita, setLoadingMita] = useState(false);
-
-  // -------------------------------------------------------------
-  // HISTORIAL DE SIMULACIONES (TAB 6)
-  // -------------------------------------------------------------
-  const [history, setHistory] = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-
-  // Cargar nodos iniciales
+  // Load Catalog & Initial Benchmarks
   useEffect(() => {
-    setLoadingNodes(true);
-    nodesApi.getNodes()
-      .then(res => {
-        const data = res.data || [];
-        setNodes(data);
-        if (data.length > 0) {
-          setMultiForm(prev => ({ ...prev, id_nodo_origen: data[0].id_nodo }));
-          setCascadeOrigin(data[0].id_nodo);
-          setMitaForm(prev => ({ ...prev, id_nodo_infractor: data[1]?.id_nodo || data[0].id_nodo }));
-        }
-      })
-      .catch(err => console.error("Error cargando estaciones:", err))
-      .finally(() => setLoadingNodes(false));
-  }, []);
+    loadInitialData();
+  }, [selectedRegion]);
 
-  // Cargar catálogo de cultivos y benchmarks MIDAGRI
-  useEffect(() => {
-    setLoadingAgroData(true);
-    Promise.all([
-      predictionsApi.getAgroCrops(),
-      predictionsApi.getAgroRegionalBenchmarks(agroRegion)
-    ])
-      .then(([cropsRes, benchRes]) => {
-        setAgroCropsCatalog(cropsRes.data || []);
-        setAgroBenchmarks(benchRes.data || null);
-      })
-      .catch(err => console.error("Error cargando datos MIDAGRI:", err))
-      .finally(() => setLoadingAgroData(false));
-  }, [agroRegion]);
+  const loadInitialData = async () => {
+    try {
+      setLoadingInitial(true);
+      const [cropsRes, benchRes] = await Promise.all([
+        predictionsApi.getAgroCrops(),
+        predictionsApi.getAgroRegionalBenchmarks(selectedRegion)
+      ]);
 
-  const loadHistory = () => {
-    setLoadingHistory(true);
-    predictionsApi.getSimulationsHistory(25)
-      .then(res => setHistory(res.data || []))
-      .catch(err => console.error("Error cargando historial:", err))
-      .finally(() => setLoadingHistory(false));
-  };
+      const crops = cropsRes.data || [];
+      setCropsCatalog(crops);
+      setRegionalBenchmark(benchRes.data || null);
 
-  useEffect(() => {
-    if (activeTab === 'history') {
-      loadHistory();
-    }
-  }, [activeTab]);
+      // Initialize crop distribution based on selected region natural zone
+      const defaultDist = {};
+      const zoneCrops = crops.filter(c => {
+        if (selectedRegion === 'LIMA' || selectedRegion === 'ICA') return c.region_natural === 'Costa';
+        if (selectedRegion === 'JUNIN' || selectedRegion === 'CUSCO' || selectedRegion === 'PUNO') return c.region_natural === 'Sierra';
+        if (selectedRegion === 'SAN MARTIN' || selectedRegion === 'UCAYALI') return c.region_natural === 'Selva';
+        return true;
+      });
 
-  // -------------------------------------------------------------
-  // HANDLERS AGRO-HÍDRICO MIDAGRI
-  // -------------------------------------------------------------
-  const handleAgroCropHaChange = (cropId, val) => {
-    const num = Math.max(0, parseFloat(val) || 0);
-    setAgroForm(prev => ({
-      ...prev,
-      crop_distribution_ha: {
-        ...prev.crop_distribution_ha,
-        [cropId]: num
+      if (zoneCrops.length >= 3) {
+        defaultDist[zoneCrops[0].crop_id] = 50;
+        defaultDist[zoneCrops[1].crop_id] = 30;
+        defaultDist[zoneCrops[2].crop_id] = 20;
+        setStressCropId(zoneCrops[0].crop_id);
+      } else if (crops.length >= 3) {
+        defaultDist[crops[0].crop_id] = 50;
+        defaultDist[crops[1].crop_id] = 30;
+        defaultDist[crops[2].crop_id] = 20;
+        setStressCropId(crops[0].crop_id);
       }
-    }));
-  };
+      setCropDistribution(defaultDist);
 
-  const applyAgroPreset = (presetType) => {
-    if (presetType === 'chancay_tradicional') {
-      setAgroForm(prev => ({
-        ...prev,
-        titulo_escenario: 'Valle Chancay-Huaral Tradicional',
-        available_flow_m3s: 1.40,
-        ec_us_cm: 1650,
-        irrigation_type: 'gravity',
-        crop_distribution_ha: {
-          palto: 120,
-          mandarina: 80,
-          vid: 50,
-          maiz_amarillo: 100,
-          papa: 40,
-          fresa: 20
-        }
-      }));
-    } else if (presetType === 'agroexportacion') {
-      setAgroForm(prev => ({
-        ...prev,
-        titulo_escenario: 'Agroexportación Intensiva de Alto Valor',
-        available_flow_m3s: 1.80,
-        ec_us_cm: 1350,
-        irrigation_type: 'drip',
-        crop_distribution_ha: {
-          palto: 200,
-          mandarina: 150,
-          vid: 80,
-          fresa: 60,
-          esparrago: 40
-        }
-      }));
-    } else if (presetType === 'sequia_resiliente') {
-      setAgroForm(prev => ({
-        ...prev,
-        titulo_escenario: 'Plan de Contingencia ante Sequía & Salinización (IA)',
-        available_flow_m3s: 0.65,
-        ec_us_cm: 2900,
-        irrigation_type: 'drip',
-        crop_distribution_ha: {
-          granado: 100,
-          olivo: 80,
-          quinua: 60,
-          vid: 50,
-          esparrago: 40
-        }
-      }));
-    }
-  };
-
-  const handleRunAgroSimulation = async (e) => {
-    if (e) e.preventDefault();
-    setSimulatingAgroPhase("1/4: Ingestando estadísticas históricas SIEA (2017-2023) y microdatos ENA...");
-
-    setTimeout(() => {
-      setSimulatingAgroPhase("2/4: Calculando balance hídrico de cédula y curvas de salinidad Maas-Hoffman...");
-    }, 450);
-
-    setTimeout(() => {
-      setSimulatingAgroPhase("3/4: Ejecutando modelo ML de riesgo agro-económico y pérdidas en Soles (S/.)...");
-    }, 900);
-
-    try {
-      const res = await predictionsApi.simulateAgroWhatIf({
-        titulo_escenario: agroForm.titulo_escenario,
-        crop_distribution_ha: agroForm.crop_distribution_ha,
-        available_flow_m3s: agroForm.available_flow_m3s,
-        ec_us_cm: agroForm.ec_us_cm,
-        ph: agroForm.ph,
-        wqi: agroForm.wqi,
-        irrigation_type: agroForm.irrigation_type,
-        water_tariff_s_m3: agroForm.water_tariff_s_m3,
-        region: agroRegion,
-        simulated_duration_days: agroForm.simulated_duration_days
-      });
-
-      setTimeout(() => {
-        setSimulatingAgroPhase("4/4: Optimizando recomendaciones de sustitución y tecnificación...");
-        setTimeout(() => {
-          setAgroResult(res.data);
-          setSimulatingAgroPhase(null);
-        }, 400);
-      }, 1300);
+      // Auto-run simulations with defaults
+      runCedulaSimulation(defaultDist, availableFlow, ecParam, phParam, turbidityParam, tempWaterParam, irrigationType, waterTariff, selectedRegion);
+      runStressSimulation(zoneCrops[0]?.crop_id || 'palto', stressEc, stressPh, stressTurbidity, stressTemp, stressWaterRatio, selectedRegion);
+      runEnaAudit(selectedRegion, enaFlow, enaIrrigation);
 
     } catch (err) {
-      setSimulatingAgroPhase(null);
-      alert("Error ejecutando simulación agro-hídrica: " + (err.response?.data?.detail || err.message));
-    }
-  };
-
-  // -------------------------------------------------------------
-  // HANDLERS MULTIVARIABLE (TAB 1)
-  // -------------------------------------------------------------
-  const handleRunMultiSimulation = async (e) => {
-    e.preventDefault();
-    setSimulatingPhase("1/4: Ingestando línea base de sensores y topología...");
-    
-    setTimeout(() => {
-      setSimulatingPhase("2/4: Calculando hidrodinámica Leopold-Maddock...");
-    }, 450);
-
-    setTimeout(() => {
-      setSimulatingPhase("3/4: Evaluando modelo de salinidad Maas-Hoffman (FAO)...");
-    }, 900);
-
-    try {
-      const res = await predictionsApi.simulateMultiVariable({
-        ...multiForm,
-        ejecutado_por: "Operador de Cuenca"
-      });
-
-      setTimeout(() => {
-        setSimulatingPhase("4/4: Generando prescripción agronómica y WQI...");
-        setTimeout(() => {
-          setMultiResult(res.data);
-          setSimulatingPhase(null);
-        }, 400);
-      }, 1300);
-
-    } catch (err) {
-      setSimulatingPhase(null);
-      alert("Error ejecutando simulación multivariable: " + (err.response?.data?.detail || err.message));
-    }
-  };
-
-  const handleRunCascade = async (e) => {
-    e.preventDefault();
-    setLoadingCascade(true);
-    setIsCascadeAnimating(true);
-    try {
-      const res = await predictionsApi.getCascadeLeadTime({
-        id_nodo_origen: cascadeOrigin,
-        caudal_transporte_m3s: cascadeCaudal,
-        salinidad_origen_ec: cascadeSalinidad,
-        ph_origen: cascadePh
-      });
-      setCascadeResult(res.data);
-    } catch (err) {
-      alert("Error calculando propagación en cascada: " + (err.response?.data?.detail || err.message));
+      console.error('Error loading MIDAGRI data:', err);
     } finally {
-      setLoadingCascade(false);
-      setTimeout(() => setIsCascadeAnimating(false), 2000);
+      setLoadingInitial(false);
     }
   };
 
-  const handleRunDilution = async (e) => {
-    e.preventDefault();
-    setLoadingDilution(true);
+  // 1. Run Cédula Simulation
+  const runCedulaSimulation = async (
+    dist = cropDistribution,
+    flow = availableFlow,
+    ec = ecParam,
+    ph = phParam,
+    turb = turbidityParam,
+    temp = tempWaterParam,
+    irrig = irrigationType,
+    tariff = waterTariff,
+    reg = selectedRegion
+  ) => {
     try {
-      const res = await predictionsApi.prescribeDilution(dilutionForm);
-      setDilutionResult(res.data);
+      setLoadingSim(true);
+      const payload = {
+        crop_distribution_ha: dist,
+        available_flow_m3s: parseFloat(flow),
+        ec_us_cm: parseFloat(ec),
+        ph: parseFloat(ph),
+        turbidity_ntu: parseFloat(turb),
+        temp_water_c: parseFloat(temp),
+        irrigation_type: irrig,
+        water_tariff_s_m3: parseFloat(tariff),
+        region: reg,
+        simulated_duration_days: parseInt(simDuration)
+      };
+      const res = await predictionsApi.simulateAgroWhatIf(payload);
+      setSimResult(res.data);
     } catch (err) {
-      alert("Error calculando prescripción de dilución: " + (err.response?.data?.detail || err.message));
+      console.error('Error in Agro What-If simulation:', err);
     } finally {
-      setLoadingDilution(false);
+      setLoadingSim(false);
     }
   };
 
-  const handleRunMita = async (e) => {
-    e.preventDefault();
-    setLoadingMita(true);
+  // 2. Run Stress Simulation
+  const runStressSimulation = async (
+    cropId = stressCropId,
+    ec = stressEc,
+    ph = stressPh,
+    turb = stressTurbidity,
+    temp = stressTemp,
+    wRatio = stressWaterRatio,
+    reg = selectedRegion
+  ) => {
     try {
-      const res = await predictionsApi.auditMitaDeficit(mitaForm);
-      setMitaResult(res.data);
+      setLoadingStress(true);
+      const payload = {
+        crop_id: cropId,
+        ec_us_cm: parseFloat(ec),
+        ph: parseFloat(ph),
+        turbidity_ntu: parseFloat(turb),
+        temp_water_c: parseFloat(temp),
+        water_availability_ratio: parseFloat(wRatio),
+        region: reg
+      };
+      const res = await predictionsApi.simulateWaterQualityStress(payload);
+      setStressResult(res.data);
     } catch (err) {
-      alert("Error en auditoría forense de La Mita: " + (err.response?.data?.detail || err.message));
+      console.error('Error in Water Quality Stress simulation:', err);
     } finally {
-      setLoadingMita(false);
+      setLoadingStress(false);
     }
+  };
+
+  // 3. Run ENA Intentions Feasibility Audit
+  const runEnaAudit = async (reg = selectedRegion, flow = enaFlow, irrig = enaIrrigation) => {
+    try {
+      setLoadingEna(true);
+      const payload = {
+        region: reg,
+        available_flow_m3s: parseFloat(flow),
+        irrigation_type: irrig,
+        simulated_duration_days: 365
+      };
+      const res = await predictionsApi.checkPlantingIntentionsFeasibility(payload);
+      setEnaResult(res.data);
+    } catch (err) {
+      console.error('Error in ENA Audit simulation:', err);
+    } finally {
+      setLoadingEna(false);
+    }
+  };
+
+  // Handler for adding/updating crop hectares
+  const handleHaChange = (cropId, ha) => {
+    const val = Math.max(0, parseFloat(ha) || 0);
+    const updated = { ...cropDistribution, [cropId]: val };
+    if (val === 0) delete updated[cropId];
+    setCropDistribution(updated);
+  };
+
+  // Filter crops catalog for display
+  const displayedCrops = cropsCatalog.filter(c => {
+    if (naturalZoneFilter === 'TODAS') return true;
+    return c.region_natural === naturalZoneFilter;
+  });
+
+  const getZoneBadge = (zone) => {
+    switch (zone) {
+      case 'Costa':
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">🌊 Costa</span>;
+      case 'Sierra':
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">🏔️ Sierra</span>;
+      case 'Selva':
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">🌴 Selva</span>;
+      default:
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">🌱 Perú</span>;
+    }
+  };
+
+  const getStatusBadge = (color, status) => {
+    const colorClasses = {
+      green: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      blue: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+      yellow: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+      red: 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+    };
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${colorClasses[color] || colorClasses.green}`}>
+        {status}
+      </span>
+    );
   };
 
   return (
-    <div className="space-y-6">
-      {/* HEADER DE CABECERA */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 rounded-full flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-500" />
-              Agro-DSS & Motor What-If MIDAGRI
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              SIEA 2017-2023 & ENA 2024-2025
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-            Simulador de Escenarios What-If & Decisiones Agro-Hídricas
-          </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-            Modelación predictiva multivariable, balance hídrico de cédula de cultivo, pérdidas económicas en S/. y tiempo de tránsito hidráulico.
-          </p>
-        </div>
-
-        {/* NAVEGACIÓN POR PESTAÑAS */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('agro')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeTab === 'agro'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-            }`}
-          >
-            <Sprout className="w-3.5 h-3.5" />
-            Inteligencia Agrícola MIDAGRI
-          </button>
-
-          <button
-            onClick={() => setActiveTab('multivariable')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeTab === 'multivariable'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            Multivariable & Calidad
-          </button>
-
-          <button
-            onClick={() => setActiveTab('cascade')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeTab === 'cascade'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            Lead Time Cascada
-          </button>
-
-          <button
-            onClick={() => setActiveTab('dilution')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeTab === 'dilution'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-            }`}
-          >
-            <Droplets className="w-3.5 h-3.5" />
-            Dilución de Rescate
-          </button>
-
-          <button
-            onClick={() => setActiveTab('mita')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeTab === 'mita'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-            }`}
-          >
-            <Scale className="w-3.5 h-3.5" />
-            Auditoría La Mita
-          </button>
-
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
-              activeTab === 'history'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            Historial Forense
-          </button>
-        </div>
-      </div>
-
-      {/* ============================================================= */}
-      {/* PESTAÑA AGRO-HÍDRICA & MIDAGRI (NUEVA) */}
-      {/* ============================================================= */}
-      {activeTab === 'agro' && (
-        <div className="space-y-6">
-          {/* BARRA DE CONTROL REGIONAL Y PRESETS */}
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Landmark className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Región Agrícola:</span>
-                <select
-                  value={agroRegion}
-                  onChange={(e) => setAgroRegion(e.target.value)}
-                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="LIMA">LIMA (Valle Chancay-Huaral / Huaura)</option>
-                  <option value="ICA">ICA (Valle de Ica / Pisco / Chincha)</option>
-                  <option value="LA LIBERTAD">LA LIBERTAD (Chao / Virú / Moche)</option>
-                  <option value="PIURA">PIURA (Chira / Piura)</option>
-                  <option value="AREQUIPA">AREQUIPA (Majes / Camaná / Tambo)</option>
-                  <option value="ANCASH">ÁNCASH (Santa / Casma / Nepeña)</option>
-                  <option value="NACIONAL">PROMEDIO NACIONAL PERÚ</option>
-                </select>
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 space-y-6">
+      {/* HEADER WITH REGION SELECTOR */}
+      <header className="bg-slate-900/80 border border-slate-800 backdrop-blur-md rounded-2xl p-5 shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-2 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 text-slate-950 shadow-lg shadow-emerald-500/20">
+                <Sprout className="w-6 h-6" />
+              </span>
+              <div>
+                <h1 className="text-xl md:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                  What-If Agro-Hídrico & Decisión Agraria MIDAGRI
+                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    SIEA 2017-2023 & ENA 2024-2025
+                  </span>
+                </h1>
+                <p className="text-xs md:text-sm text-slate-400">
+                  Simulador biofísico y económico multivariable (Salinidad, pH, Turbidez, Temperatura, Dotación) para Costa, Sierra y Selva.
+                </p>
               </div>
-
-              {agroBenchmarks && (
-                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-slate-800 pl-3">
-                  <span>Pérdida Histórica ENA: <strong className="text-amber-600 dark:text-amber-400">{agroBenchmarks.loss_profile?.drought_deficit_pct || 30}% sequía</strong></span>
-                  <span>|</span>
-                  <span>Riego Gravedad: <strong className="text-slate-700 dark:text-slate-300">{agroBenchmarks.irrigation_profile?.gravity_pct || 60}%</strong></span>
-                </div>
-              )}
-            </div>
-
-            {/* PRESETS RÁPIDOS */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Escenarios Típicos:</span>
-              <button
-                type="button"
-                onClick={() => applyAgroPreset('chancay_tradicional')}
-                className="px-2.5 py-1 text-xs font-medium rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
-              >
-                Chancay Tradicional
-              </button>
-              <button
-                type="button"
-                onClick={() => applyAgroPreset('agroexportacion')}
-                className="px-2.5 py-1 text-xs font-medium rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors"
-              >
-                Agroexportación Intensiva
-              </button>
-              <button
-                type="button"
-                onClick={() => applyAgroPreset('sequia_resiliente')}
-                className="px-2.5 py-1 text-xs font-medium rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 transition-colors"
-              >
-                Contingencia Sequía (IA)
-              </button>
             </div>
           </div>
 
-          {/* GRID DE CONFIGURACIÓN: CÉDULA DE CULTIVOS + PARÁMETROS HIDRÁULICOS */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* COLUMNA IZQUIERDA: CONFIGURADOR DE HECTÁREAS (7 COLS) */}
-            <div className="lg:col-span-7 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+          {/* REGION SELECTOR */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-700/60 rounded-xl px-3 py-2">
+              <Filter className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-medium text-slate-400">Región Agraria:</span>
+              <select
+                value={selectedRegion}
+                onChange={(e) => setSelectedRegion(e.target.value)}
+                className="bg-transparent text-sm font-bold text-white focus:outline-none cursor-pointer"
+              >
+                <optgroup label="🌊 Región Costa (Valles de Riego)">
+                  {REGIONS_BY_ZONE.Costa.map(r => (
+                    <option key={r.id} value={r.id} className="bg-slate-900 text-white">{r.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="🏔️ Región Sierra (Valles Interandinos / Altiplano)">
+                  {REGIONS_BY_ZONE.Sierra.map(r => (
+                    <option key={r.id} value={r.id} className="bg-slate-900 text-white">{r.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="🌴 Región Selva (Cuenca Amazónica / Ceja de Selva)">
+                  {REGIONS_BY_ZONE.Selva.map(r => (
+                    <option key={r.id} value={r.id} className="bg-slate-900 text-white">{r.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="🌱 Promedio País">
+                  {REGIONS_BY_ZONE.Nacional.map(r => (
+                    <option key={r.id} value={r.id} className="bg-slate-900 text-white">{r.name}</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
+            <button
+              onClick={() => loadInitialData()}
+              disabled={loadingInitial}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition-all flex items-center gap-2"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingInitial ? 'animate-spin text-emerald-400' : ''}`} />
+              Refrescar
+            </button>
+          </div>
+        </div>
+
+        {/* TABS NAVIGATION */}
+        <div className="flex overflow-x-auto scrollbar-none gap-2 mt-5 pt-4 border-t border-slate-800">
+          <button
+            onClick={() => setActiveTab('cedula_whatif')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${
+              activeTab === 'cedula_whatif'
+                ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25'
+                : 'bg-slate-950/60 hover:bg-slate-800/80 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            1. Balance Hídrico & Cédula de Cultivo
+          </button>
+
+          <button
+            onClick={() => setActiveTab('stress_whatif')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${
+              activeTab === 'stress_whatif'
+                ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/25'
+                : 'bg-slate-950/60 hover:bg-slate-800/80 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            2. Estrés por Calidad de Agua (pH, CE, NTU, T°)
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ena_intentions')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${
+              activeTab === 'ena_intentions'
+                ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
+                : 'bg-slate-950/60 hover:bg-slate-800/80 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            3. Factibilidad de Intenciones ENA
+          </button>
+
+          <button
+            onClick={() => setActiveTab('midagri_kpis')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap ${
+              activeTab === 'midagri_kpis'
+                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25'
+                : 'bg-slate-950/60 hover:bg-slate-800/80 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            4. Estadísticas & Benchmarks MIDAGRI
+          </button>
+        </div>
+      </header>
+
+      {/* ========================================================================= */}
+      {/* TAB 1: BALANCE HÍDRICO & CÉDULA DE CULTIVO (WHAT-IF MULTI-CULTIVO) */}
+      {/* ========================================================================= */}
+      {activeTab === 'cedula_whatif' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* LEFT PANEL: SLIDERS & CROP DISTRIBUTION CONFIG */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-5 shadow-xl">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-emerald-100 dark:bg-emerald-950/80 rounded-xl text-emerald-600 dark:text-emerald-400">
-                    <Leaf className="w-5 h-5" />
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-emerald-400" />
+                  Parámetros del Río / Canal & Cuenca
+                </h2>
+                <span className="text-xs text-slate-400 font-mono">Región: {selectedRegion}</span>
+              </div>
+
+              {/* SLIDERS */}
+              <div className="space-y-4">
+                {/* Available Flow */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-300 font-medium">Caudal Disponible Asignado (Q):</span>
+                    <span className="font-mono font-bold text-emerald-400">{availableFlow.toFixed(2)} m³/s ({(availableFlow * 1000).toFixed(0)} l/s)</span>
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      Cédula de Cultivo Planificada (Hectáreas)
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Asigna la superficie a regar para evaluar la demanda volumétrica contra la oferta del río.
-                    </p>
+                  <input
+                    type="range"
+                    min="0.10"
+                    max="5.00"
+                    step="0.05"
+                    value={availableFlow}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setAvailableFlow(val);
+                      runCedulaSimulation(cropDistribution, val, ecParam, phParam, turbidityParam, tempWaterParam, irrigationType, waterTariff, selectedRegion);
+                    }}
+                    className="w-full accent-emerald-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                    <span>Estiaje Crítico (0.10 m³/s)</span>
+                    <span>Avenida Normal (5.00 m³/s)</span>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Total Hectáreas:</span>
-                  <div className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
-                    {Object.values(agroForm.crop_distribution_ha).reduce((a, b) => a + b, 0)} ha
+                {/* Salinity EC */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-300 font-medium">Conductividad Eléctrica (EC):</span>
+                    <span className={`font-mono font-bold ${ecParam > 2000 ? 'text-rose-400' : ecParam > 1400 ? 'text-amber-400' : 'text-cyan-400'}`}>
+                      {ecParam} µS/cm ({(ecParam / 1000).toFixed(2)} dS/m)
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="200"
+                    max="5000"
+                    step="50"
+                    value={ecParam}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setEcParam(val);
+                      runCedulaSimulation(cropDistribution, availableFlow, val, phParam, turbidityParam, tempWaterParam, irrigationType, waterTariff, selectedRegion);
+                    }}
+                    className="w-full accent-cyan-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                {/* pH & Turbidity */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300">pH Agua:</span>
+                      <span className="font-mono font-bold text-amber-400">{phParam.toFixed(1)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="5.0"
+                      max="9.5"
+                      step="0.1"
+                      value={phParam}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setPhParam(val);
+                        runCedulaSimulation(cropDistribution, availableFlow, ecParam, val, turbidityParam, tempWaterParam, irrigationType, waterTariff, selectedRegion);
+                      }}
+                      className="w-full accent-amber-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300">Turbidez:</span>
+                      <span className="font-mono font-bold text-slate-300">{turbidityParam} NTU</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="5"
+                      max="300"
+                      step="5"
+                      value={turbidityParam}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setTurbidityParam(val);
+                        runCedulaSimulation(cropDistribution, availableFlow, ecParam, phParam, val, tempWaterParam, irrigationType, waterTariff, selectedRegion);
+                      }}
+                      className="w-full accent-slate-400 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Irrigation Technology & Water Tariff */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-300 font-medium">Tecnología de Riego:</label>
+                    <select
+                      value={irrigationType}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setIrrigationType(val);
+                        runCedulaSimulation(cropDistribution, availableFlow, ecParam, phParam, turbidityParam, tempWaterParam, val, waterTariff, selectedRegion);
+                      }}
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none"
+                    >
+                      <option value="gravity">Gravedad / Inundación (55% Ef.)</option>
+                      <option value="sprinkler">Aspersión Convencional (75% Ef.)</option>
+                      <option value="drip">Goteo Presurizado (88% Ef.)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-300 font-medium">Tarifa del Agua (S/./m³):</label>
+                    <input
+                      type="number"
+                      step="0.005"
+                      value={waterTariff}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setWaterTariff(val);
+                        runCedulaSimulation(cropDistribution, availableFlow, ecParam, phParam, turbidityParam, tempWaterParam, irrigationType, val, selectedRegion);
+                      }}
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-mono font-semibold text-white focus:outline-none"
+                    />
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* LISTADO DE CULTIVOS CON SLIDERS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[380px] overflow-y-auto pr-1">
-                {agroCropsCatalog.map(crop => {
-                  const ha = agroForm.crop_distribution_ha[crop.crop_id] || 0;
-                  const isResilient = crop.category?.includes('Resilientes');
+            {/* CROP HECTARES DISTRIBUTION CONFIG */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <Sprout className="w-4 h-4 text-emerald-400" />
+                  Cédula de Siembra (Hectáreas)
+                </h2>
+                {/* Filter Natural Region */}
+                <div className="flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-[11px]">
+                  {['TODAS', 'Costa', 'Sierra', 'Selva'].map(z => (
+                    <button
+                      key={z}
+                      onClick={() => setNaturalZoneFilter(z)}
+                      className={`px-2 py-0.5 rounded font-semibold transition-all ${
+                        naturalZoneFilter === z ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {z}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
+              {/* Crops list with ha inputs */}
+              <div className="max-h-72 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-slate-700">
+                {displayedCrops.map(crop => {
+                  const ha = cropDistribution[crop.crop_id] || '';
                   return (
                     <div
                       key={crop.crop_id}
-                      className={`p-3.5 rounded-xl border transition-all ${
-                        ha > 0
-                          ? isResilient 
-                            ? 'bg-purple-50/70 dark:bg-purple-950/30 border-purple-300 dark:border-purple-800'
-                            : 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800'
-                          : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 opacity-70'
+                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                        ha > 0 ? 'bg-emerald-950/20 border-emerald-500/40' : 'bg-slate-950/50 border-slate-800/80 hover:border-slate-700'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span className="text-xs font-bold text-slate-900 dark:text-white block truncate max-w-[170px]" title={crop.name}>
-                            {crop.name}
-                          </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
-                            Demanda: {crop.water_demand_m3_ha?.toLocaleString()} m³/ha | CE máx: {crop.ec_threshold_us_cm} µS/cm
-                          </span>
+                      <div className="space-y-0.5 flex-1 pr-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">{crop.name}</span>
+                          {getZoneBadge(crop.region_natural)}
                         </div>
-                        <input
-                          type="number"
-                          min="0"
-                          max="2000"
-                          step="5"
-                          value={ha}
-                          onChange={(e) => handleAgroCropHaChange(crop.crop_id, e.target.value)}
-                          className="w-16 px-2 py-1 text-xs font-bold text-right rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"
-                        />
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400 font-mono">
+                          <span>💧 {crop.water_demand_m3_ha} m³/ha</span>
+                          <span>⚡ CE umbral: {crop.ec_threshold_us_cm} µS/cm</span>
+                        </div>
                       </div>
 
-                      <div className="mt-2 flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <input
-                          type="range"
+                          type="number"
+                          placeholder="0"
                           min="0"
-                          max="300"
-                          step="5"
+                          max="10000"
                           value={ha}
-                          onChange={(e) => handleAgroCropHaChange(crop.crop_id, e.target.value)}
-                          className="w-full accent-emerald-600 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
+                          onChange={(e) => {
+                            handleHaChange(crop.crop_id, e.target.value);
+                            const updated = { ...cropDistribution, [crop.crop_id]: Math.max(0, parseFloat(e.target.value) || 0) };
+                            if (!e.target.value || parseFloat(e.target.value) === 0) delete updated[crop.crop_id];
+                            runCedulaSimulation(updated, availableFlow, ecParam, phParam, turbidityParam, tempWaterParam, irrigationType, waterTariff, selectedRegion);
+                          }}
+                          className="w-20 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-right text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
                         />
+                        <span className="text-xs font-medium text-slate-400">ha</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            {/* COLUMNA DERECHA: PARÁMETROS HIDRÁULICOS & CALIDAD (5 COLS) */}
-            <div className="lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-950/80 rounded-xl text-blue-600 dark:text-blue-400">
-                    <Waves className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      Oferta Hídrica & Calidad del Agua
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Parámetros ambientales del río/canal para abastecer el valle.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3.5">
-                  {/* CAUDAL DISPONIBLE */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">Caudal Disponible en Río/Toma:</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">{agroForm.available_flow_m3s} m³/s ({Math.round(agroForm.available_flow_m3s * 1000)} l/s)</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.1"
-                      max="8.0"
-                      step="0.05"
-                      value={agroForm.available_flow_m3s}
-                      onChange={(e) => setAgroForm(prev => ({ ...prev, available_flow_m3s: parseFloat(e.target.value) }))}
-                      className="w-full accent-blue-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
-                    />
-                    <div className="flex justify-between text-[10px] text-slate-400">
-                      <span>Estiaje Severo (0.1 m³/s)</span>
-                      <span>Avenida Plena (8.0 m³/s)</span>
-                    </div>
-                  </div>
-
-                  {/* SALINIDAD / CONDUCTIVIDAD */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">Salinidad del Agua (Conductividad EC):</span>
-                      <span className={`font-bold ${agroForm.ec_us_cm > 2000 ? 'text-rose-600' : agroForm.ec_us_cm > 1500 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                        {agroForm.ec_us_cm} µS/cm ({(agroForm.ec_us_cm / 1000).toFixed(2)} dS/m)
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="300"
-                      max="5000"
-                      step="50"
-                      value={agroForm.ec_us_cm}
-                      onChange={(e) => setAgroForm(prev => ({ ...prev, ec_us_cm: parseFloat(e.target.value) }))}
-                      className="w-full accent-amber-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
-                    />
-                    <div className="flex justify-between text-[10px] text-slate-400">
-                      <span>Agua Pura Laguna (300 µS/cm)</span>
-                      <span>Agua Muy Salina (5000 µS/cm)</span>
-                    </div>
-                  </div>
-
-                  {/* TIPO DE RIEGO Y EFICIENCIA */}
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tecnología de Riego:</label>
-                      <select
-                        value={agroForm.irrigation_type}
-                        onChange={(e) => setAgroForm(prev => ({ ...prev, irrigation_type: e.target.value }))}
-                        className="w-full px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
-                      >
-                        <option value="gravity">Gravedad / Surcos (55% ef.)</option>
-                        <option value="sprinkler">Aspersión (75% ef.)</option>
-                        <option value="drip">Goteo Tecnificado (88% ef.)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tarifa de Agua (S/./m³):</label>
-                      <input
-                        type="number"
-                        min="0.01"
-                        max="0.50"
-                        step="0.005"
-                        value={agroForm.water_tariff_s_m3}
-                        onChange={(e) => setAgroForm(prev => ({ ...prev, water_tariff_s_m3: parseFloat(e.target.value) }))}
-                        className="w-full px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-right"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* BOTÓN EJECUTAR SIMULACIÓN */}
-              <div className="pt-3">
-                <button
-                  type="button"
-                  disabled={simulatingAgroPhase !== null}
-                  onClick={handleRunAgroSimulation}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-                >
-                  {simulatingAgroPhase ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                      <span>{simulatingAgroPhase}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4 fill-white" />
-                      <span>Ejecutar Simulación Agro-Hídrica MIDAGRI</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* RESULTADOS DE LA SIMULACIÓN AGRO-HÍDRICA */}
-          {agroResult && (
-            <div className="space-y-6 animate-fade-in">
-              {/* KPIS PRINCIPALES */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* BALANCE HÍDRICO */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Balance Hídrico Anual</span>
-                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                      agroResult.water_deficit_mmc === 0 
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                        : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                    }`}>
-                      {agroResult.water_balance_status}
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <div className="text-2xl font-extrabold text-slate-900 dark:text-white">
-                      {agroResult.water_coverage_pct}%
-                    </div>
-                    <span className="text-xs text-slate-500">Cobertura de la demanda</span>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex justify-between">
-                    <span>Demanda: <strong>{agroResult.gross_water_demand_mmc} MMC</strong></span>
-                    <span>Oferta: <strong>{agroResult.water_availability_mmc} MMC</strong></span>
-                  </div>
-                </div>
-
-                {/* PÉRDIDA ECONÓMICA PROYECTADA */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pérdida Económica Proyectada</span>
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                      -{agroResult.total_loss_pct}% Merma
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
-                      S/. {agroResult.total_economic_loss_s?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                    <span className="text-xs text-slate-500">Por estrés salino y déficit de riego</span>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex justify-between">
-                    <span>Potencial: <strong>S/. {Math.round(agroResult.total_potential_revenue_s / 1000)}k</strong></span>
-                    <span>Proyectado: <strong>S/. {Math.round(agroResult.total_stressed_revenue_s / 1000)}k</strong></span>
-                  </div>
-                </div>
-
-                {/* MARGEN NETO AGRÍCOLA */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Margen Neto Agrícola</span>
-                    <DollarSign className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <div className="mt-2">
-                    <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
-                      S/. {agroResult.net_agricultural_margin_s?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                    <span className="text-xs text-slate-500">Ingreso menos canon de agua</span>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex justify-between">
-                    <span>Costo Agua: <strong>S/. {Math.round(agroResult.total_water_cost_s).toLocaleString()}</strong></span>
-                    <span>Cultivos en Riesgo: <strong>{agroResult.at_risk_crops_count}</strong></span>
-                  </div>
-                </div>
-
-                {/* POTENCIAL DE TECNIFICACIÓN */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950/40 border border-blue-200 dark:border-indigo-900 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">Potencial por Tecnificación</span>
-                    <Zap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <div className="mt-2">
-                    <div className="text-2xl font-extrabold text-indigo-700 dark:text-indigo-300">
-                      +{agroResult.tech_upgrade_potential?.water_saved_mmc} MMC
-                    </div>
-                    <span className="text-xs text-slate-600 dark:text-slate-400">Ahorro migrando a Riego por Goteo</span>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-blue-200/60 dark:border-indigo-900 text-[11px] text-slate-600 dark:text-slate-400">
-                    <span>Cobertura con Goteo: <strong>{agroResult.tech_upgrade_potential?.feasibility_boost_pct}%</strong></span>
-                  </div>
-                </div>
+          {/* RIGHT PANEL: SIMULATION RESULTS & KPIS */}
+          <div className="lg:col-span-7 space-y-6">
+            {loadingSim && (
+              <div className="h-96 flex flex-col items-center justify-center bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+                <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin mb-3" />
+                <p className="text-sm text-slate-300 font-medium">Calculando balance hidrológico y proyecciones MIDAGRI...</p>
               </div>
+            )}
 
-              {/* ATRIBUCIÓN DE CAUSAS Y DESGLOSE POR CULTIVO */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* ATRIBUCIÓN DE CAUSAS (4 COLS) */}
-                <div className="lg:col-span-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2">
-                    <PieChart className="w-5 h-5 text-indigo-600" />
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      Atribución de Causas de Merma
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Proporción de pérdidas atribuibles a salinidad vs estrés por déficit de volumen.
-                  </p>
-
-                  <div className="space-y-3 pt-2">
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span className="text-amber-700 dark:text-amber-400">Estrés por Salinidad (EC):</span>
-                        <span>{agroResult.loss_attribution?.salinity_share_pct}%</span>
-                      </div>
-                      <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-amber-500 rounded-full"
-                          style={{ width: `${agroResult.loss_attribution?.salinity_share_pct}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span className="text-rose-700 dark:text-rose-400">Déficit de Caudal / Sequía:</span>
-                        <span>{agroResult.loss_attribution?.drought_deficit_share_pct}%</span>
-                      </div>
-                      <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-rose-500 rounded-full"
-                          style={{ width: `${agroResult.loss_attribution?.drought_deficit_share_pct}%` }}
-                        />
-                      </div>
-                    </div>
+            {!loadingSim && simResult && (
+              <>
+                {/* KPIS SUMMARY GRID */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                  {/* Total Hectares */}
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-1 shadow-lg">
+                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                      Área Programada
+                    </span>
+                    <div className="text-xl font-black text-white font-mono">{simResult.total_planned_ha} ha</div>
+                    <span className="text-[10px] text-slate-500 font-mono">{simResult.crops_summary?.length || 0} cultivos activos</span>
                   </div>
 
-                  <div className="mt-4 p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50">
-                    <span className="font-bold text-slate-800 dark:text-slate-200 block mb-1">Diagnóstico Biofísico:</span>
-                    {agroResult.loss_attribution?.salinity_share_pct > 60 ? (
-                      <span>La salinidad elevada ({agroResult.loss_attribution?.ec_measured_us_cm} µS/cm) es el factor dominante de merma. Se recomienda priorizar cultivos tolerantes a sales o lavado de sales con descargas de cabecera.</span>
-                    ) : agroResult.loss_attribution?.drought_deficit_share_pct > 60 ? (
-                      <span>El déficit volumétrico de agua es la principal limitante. Se requiere tecnificación inmediata a riego presurizado o reducción de cédula de cultivo.</span>
-                    ) : (
-                      <span>Impacto mixto balanceado entre carga salina y disponibilidad de caudal.</span>
-                    )}
+                  {/* Water Demand vs Availability */}
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-1 shadow-lg">
+                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                      <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+                      Demanda vs Oferta
+                    </span>
+                    <div className="text-xl font-black text-cyan-400 font-mono">
+                      {simResult.gross_water_demand_mmc} <span className="text-xs text-slate-400">/ {simResult.water_availability_mmc} MMC</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">Cobertura: {simResult.water_coverage_pct}%</span>
+                  </div>
+
+                  {/* Economic Loss */}
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-1 shadow-lg">
+                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                      <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+                      Pérdida Económica
+                    </span>
+                    <div className="text-xl font-black text-rose-400 font-mono">
+                      S/. {(simResult.total_economic_loss_s / 1000).toFixed(1)}k
+                    </div>
+                    <span className="text-[10px] text-rose-400 font-semibold font-mono">-{simResult.total_loss_pct}% del potencial</span>
+                  </div>
+
+                  {/* Net Margin */}
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-1 shadow-lg">
+                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                      <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                      Margen Neto
+                    </span>
+                    <div className="text-xl font-black text-emerald-400 font-mono">
+                      S/. {(simResult.net_agricultural_margin_s / 1000).toFixed(1)}k
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">Deducido agua y filtración</span>
                   </div>
                 </div>
 
-                {/* TABLA DETALLADA DE CÉDULA DE CULTIVOS (8 COLS) */}
-                <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
+                {/* WATER BALANCE BANNER & TECH UPGRADE */}
+                <div className={`p-4 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg ${
+                  simResult.water_deficit_mmc === 0
+                    ? 'bg-emerald-950/30 border-emerald-500/40'
+                    : 'bg-rose-950/30 border-rose-500/40'
+                }`}>
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-emerald-600" />
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                        Desglose Agronómico & Recomendaciones IA por Cultivo
+                      {simResult.water_deficit_mmc === 0 ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-rose-400" />
+                      )}
+                      <h3 className="text-sm font-bold text-white">
+                        {simResult.water_balance_status} ({simResult.water_coverage_pct}% cubierto)
                       </h3>
                     </div>
+                    <p className="text-xs text-slate-300">
+                      {simResult.water_deficit_mmc === 0
+                        ? `La oferta hídrica de ${simResult.water_availability_mmc} MMC cubre holgadamente la demanda bruta de ${simResult.gross_water_demand_mmc} MMC.`
+                        : `Déficit de ${simResult.water_deficit_mmc} MMC. Riesgo inminente de aborto floral o reducción de calibre por estrés hídrico.`}
+                    </p>
                   </div>
 
+                  {/* Tech upgrade potential card */}
+                  {simResult.tech_upgrade_potential && simResult.irrigation_type !== 'drip' && (
+                    <div className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 text-xs space-y-1 shrink-0">
+                      <div className="flex items-center gap-1.5 text-cyan-400 font-bold">
+                        <Zap className="w-3.5 h-3.5" />
+                        Potencial de Tecnificación (Goteo)
+                      </div>
+                      <div className="text-slate-300">
+                        Ahorro: <span className="font-mono font-bold text-white">{simResult.tech_upgrade_potential.water_saved_mmc} MMC</span>
+                      </div>
+                      <div className="text-[11px] text-emerald-400 font-semibold">
+                        Elevaría viabilidad al {simResult.tech_upgrade_potential.feasibility_boost_pct}%
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* STRESS ATTRIBUTION BREAKDOWN */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
+                  <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <PieChart className="w-4 h-4 text-indigo-400" />
+                    Atribución de Causas de Pérdida Agro-Hídrica
+                  </h3>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                      <span className="text-[10px] text-slate-400 block font-medium">Estrés Salino (CE)</span>
+                      <span className="text-base font-bold text-cyan-400 font-mono">
+                        {simResult.loss_attribution?.salinity_share_pct || 0}%
+                      </span>
+                    </div>
+                    <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                      <span className="text-[10px] text-slate-400 block font-medium">Déficit de Caudal (Q)</span>
+                      <span className="text-base font-bold text-rose-400 font-mono">
+                        {simResult.loss_attribution?.drought_deficit_share_pct || 0}%
+                      </span>
+                    </div>
+                    <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                      <span className="text-[10px] text-slate-400 block font-medium">Bloqueo Químico (pH)</span>
+                      <span className="text-base font-bold text-amber-400 font-mono">
+                        {simResult.loss_attribution?.ph_lockout_share_pct || 0}%
+                      </span>
+                    </div>
+                    <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                      <span className="text-[10px] text-slate-400 block font-medium">Colmatación (Turbidez)</span>
+                      <span className="text-base font-bold text-slate-300 font-mono">
+                        {simResult.loss_attribution?.turbidity_clog_share_pct || 0}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CROPS SUMMARY EVALUATION TABLE */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl overflow-hidden">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-emerald-400" />
+                    Evaluación por Cultivo en la Cédula Simulación
+                  </h3>
+
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left">
-                      <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
-                        <tr>
-                          <th className="py-2.5 px-3">Cultivo</th>
-                          <th className="py-2.5 px-3 text-right">Área (ha)</th>
-                          <th className="py-2.5 px-3 text-right">Demanda</th>
-                          <th className="py-2.5 px-3 text-center">Score Aptitud</th>
-                          <th className="py-2.5 px-3 text-right">Pérdida (S/.)</th>
-                          <th className="py-2.5 px-3 text-right">Ingreso Proyectado</th>
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-semibold font-mono">
+                          <th className="pb-3">Cultivo / Región</th>
+                          <th className="pb-3">Área (ha)</th>
+                          <th className="pb-3">Aptitud IA</th>
+                          <th className="pb-3">Demanda MMC</th>
+                          <th className="pb-3">Ingreso Estimado</th>
+                          <th className="pb-3">Pérdida S/.</th>
+                          <th className="pb-3">Sustituto Resiliente</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {agroResult.crops_summary.map(crop => (
-                          <React.Fragment key={crop.crop_id}>
-                            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                              <td className="py-3 px-3">
-                                <div className="font-bold text-slate-900 dark:text-white">{crop.crop_name}</div>
-                                <span className="text-[10px] text-slate-500">{crop.category}</span>
-                              </td>
-                              <td className="py-3 px-3 text-right font-semibold">{crop.planned_ha} ha</td>
-                              <td className="py-3 px-3 text-right text-slate-600 dark:text-slate-400">{crop.water_demand_mmc} MMC</td>
-                              <td className="py-3 px-3 text-center">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  crop.status_color === 'green'
-                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                    : crop.status_color === 'blue'
-                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                                    : crop.status_color === 'yellow'
-                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                    : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                }`}>
-                                  {crop.suitability_score}% ({crop.status})
+                      <tbody className="divide-y divide-slate-800/60 font-mono">
+                        {simResult.crops_summary?.map((c) => (
+                          <tr key={c.crop_id} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="py-3 pr-2">
+                              <div className="font-sans font-bold text-white">{c.crop_name}</div>
+                              <div className="text-[10px] text-slate-400 font-sans">{c.region_natural} • {c.category}</div>
+                            </td>
+                            <td className="py-3 text-slate-300 font-bold">{c.planned_ha} ha</td>
+                            <td className="py-3">
+                              <div className="space-y-1">
+                                <div className="font-bold text-white">{c.suitability_score}%</div>
+                                {getStatusBadge(c.status_color, c.status)}
+                              </div>
+                            </td>
+                            <td className="py-3 text-cyan-400">{c.water_demand_mmc} MMC</td>
+                            <td className="py-3 text-emerald-400 font-bold">S/. {(c.stressed_revenue_s / 1000).toFixed(1)}k</td>
+                            <td className="py-3">
+                              {c.economic_loss_s > 0 ? (
+                                <span className="text-rose-400 font-bold">
+                                  -S/. {(c.economic_loss_s / 1000).toFixed(1)}k ({c.loss_pct}%)
                                 </span>
-                              </td>
-                              <td className="py-3 px-3 text-right font-bold text-rose-600 dark:text-rose-400">
-                                -S/. {crop.economic_loss_s?.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                              </td>
-                              <td className="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
-                                S/. {crop.stressed_revenue_s?.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                              </td>
-                            </tr>
-
-                            {/* RECOMENDACIÓN DE SUSTITUTOS RESILIENTES */}
-                            {crop.substitutes && crop.substitutes.length > 0 && (
-                              <tr className="bg-purple-50/50 dark:bg-purple-950/20">
-                                <td colSpan="6" className="py-2.5 px-3">
-                                  <div className="flex items-center gap-2 text-[11px] text-purple-900 dark:text-purple-300">
-                                    <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                                    <span className="font-bold">Recomendación IA Resiliente:</span>
-                                    <span>Para mitigar pérdidas en {crop.crop_name}, considera sustituir hectáreas por: </span>
-                                    <div className="flex flex-wrap gap-1.5 ml-1">
-                                      {crop.substitutes.map(sub => (
-                                        <span key={sub.crop_id} className="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/60 font-semibold text-purple-900 dark:text-purple-200">
-                                          {sub.crop_name} ({sub.suitability_score}% apto | Ahorro: {sub.water_saving_m3_ha} m³/ha)
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
+                              ) : (
+                                <span className="text-slate-500">S/. 0</span>
+                              )}
+                            </td>
+                            <td className="py-3">
+                              {c.substitutes && c.substitutes.length > 0 ? (
+                                <div className="space-y-1">
+                                  <span className="text-amber-400 text-[10px] font-bold flex items-center gap-1 font-sans">
+                                    <Sparkles className="w-3 h-3 text-amber-400" />
+                                    {c.substitutes[0].crop_name}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 block font-sans">
+                                    Ahorra {c.substitutes[0].water_saving_m3_ha} m³/ha
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-600 text-[10px] font-sans">Cultivo Óptimo</span>
+                              )}
+                            </td>
+                          </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ============================================================= */}
-      {/* PESTAÑA 1: SIMULADOR MULTIVARIABLE CLÁSICO */}
-      {/* ============================================================= */}
-      {activeTab === 'multivariable' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Sliders className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Parámetros de Simulación What-If
-              </h2>
-            </div>
-
-            <form onSubmit={handleRunMultiSimulation} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Estación de Origen / Perturbación:
-                </label>
-                <select
-                  value={multiForm.id_nodo_origen}
-                  onChange={(e) => setMultiForm({ ...multiForm, id_nodo_origen: e.target.value })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                >
-                  {nodes.map(n => (
-                    <option key={n.id_nodo} value={n.id_nodo}>
-                      {n.nombre} ({n.id_nodo}) - {n.cota_msnm} msnm
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Título del Escenario:
-                </label>
-                <input
-                  type="text"
-                  value={multiForm.titulo_escenario}
-                  onChange={(e) => setMultiForm({ ...multiForm, titulo_escenario: e.target.value })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              {/* SLIDERS DE CONTROL */}
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">Variación de Caudal (%):</span>
-                  <span className="font-bold text-blue-600">{multiForm.delta_caudal_pct}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="-90"
-                  max="300"
-                  step="5"
-                  value={multiForm.delta_caudal_pct}
-                  onChange={(e) => setMultiForm({ ...multiForm, delta_caudal_pct: parseFloat(e.target.value) })}
-                  className="w-full accent-blue-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">Incremento de Salinidad (µS/cm):</span>
-                  <span className="font-bold text-amber-600">+{multiForm.delta_salinidad_us_cm} µS/cm</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="3000"
-                  step="50"
-                  value={multiForm.delta_salinidad_us_cm}
-                  onChange={(e) => setMultiForm({ ...multiForm, delta_salinidad_us_cm: parseFloat(e.target.value) })}
-                  className="w-full accent-amber-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">Desviación de pH:</span>
-                  <span className="font-bold text-purple-600">{multiForm.delta_ph > 0 ? `+${multiForm.delta_ph}` : multiForm.delta_ph}</span>
-                </div>
-                <input
-                  type="range"
-                  min="-2.0"
-                  max="2.0"
-                  step="0.1"
-                  value={multiForm.delta_ph}
-                  onChange={(e) => setMultiForm({ ...multiForm, delta_ph: parseFloat(e.target.value) })}
-                  className="w-full accent-purple-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Cultivo Agrícola Diana:
-                </label>
-                <select
-                  value={multiForm.cultivo_diana}
-                  onChange={(e) => setMultiForm({ ...multiForm, cultivo_diana: e.target.value })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                >
-                  <option value="PALTOS_AGUACATE">Paltos / Aguacate Hass (Muy Sensible a Sales)</option>
-                  <option value="MANDARINOS_CITRICOS">Mandarinos y Cítricos W. Murcott (Alta Sensibilidad)</option>
-                  <option value="UVA_VID">Uva de Mesa / Vid (Tolerancia Media)</option>
-                  <option value="HORTALIZAS">Hortalizas / Fresa (Alta Sensibilidad)</option>
-                  <option value="MAIZ_FORRAJE">Maíz Amarillo y Forrajes (Moderado)</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                disabled={simulatingPhase !== null}
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                {simulatingPhase ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{simulatingPhase}</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 fill-white" />
-                    <span>Ejecutar Simulación Multivariable</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* RESULTADOS MULTIVARIABLE */}
-          <div className="lg:col-span-7 space-y-4">
-            {multiResult ? (
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 animate-fade-in">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-                  <div>
-                    <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Resultado de Simulación #{multiResult.id_simulacion}</span>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">{multiResult.titulo_escenario}</h3>
-                  </div>
-                  {multiResult.alerta_critica && (
-                    <span className="px-3 py-1 bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 text-xs font-bold rounded-full flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                      ALERTA CRÍTICA
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
-                    <span className="text-[10px] text-slate-500 font-semibold block">Caudal Proyectado</span>
-                    <span className="text-base font-extrabold text-slate-900 dark:text-white">{multiResult.caudal_proyectado_m3s} m³/s</span>
-                    <span className="text-[10px] text-slate-400 block">{multiResult.caudal_proyectado_ls} l/s</span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
-                    <span className="text-[10px] text-slate-500 font-semibold block">Salinidad (EC)</span>
-                    <span className="text-base font-extrabold text-amber-600 dark:text-amber-400">{multiResult.salinidad_proyectada_ec} µS/cm</span>
-                    <span className="text-[10px] text-slate-400 block">Base: {multiResult.salinidad_base_ec}</span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
-                    <span className="text-[10px] text-slate-500 font-semibold block">pH Proyectado</span>
-                    <span className="text-base font-extrabold text-purple-600 dark:text-purple-400">{multiResult.ph_proyectado}</span>
-                    <span className="text-[10px] text-slate-400 block">Base: {multiResult.ph_base}</span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
-                    <span className="text-[10px] text-slate-500 font-semibold block">Calidad WQI</span>
-                    <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">{multiResult.wqi_proyectado}</span>
-                    <span className="text-[10px] text-slate-400 block">{multiResult.wqi_categoria}</span>
-                  </div>
-                </div>
-
-                {/* TARJETA MAAS-HOFFMAN AGRONÓMICA */}
-                <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-800/70 dark:to-amber-950/20 border border-amber-200 dark:border-amber-900/50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
-                      <Sprout className="w-4 h-4 text-amber-600" />
-                      Impacto Agronómico Maas-Hoffman: {multiResult.impacto_cultivo?.nombre_legible}
-                    </span>
-                    <span className="text-xs font-extrabold text-rose-600">
-                      -{multiResult.impacto_cultivo?.perdida_rendimiento_pct}% Pérdida
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-700 dark:text-slate-300">
-                    {multiResult.impacto_cultivo?.diagnostico_agronomico}
-                  </p>
-                  <div className="pt-2 border-t border-amber-200/60 dark:border-amber-900/40 flex items-start gap-2 text-xs text-slate-800 dark:text-slate-200">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Acción Recomendada:</strong> {multiResult.impacto_cultivo?.accion_recomendada}</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full min-h-[300px] flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
-                <Sliders className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
-                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Simulador Multivariable Listo</h4>
-                <p className="text-xs text-slate-500 max-w-sm mt-1">Configura las variaciones de caudal y salinidad a la izquierda y presiona Ejecutar para ver la respuesta biofísica.</p>
-              </div>
+              </>
             )}
           </div>
         </div>
       )}
 
-      {/* ============================================================= */}
-      {/* PESTAÑA 2: LEAD TIME & CASCADA 3D */}
-      {/* ============================================================= */}
-      {activeTab === 'cascade' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Simulador de Propagación en Cascada Multitramo (Topología Hidráulica 3D)
-              </h2>
-            </div>
+      {/* ========================================================================= */}
+      {/* TAB 2: SIMULADOR DE ESTRÉS POR PARÁMETROS DE CALIDAD DE AGUA */}
+      {/* ========================================================================= */}
+      {activeTab === 'stress_whatif' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* LEFT: CROP SELECTOR & 5 STRESS SLIDERS */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-5 shadow-xl">
+              <div className="space-y-1">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-cyan-400" />
+                  Cultivo & Variables Físico-Químicas
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Simula la respuesta agronómica individual según las leyes de Maas-Hoffman y factores bioquímicos.
+                </p>
+              </div>
 
-            <form onSubmit={handleRunCascade} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Estación Origen del Evento:
-                </label>
+              {/* Crop Select */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-slate-300 font-medium">Cultivo a Someter a Prueba de Estrés:</label>
                 <select
-                  value={cascadeOrigin}
-                  onChange={(e) => setCascadeOrigin(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                  value={stressCropId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setStressCropId(id);
+                    runStressSimulation(id, stressEc, stressPh, stressTurbidity, stressTemp, stressWaterRatio, selectedRegion);
+                  }}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-white focus:outline-none"
                 >
-                  {nodes.map(n => (
-                    <option key={n.id_nodo} value={n.id_nodo}>
-                      {n.nombre} ({n.id_nodo}) - {n.cota_msnm} msnm
-                    </option>
-                  ))}
+                  <optgroup label="🌊 Costa">
+                    {cropsCatalog.filter(c => c.region_natural === 'Costa').map(c => (
+                      <option key={c.crop_id} value={c.crop_id} className="bg-slate-900 text-white">{c.name}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🏔️ Sierra">
+                    {cropsCatalog.filter(c => c.region_natural === 'Sierra').map(c => (
+                      <option key={c.crop_id} value={c.crop_id} className="bg-slate-900 text-white">{c.name}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🌴 Selva">
+                    {cropsCatalog.filter(c => c.region_natural === 'Selva').map(c => (
+                      <option key={c.crop_id} value={c.crop_id} className="bg-slate-900 text-white">{c.name}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🌱 Resilientes IA">
+                    {cropsCatalog.filter(c => c.category?.startsWith('Resilientes')).map(c => (
+                      <option key={c.crop_id} value={c.crop_id} className="bg-slate-900 text-white">{c.name}</option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Caudal de Transporte (m³/s):
-                </label>
-                <input
-                  type="number"
-                  min="0.1"
-                  max="50"
-                  step="0.1"
-                  value={cascadeCaudal}
-                  onChange={(e) => setCascadeCaudal(parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
+              {/* 5 STRESS SLIDERS */}
+              <div className="space-y-4 pt-2 border-t border-slate-800">
+                {/* 1. Salinity EC */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-300 font-medium">Conductividad Eléctrica (CE):</span>
+                    <span className="font-mono font-bold text-cyan-400">{stressEc} µS/cm ({(stressEc / 1000).toFixed(2)} dS/m)</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="100"
+                    max="8000"
+                    step="50"
+                    value={stressEc}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setStressEc(val);
+                      runStressSimulation(stressCropId, val, stressPh, stressTurbidity, stressTemp, stressWaterRatio, selectedRegion);
+                    }}
+                    className="w-full accent-cyan-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                    <span>Agua Dulce (100)</span>
+                    <span>Salobre Moderada (3,000)</span>
+                    <span>Hiper-Salina (8,000)</span>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Salinidad en Origen (µS/cm):
-                </label>
-                <input
-                  type="number"
-                  min="100"
-                  max="10000"
-                  step="50"
-                  value={cascadeSalinidad}
-                  onChange={(e) => setCascadeSalinidad(parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
+                {/* 2. pH */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-300 font-medium">Potencial de Hidrógeno (pH):</span>
+                    <span className={`font-mono font-bold ${stressPh < 6.0 || stressPh > 8.0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                      {stressPh.toFixed(1)}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="4.0"
+                    max="10.0"
+                    step="0.1"
+                    value={stressPh}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setStressPh(val);
+                      runStressSimulation(stressCropId, stressEc, val, stressTurbidity, stressTemp, stressWaterRatio, selectedRegion);
+                    }}
+                    className="w-full accent-amber-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                    <span>Ácido (4.0)</span>
+                    <span>Neutro Óptimo (6.5-7.5)</span>
+                    <span>Alcalino (10.0)</span>
+                  </div>
+                </div>
 
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  disabled={loadingCascade}
-                  className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-                >
-                  {loadingCascade ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-white" />}
-                  <span>Calcular Timeline en Cascada</span>
-                </button>
+                {/* 3. Turbidity */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-300 font-medium">Turbidez / Sedimentos (NTU):</span>
+                    <span className="font-mono font-bold text-slate-300">{stressTurbidity} NTU</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="500"
+                    step="5"
+                    value={stressTurbidity}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setStressTurbidity(val);
+                      runStressSimulation(stressCropId, stressEc, stressPh, val, stressTemp, stressWaterRatio, selectedRegion);
+                    }}
+                    className="w-full accent-slate-400 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                {/* 4. Temperature */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-300 font-medium">Temperatura del Agua de Riego:</span>
+                    <span className="font-mono font-bold text-rose-400">{stressTemp.toFixed(1)} °C</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="8.0"
+                    max="38.0"
+                    step="0.5"
+                    value={stressTemp}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setStressTemp(val);
+                      runStressSimulation(stressCropId, stressEc, stressPh, stressTurbidity, val, stressWaterRatio, selectedRegion);
+                    }}
+                    className="w-full accent-rose-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                {/* 5. Water Availability Ratio */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-300 font-medium">Disponibilidad Hídrica (Oferta/Demanda):</span>
+                    <span className="font-mono font-bold text-emerald-400">{(stressWaterRatio * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.30"
+                    max="1.30"
+                    step="0.05"
+                    value={stressWaterRatio}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setStressWaterRatio(val);
+                      runStressSimulation(stressCropId, stressEc, stressPh, stressTurbidity, stressTemp, val, selectedRegion);
+                    }}
+                    className="w-full accent-emerald-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  />
+                </div>
               </div>
-            </form>
+            </div>
           </div>
 
-          {cascadeResult && (
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Timeline de Tránsito desde {cascadeResult.nombre_origen} ({cascadeResult.cota_origen_msnm} msnm)
+          {/* RIGHT: STRESS RESULTS, MULTI-FACTOR GAUGES & DIAGNOSTICS */}
+          <div className="lg:col-span-7 space-y-6">
+            {loadingStress && (
+              <div className="h-96 flex flex-col items-center justify-center bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+                <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin mb-3" />
+                <p className="text-sm text-slate-300 font-medium">Evaluando cinética de estrés biofísico...</p>
+              </div>
+            )}
+
+            {!loadingStress && stressResult && (
+              <>
+                {/* OVERALL SCORE & FINANCIAL IMPACT */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-black text-white">{stressResult.crop_name}</h3>
+                        {getZoneBadge(stressResult.region_natural)}
+                      </div>
+                      <p className="text-xs text-slate-400 font-mono">
+                        Resiliencia: <span className="text-white font-bold">{stressResult.resilience_level}</span> • Rendimiento base: {stressResult.base_yield_kg_ha} kg/ha
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(stressResult.status_color, stressResult.status)}
+                      <div className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-mono font-black text-lg text-white">
+                        {stressResult.suitability_score}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4 Financial Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+                    <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
+                      <span className="text-[10px] font-sans text-slate-400 block font-medium">Rendimiento Esperado</span>
+                      <span className="text-sm font-bold text-white">{stressResult.expected_yield_kg_ha} kg/ha</span>
+                      <span className="text-[10px] text-slate-500 block">Base: {stressResult.base_yield_kg_ha} kg</span>
+                    </div>
+
+                    <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
+                      <span className="text-[10px] font-sans text-slate-400 block font-medium">Precio en Chacra</span>
+                      <span className="text-sm font-bold text-emerald-400">S/. {stressResult.farmgate_price_s_kg.toFixed(2)} /kg</span>
+                      <span className="text-[10px] text-slate-500 block">Cotización SIEA</span>
+                    </div>
+
+                    <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
+                      <span className="text-[10px] font-sans text-slate-400 block font-medium">Ingreso / Hectárea</span>
+                      <span className="text-sm font-bold text-cyan-400">S/. {stressResult.stressed_revenue_ha_s.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-500 block">Potencial: S/. {stressResult.potential_revenue_ha_s.toLocaleString()}</span>
+                    </div>
+
+                    <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
+                      <span className="text-[10px] font-sans text-slate-400 block font-medium">Pérdida por Estrés</span>
+                      <span className={`text-sm font-bold ${stressResult.economic_loss_ha_s > 0 ? 'text-rose-400' : 'text-slate-400'}`}>
+                        S/. {stressResult.economic_loss_ha_s.toLocaleString()} /ha
+                      </span>
+                      {stressResult.extra_filtration_cost_s_ha > 0 && (
+                        <span className="text-[10px] text-amber-400 block">+S/. {stressResult.extra_filtration_cost_s_ha} filtro</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5 BIOCHEMICAL STRESS FACTOR GAUGES */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+                  <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-cyan-400" />
+                    Cinética de Factores Biofísicos de Retención de Rendimiento
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Caudal simulado: {cascadeResult.caudal_efectivo_m3s} m³/s | {cascadeResult.total_estaciones_aguas_abajo} estaciones receptoras aguas abajo
-                  </p>
-                </div>
-              </div>
 
-              {/* LÍNEA DE TIEMPO EN CASCADA CON ANIMACIÓN */}
-              <div className="space-y-4">
-                {cascadeResult.secuencia_nodos.map((hop, index) => (
-                  <div
-                    key={hop.id_nodo}
-                    className={`p-4 rounded-xl border transition-all ${
-                      isCascadeAnimating ? 'animate-pulse' : ''
-                    } ${
-                      hop.nivel_alerta === 'CRITICO'
-                        ? 'bg-rose-50/80 dark:bg-rose-950/20 border-rose-300 dark:border-rose-800'
-                        : hop.nivel_alerta === 'ALERTA'
-                        ? 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800'
-                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
-                    }`}
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-xs">
-                          {hop.orden_secuencia}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 dark:text-white text-sm">{hop.nombre}</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 font-semibold">
-                              {hop.cota_msnm} msnm (Δ{hop.desnivel_acumulado_m}m)
-                            </span>
+                  <div className="space-y-3 font-mono">
+                    {/* Salinity Factor */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs font-sans">
+                        <span className="text-slate-300 font-medium">1. Retención por Salinidad (k_sal Maas-Hoffman):</span>
+                        <span className="font-bold text-cyan-400">{stressResult.salinity_retention_pct}%</span>
+                      </div>
+                      <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 ${
+                            stressResult.salinity_retention_pct >= 90 ? 'bg-cyan-400' : stressResult.salinity_retention_pct >= 70 ? 'bg-amber-400' : 'bg-rose-500'
+                          }`}
+                          style={{ width: `${stressResult.salinity_retention_pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-sans block">{stressResult.diagnostics?.salinity}</span>
+                    </div>
+
+                    {/* pH Factor */}
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between text-xs font-sans">
+                        <span className="text-slate-300 font-medium">2. Disponibilidad Nutricional por pH (k_ph Truog):</span>
+                        <span className="font-bold text-amber-400">{stressResult.ph_factor_pct}%</span>
+                      </div>
+                      <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-amber-400 transition-all duration-500"
+                          style={{ width: `${stressResult.ph_factor_pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-sans block">{stressResult.diagnostics?.ph}</span>
+                    </div>
+
+                    {/* Turbidity Factor */}
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between text-xs font-sans">
+                        <span className="text-slate-300 font-medium">3. Factor de Turbidez & Emisores (k_turb):</span>
+                        <span className="font-bold text-slate-300">{stressResult.turbidity_factor_pct}%</span>
+                      </div>
+                      <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-slate-400 transition-all duration-500"
+                          style={{ width: `${stressResult.turbidity_factor_pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-sans block">{stressResult.diagnostics?.turbidity}</span>
+                    </div>
+
+                    {/* Thermal Factor */}
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between text-xs font-sans">
+                        <span className="text-slate-300 font-medium">4. Factor Térmico Radicular (k_temp):</span>
+                        <span className="font-bold text-rose-400">{stressResult.temperature_factor_pct}%</span>
+                      </div>
+                      <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-rose-400 transition-all duration-500"
+                          style={{ width: `${stressResult.temperature_factor_pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-sans block">{stressResult.diagnostics?.temperature}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RESILIENT REPLACEMENT CROPS RECOMMENDATION */}
+                {stressResult.substitutes && stressResult.substitutes.length > 0 && (
+                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      Cultivos Sustitutos Resilientes Recomendados por el Motor IA
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Opciones agronómicas tolerantes a las condiciones químicas simuladas que minimizan la merma económica:
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {stressResult.substitutes.map((sub) => (
+                        <div
+                          key={sub.crop_id}
+                          className="bg-slate-950 border border-slate-800 hover:border-emerald-500/50 rounded-xl p-3.5 space-y-2 transition-all"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-white">{sub.crop_name}</span>
+                            {getZoneBadge(sub.region_natural)}
                           </div>
-                          <span className="text-xs text-slate-500">
-                            Distancia: +{hop.distancia_tramo_km} km (Acumulado: {hop.distancia_acumulada_km} km) | Vel. Media: {hop.velocidad_media_kmh} km/h
-                          </span>
+                          <div className="text-[11px] text-slate-300 font-mono space-y-0.5">
+                            <div>Score Aptitud: <span className="text-emerald-400 font-bold">{sub.suitability_score}%</span></div>
+                            <div>Ahorro Hídrico: <span className="text-cyan-400 font-bold">{sub.water_saving_m3_ha} m³/ha</span></div>
+                            <div>Ingreso Bruto: <span className="text-white font-bold">S/. {sub.expected_gross_income_s_ha.toLocaleString()} /ha</span></div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 italic">"{sub.rationale}"</p>
                         </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 text-right">
-                        <div>
-                          <span className="text-[10px] text-slate-500 block">Llegada Frente</span>
-                          <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400">{hop.lead_time_frente_legible}</span>
-                        </div>
-
-                        <div>
-                          <span className="text-[10px] text-slate-500 block">Salinidad Llegada</span>
-                          <span className="text-xs font-extrabold text-amber-600 dark:text-amber-400">{hop.salinidad_estimada_llegada_ec} µS/cm</span>
-                        </div>
-
-                        <div>
-                          <span className="text-[10px] text-slate-500 block">Compuertas</span>
-                          <span className="text-xs font-bold text-slate-900 dark:text-white">{hop.estado_compuerta_recomendado}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/40 text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                      <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                      <span>{hop.indicacion_operativa}</span>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ============================================================= */}
-      {/* PESTAÑA 3: PRESCRIPCIÓN DE DILUCIÓN */}
-      {/* ============================================================= */}
-      {activeTab === 'dilution' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Droplets className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Prescriptor de Dilución de Rescate
-              </h2>
-            </div>
-
-            <form onSubmit={handleRunDilution} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Salinidad Actual en Río (µS/cm):
-                </label>
-                <input
-                  type="number"
-                  min="200"
-                  max="8000"
-                  value={dilutionForm.salinidad_actual_rio_ec}
-                  onChange={(e) => setDilutionForm({ ...dilutionForm, salinidad_actual_rio_ec: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Caudal Actual del Río (m³/s):
-                </label>
-                <input
-                  type="number"
-                  min="0.1"
-                  max="30"
-                  step="0.1"
-                  value={dilutionForm.caudal_actual_rio_m3s}
-                  onChange={(e) => setDilutionForm({ ...dilutionForm, caudal_actual_rio_m3s: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Salinidad Objetivo / Segura (µS/cm):
-                </label>
-                <input
-                  type="number"
-                  min="200"
-                  max="2500"
-                  value={dilutionForm.salinidad_objetivo_ec}
-                  onChange={(e) => setDilutionForm({ ...dilutionForm, salinidad_objetivo_ec: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Ventana de Lavado (Horas):
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="48"
-                  value={dilutionForm.duracion_lavado_horas}
-                  onChange={(e) => setDilutionForm({ ...dilutionForm, duracion_lavado_horas: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loadingDilution}
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                {loadingDilution ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-white" />}
-                <span>Calcular Descarga de Dilución</span>
-              </button>
-            </form>
-          </div>
-
-          <div className="lg:col-span-7">
-            {dilutionResult ? (
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Prescripción Hidráulica de Desembalse
-                </h3>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                    <span className="text-[10px] text-slate-500 block">Descarga Requerida</span>
-                    <span className="text-lg font-extrabold text-blue-600">{dilutionResult.caudal_descarga_requerido_m3s} m³/s</span>
-                    <span className="text-[10px] text-slate-400">{dilutionResult.caudal_descarga_requerido_ls} l/s</span>
-                  </div>
-
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                    <span className="text-[10px] text-slate-500 block">Volumen Total</span>
-                    <span className="text-lg font-extrabold text-slate-900 dark:text-white">{dilutionResult.volumen_total_desembalse_mmc} MMC</span>
-                    <span className="text-[10px] text-slate-400">{dilutionResult.volumen_total_desembalse_m3?.toLocaleString()} m³</span>
-                  </div>
-
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                    <span className="text-[10px] text-slate-500 block">Caudal Total Río</span>
-                    <span className="text-lg font-extrabold text-emerald-600">{dilutionResult.caudal_total_resultante_m3s} m³/s</span>
-                    <span className="text-[10px] text-slate-400">Río + Descarga</span>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900 text-xs text-slate-800 dark:text-slate-200">
-                  <span className="font-bold block mb-1">Prescripción Oficial:</span>
-                  {dilutionResult.prescripcion_tecnica}
-                </div>
-              </div>
-            ) : (
-              <div className="h-full min-h-[300px] flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
-                <Droplets className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
-                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Prescriptor de Dilución</h4>
-                <p className="text-xs text-slate-500 max-w-sm mt-1">Calcula el volumen exacto a liberar desde lagunas o represas para lavar plumas de salinidad.</p>
-              </div>
+                )}
+              </>
             )}
           </div>
         </div>
       )}
 
-      {/* ============================================================= */}
-      {/* PESTAÑA 4: AUDITORÍA DE LA MITA */}
-      {/* ============================================================= */}
-      {activeTab === 'mita' && (
+      {/* ========================================================================= */}
+      {/* TAB 3: AUDITORÍA DE INTENCIONES DE SIEMBRA ENA */}
+      {/* ========================================================================= */}
+      {activeTab === 'ena_intentions' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Scale className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Auditoría Forense de La Mita
-              </h2>
+          {/* LEFT: ENA AUDIT CONTROLS */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-5 shadow-xl">
+              <div className="space-y-1">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-amber-400" />
+                  Auditoría de Siembra ENA vs Río
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Cruza las intenciones de siembra declaradas por productores en la Encuesta Nacional Agraria con el caudal asignado al valle.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-300 font-medium">Caudal Asignado a la Cuenca / Sector:</span>
+                    <span className="font-mono font-bold text-emerald-400">{enaFlow.toFixed(2)} m³/s</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.20"
+                    max="5.00"
+                    step="0.05"
+                    value={enaFlow}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setEnaFlow(val);
+                      runEnaAudit(selectedRegion, val, enaIrrigation);
+                    }}
+                    className="w-full accent-emerald-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-300 font-medium">Sistema de Riego Predominante:</label>
+                  <select
+                    value={enaIrrigation}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEnaIrrigation(val);
+                      runEnaAudit(selectedRegion, enaFlow, val);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none"
+                  >
+                    <option value="gravity">Gravedad Tradicional (55% Eficiencia)</option>
+                    <option value="sprinkler">Aspersión Mixta (75% Eficiencia)</option>
+                    <option value="drip">Goteo Tecnificado (88% Eficiencia)</option>
+                  </select>
+                </div>
+              </div>
             </div>
-
-            <form onSubmit={handleRunMita} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Bocatoma / Nodo Infractor:
-                </label>
-                <select
-                  value={mitaForm.id_nodo_infractor}
-                  onChange={(e) => setMitaForm({ ...mitaForm, id_nodo_infractor: e.target.value })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                >
-                  {nodes.map(n => (
-                    <option key={n.id_nodo} value={n.id_nodo}>
-                      {n.nombre} ({n.id_nodo})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Caudal en Exceso Sobre Asignación (l/s):
-                </label>
-                <input
-                  type="number"
-                  min="10"
-                  max="3000"
-                  step="10"
-                  value={mitaForm.caudal_exceso_ls}
-                  onChange={(e) => setMitaForm({ ...mitaForm, caudal_exceso_ls: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Duración de Sobre-Extracción (Horas):
-                </label>
-                <input
-                  type="number"
-                  min="0.5"
-                  max="48"
-                  step="0.5"
-                  value={mitaForm.duracion_sobre_extraccion_horas}
-                  onChange={(e) => setMitaForm({ ...mitaForm, duracion_sobre_extraccion_horas: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loadingMita}
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                {loadingMita ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-white" />}
-                <span>Generar Dictamen Forense de Turnos</span>
-              </button>
-            </form>
           </div>
 
-          <div className="lg:col-span-7">
-            {mitaResult ? (
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Balance Forense de Afectación de Turnos
-                </h3>
+          {/* RIGHT: ENA VERDICT & BREAKDOWN */}
+          <div className="lg:col-span-7 space-y-6">
+            {loadingEna && (
+              <div className="h-96 flex flex-col items-center justify-center bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+                <RefreshCw className="w-8 h-8 text-amber-400 animate-spin mb-3" />
+                <p className="text-sm text-slate-300 font-medium">Auditando base de datos ENA Módulo 1912...</p>
+              </div>
+            )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                    <span className="text-[10px] text-slate-500 block">Volumen Sustraído</span>
-                    <span className="text-lg font-extrabold text-rose-600">{mitaResult.volumen_total_sustraido_m3?.toLocaleString()} m³</span>
+            {!loadingEna && enaResult && (
+              <>
+                {/* VERDICT BANNER */}
+                <div className={`p-5 rounded-2xl border space-y-2 shadow-xl ${
+                  enaResult.verdict_color === 'green'
+                    ? 'bg-emerald-950/30 border-emerald-500/40'
+                    : enaResult.verdict_color === 'yellow'
+                    ? 'bg-amber-950/30 border-amber-500/40'
+                    : 'bg-rose-950/30 border-rose-500/40'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {enaResult.verdict_color === 'green' ? (
+                      <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                    ) : (
+                      <ShieldAlert className="w-6 h-6 text-rose-400" />
+                    )}
+                    <h3 className="text-base font-black text-white">{enaResult.verdict}</h3>
+                  </div>
+                  <p className="text-xs text-slate-300 font-sans">{enaResult.recommendation}</p>
+                </div>
+
+                {/* 4 KPIS */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                    <span className="text-[10px] font-sans text-slate-400 block font-medium">Área Declarada ENA</span>
+                    <span className="text-base font-bold text-white">{enaResult.total_declared_ha.toLocaleString()} ha</span>
                   </div>
 
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                    <span className="text-[10px] text-slate-500 block">Retraso en Turno</span>
-                    <span className="text-lg font-extrabold text-amber-600">+{mitaResult.retraso_turno_valle_horas} horas</span>
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                    <span className="text-[10px] font-sans text-slate-400 block font-medium">Demanda Total ENA</span>
+                    <span className="text-base font-bold text-cyan-400">{enaResult.total_intentions_demand_mmc} MMC</span>
                   </div>
 
-                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                    <span className="text-[10px] text-slate-500 block">Hectáreas Afectadas</span>
-                    <span className="text-lg font-extrabold text-slate-900 dark:text-white">~{mitaResult.deficit_hectareas_afectadas} ha</span>
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                    <span className="text-[10px] font-sans text-slate-400 block font-medium">Área Asegurada</span>
+                    <span className="text-base font-bold text-emerald-400">{enaResult.hectares_secured_ha.toLocaleString()} ha</span>
+                  </div>
+
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                    <span className="text-[10px] font-sans text-slate-400 block font-medium">Área en Riesgo</span>
+                    <span className={`text-base font-bold ${enaResult.hectares_at_risk_ha > 0 ? 'text-rose-400' : 'text-slate-400'}`}>
+                      {enaResult.hectares_at_risk_ha.toLocaleString()} ha
+                    </span>
                   </div>
                 </div>
 
-                <div className="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-900 text-xs text-slate-800 dark:text-slate-200">
-                  <span className="font-bold block mb-1">Dictamen Forense:</span>
-                  {mitaResult.dictamen_auditoria}
+                {/* INTENTIONS BREAKDOWN TABLE */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
+                  <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-amber-400" />
+                    Principales Cultivos Declarados en {selectedRegion} (Módulo 1912 ENA)
+                  </h3>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-semibold font-mono">
+                          <th className="pb-2">Cultivo Declarado</th>
+                          <th className="pb-2">Declaraciones</th>
+                          <th className="pb-2">Superficie Intención (ha)</th>
+                          <th className="pb-2">Demanda Hídrica Requerida</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 font-mono">
+                        {enaResult.intentions_breakdown?.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-800/30">
+                            <td className="py-2.5 font-bold text-white font-sans">{item.crop_declared}</td>
+                            <td className="py-2.5 text-slate-400">{item.declarations_count} productores</td>
+                            <td className="py-2.5 text-emerald-400 font-bold">{item.planned_ha} ha</td>
+                            <td className="py-2.5 text-cyan-400 font-bold">{item.water_demand_mmc} MMC</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="h-full min-h-[300px] flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
-                <Scale className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
-                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Auditoría de Turnos de Riego</h4>
-                <p className="text-xs text-slate-500 max-w-sm mt-1">Cuantifica el impacto de sobre-extracciones no autorizadas en el retraso del turno de comisiones aguas abajo.</p>
-              </div>
+              </>
             )}
           </div>
         </div>
       )}
 
-      {/* ============================================================= */}
-      {/* PESTAÑA 5: HISTORIAL FORENSE */}
-      {/* ============================================================= */}
-      {activeTab === 'history' && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Historial Forense de Simulaciones
-              </h2>
+      {/* ========================================================================= */}
+      {/* TAB 4: ESTADÍSTICAS & BENCHMARKS REGIONALES MIDAGRI */}
+      {/* ========================================================================= */}
+      {activeTab === 'midagri_kpis' && regionalBenchmark && (
+        <div className="space-y-6">
+          {/* TOP BENCHMARK SUMMARY CARDS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* ENA LOSS PROFILE */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400" />
+                Causas de Pérdida Agrícola ({selectedRegion})
+              </h3>
+              <p className="text-xs text-slate-400">
+                Distribución porcentual de siniestros agrarios reportados en ENA:
+              </p>
+
+              <div className="space-y-2.5 font-mono text-xs">
+                <div>
+                  <div className="flex justify-between mb-1 font-sans">
+                    <span className="text-slate-300">Déficit Hídrico / Sequía</span>
+                    <span className="font-bold text-rose-400">{regionalBenchmark.loss_profile?.drought_deficit_pct || 0}%</span>
+                  </div>
+                  <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-rose-500" style={{ width: `${regionalBenchmark.loss_profile?.drought_deficit_pct || 0}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1 font-sans">
+                    <span className="text-slate-300">Salinidad / Degradación de Suelo</span>
+                    <span className="font-bold text-cyan-400">{regionalBenchmark.loss_profile?.salinity_soil_pct || 0}%</span>
+                  </div>
+                  <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-cyan-400" style={{ width: `${regionalBenchmark.loss_profile?.salinity_soil_pct || 0}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1 font-sans">
+                    <span className="text-slate-300">Plagas y Enfermedades</span>
+                    <span className="font-bold text-amber-400">{regionalBenchmark.loss_profile?.pests_pct || 0}%</span>
+                  </div>
+                  <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-400" style={{ width: `${regionalBenchmark.loss_profile?.pests_pct || 0}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1 font-sans">
+                    <span className="text-slate-300">Heladas / Granizadas</span>
+                    <span className="font-bold text-indigo-400">{regionalBenchmark.loss_profile?.frost_hail_pct || 0}%</span>
+                  </div>
+                  <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-400" style={{ width: `${regionalBenchmark.loss_profile?.frost_hail_pct || 0}%` }} />
+                  </div>
+                </div>
+              </div>
             </div>
-            <button
-              onClick={loadHistory}
-              disabled={loadingHistory}
-              className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-            >
-              <RefreshCw className={`w-4 h-4 ${loadingHistory ? 'animate-spin' : ''}`} />
-            </button>
+
+            {/* IRRIGATION TECHNOLOGY PROFILE */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-cyan-400" />
+                Tecnificación del Riego ({selectedRegion})
+              </h3>
+              <p className="text-xs text-slate-400">
+                Adopción tecnológica en parcelas registradas (ENA Módulo 1894):
+              </p>
+
+              <div className="space-y-3 font-mono text-xs pt-1">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                  <div>
+                    <span className="text-xs font-bold text-white block font-sans">Riego por Gravedad</span>
+                    <span className="text-[10px] text-slate-400 font-sans">Eficiencia: 50-60%</span>
+                  </div>
+                  <span className="text-sm font-bold text-slate-300">{regionalBenchmark.irrigation_profile?.gravity_pct || 65}%</span>
+                </div>
+
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                  <div>
+                    <span className="text-xs font-bold text-white block font-sans">Riego por Aspersión</span>
+                    <span className="text-[10px] text-slate-400 font-sans">Eficiencia: 70-80%</span>
+                  </div>
+                  <span className="text-sm font-bold text-amber-400">{regionalBenchmark.irrigation_profile?.sprinkler_pct || 20}%</span>
+                </div>
+
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                  <div>
+                    <span className="text-xs font-bold text-white block font-sans">Riego por Goteo</span>
+                    <span className="text-[10px] text-slate-400 font-sans">Eficiencia: 85-95%</span>
+                  </div>
+                  <span className="text-sm font-bold text-emerald-400">{regionalBenchmark.irrigation_profile?.drip_pct || 15}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CROPS CATALOG COVERAGE */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-emerald-400" />
+                Matriz de Calibración MIDAGRI
+              </h3>
+              <p className="text-xs text-slate-400">
+                Parámetros biofísicos integrados en el motor analítico:
+              </p>
+
+              <div className="space-y-2 text-xs font-mono">
+                <div className="flex justify-between py-1.5 border-b border-slate-800">
+                  <span className="text-slate-400 font-sans">Cultivos Calibrados:</span>
+                  <span className="font-bold text-white">{cropsCatalog.length} variedades</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-slate-800">
+                  <span className="text-slate-400 font-sans">Departamentos con Microdatos:</span>
+                  <span className="font-bold text-emerald-400">25 regiones (100% Perú)</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-slate-800">
+                  <span className="text-slate-400 font-sans">Serie Histórica SIEA:</span>
+                  <span className="font-bold text-cyan-400">2017 - 2023</span>
+                </div>
+                <div className="flex justify-between py-1.5">
+                  <span className="text-slate-400 font-sans">Encuesta Nacional Agraria:</span>
+                  <span className="font-bold text-amber-400">ENA 2024 / ENA 2025</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 font-semibold border-b border-slate-200 dark:border-slate-700">
-                <tr>
-                  <th className="py-2.5 px-3">ID</th>
-                  <th className="py-2.5 px-3">Título Escenario</th>
-                  <th className="py-2.5 px-3">Fecha Ejecución</th>
-                  <th className="py-2.5 px-3">Caudal Proyectado</th>
-                  <th className="py-2.5 px-3">WQI Valle</th>
-                  <th className="py-2.5 px-3">Ejecutado Por</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {history.map(sim => (
-                  <tr key={sim.id_simulacion} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                    <td className="py-2.5 px-3 font-mono font-bold text-blue-600">#{sim.id_simulacion}</td>
-                    <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white">{sim.titulo_escenario}</td>
-                    <td className="py-2.5 px-3 text-slate-500">{formatDateTime(sim.fecha_ejecucion)}</td>
-                    <td className="py-2.5 px-3 font-bold">{sim.resultado_caudal_valle_m3s} m³/s</td>
-                    <td className="py-2.5 px-3 font-bold text-emerald-600">{sim.resultado_wqi_valle}</td>
-                    <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">{sim.ejecutado_por}</td>
+          {/* HISTORICAL YIELDS & PRICES TABLE (SIEA) */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-indigo-400" />
+              Rendimientos Promedio y Precios en Chacra Registrados en SIEA ({selectedRegion})
+            </h3>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 font-semibold font-mono">
+                    <th className="pb-3">Cultivo</th>
+                    <th className="pb-3">Región Natural</th>
+                    <th className="pb-3">Demanda Hídrica (m³/ha)</th>
+                    <th className="pb-3">Rdto. Promedio Regional</th>
+                    <th className="pb-3">Rdto. Base Catálogo</th>
+                    <th className="pb-3">Precio Promedio Chacra</th>
+                    <th className="pb-3">Tolerancia Salina CE</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-mono">
+                  {cropsCatalog.map(crop => {
+                    const stats = regionalBenchmark.crops_stats?.[crop.crop_id] || {};
+                    const meanRdto = stats.mean_yield_kg_ha || crop.base_yield_kg_ha;
+                    const meanPrice = stats.mean_price_s_kg || crop.base_price_s_kg;
+
+                    return (
+                      <tr key={crop.crop_id} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="py-3 font-sans font-bold text-white">{crop.name}</td>
+                        <td className="py-3">{getZoneBadge(crop.region_natural)}</td>
+                        <td className="py-3 text-cyan-400">{crop.water_demand_m3_ha.toLocaleString()} m³/ha</td>
+                        <td className="py-3 text-emerald-400 font-bold">{meanRdto.toLocaleString()} kg/ha</td>
+                        <td className="py-3 text-slate-400">{crop.base_yield_kg_ha.toLocaleString()} kg/ha</td>
+                        <td className="py-3 text-amber-400 font-bold">S/. {meanPrice.toFixed(2)} /kg</td>
+                        <td className="py-3 text-slate-300">{crop.ec_threshold_us_cm} µS/cm</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+};
+
+export default WhatIfSimulatorView;

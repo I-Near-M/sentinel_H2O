@@ -1,7 +1,8 @@
 """
 Sentinel-H2O: MIDAGRI Data Ingestion and Normalization Processor
 Extracts, cleans, and standardizes agricultural statistics from MIDAGRI SIEA (2017-2023)
-and ENA (Encuesta Nacional Agraria 2024-2025).
+and ENA (Encuesta Nacional Agraria 2024-2025) across all Peruvian agro-ecological regions
+(Costa, Sierra, Selva and Nacional).
 """
 
 import os
@@ -16,20 +17,25 @@ import numpy as np
 logger = logging.getLogger("sentinel.ml.midagri_processor")
 logger.setLevel(logging.INFO)
 
-# Default base crops with agronomic parameters (FAO-56 and MIDAGRI standards)
+# Expanded national crops catalog with agronomic, biophysical and economic parameters
 DEFAULT_CROPS_PARAMS: Dict[str, Dict[str, Any]] = {
+    # --- COSTA ---
     "palto": {
         "crop_id": "palto",
         "name": "Palto (Palta Hass / Fuerte)",
+        "region_natural": "Costa",
         "category": "Frutales / Agroexportación",
         "water_demand_m3_ha": 10500.0,
         "ec_threshold_us_cm": 1500.0,     # 1.5 dS/m
-        "salinity_slope_pct": 14.0,       # 14% yield reduction per dS/m above threshold (Maas-Hoffman)
+        "salinity_slope_pct": 14.0,
         "ph_min": 6.0,
         "ph_max": 7.5,
+        "turbidity_max_ntu": 40.0,
+        "temp_water_min_c": 14.0,
+        "temp_water_max_c": 24.0,
         "wqi_min": 65.0,
         "growth_cycle_days": 365,
-        "base_yield_kg_ha": 14500.0,
+        "base_yield_kg_ha": 15500.0,
         "base_price_s_kg": 4.80,
         "resilience_level": "Baja",
         "description": "Cultivo de alta rentabilidad pero muy sensible al estrés por cloruros/sales y déficit hídrico continuo."
@@ -37,12 +43,16 @@ DEFAULT_CROPS_PARAMS: Dict[str, Dict[str, Any]] = {
     "mandarina": {
         "crop_id": "mandarina",
         "name": "Mandarina / Cítricos (Satsuma, W. Murcott)",
+        "region_natural": "Costa",
         "category": "Frutales / Agroexportación",
         "water_demand_m3_ha": 9200.0,
         "ec_threshold_us_cm": 1700.0,     # 1.7 dS/m
         "salinity_slope_pct": 13.0,
         "ph_min": 6.0,
         "ph_max": 7.5,
+        "turbidity_max_ntu": 50.0,
+        "temp_water_min_c": 15.0,
+        "temp_water_max_c": 26.0,
         "wqi_min": 60.0,
         "growth_cycle_days": 365,
         "base_yield_kg_ha": 28000.0,
@@ -53,12 +63,16 @@ DEFAULT_CROPS_PARAMS: Dict[str, Dict[str, Any]] = {
     "vid": {
         "crop_id": "vid",
         "name": "Vid (Uva de Mesa / Pisco)",
+        "region_natural": "Costa",
         "category": "Frutales / Agroexportación",
         "water_demand_m3_ha": 7800.0,
         "ec_threshold_us_cm": 2500.0,     # 2.5 dS/m
         "salinity_slope_pct": 9.6,
         "ph_min": 6.0,
         "ph_max": 8.0,
+        "turbidity_max_ntu": 80.0,
+        "temp_water_min_c": 12.0,
+        "temp_water_max_c": 26.0,
         "wqi_min": 55.0,
         "growth_cycle_days": 365,
         "base_yield_kg_ha": 19500.0,
@@ -66,15 +80,59 @@ DEFAULT_CROPS_PARAMS: Dict[str, Dict[str, Any]] = {
         "resilience_level": "Media",
         "description": "Moderadamente tolerante a la salinidad y con buena respuesta al riego deficitario controlado."
     },
+    "esparrago": {
+        "crop_id": "esparrago",
+        "name": "Espárrago Verde / Blanco",
+        "region_natural": "Costa",
+        "category": "Hortalizas / Agroexportación",
+        "water_demand_m3_ha": 11500.0,
+        "ec_threshold_us_cm": 4100.0,     # 4.1 dS/m
+        "salinity_slope_pct": 2.0,
+        "ph_min": 6.0,
+        "ph_max": 8.2,
+        "turbidity_max_ntu": 100.0,
+        "temp_water_min_c": 14.0,
+        "temp_water_max_c": 28.0,
+        "wqi_min": 50.0,
+        "growth_cycle_days": 365,
+        "base_yield_kg_ha": 12000.0,
+        "base_price_s_kg": 6.50,
+        "resilience_level": "Alta",
+        "description": "Alta demanda volumétrica de agua pero excelente tolerancia a la salinidad y suelos arenosos."
+    },
+    "fresa": {
+        "crop_id": "fresa",
+        "name": "Fresa (San Andreas / Camarosa)",
+        "region_natural": "Costa",
+        "category": "Hortalizas / Bayas",
+        "water_demand_m3_ha": 5800.0,
+        "ec_threshold_us_cm": 1000.0,     # 1.0 dS/m
+        "salinity_slope_pct": 33.0,
+        "ph_min": 5.8,
+        "ph_max": 6.8,
+        "turbidity_max_ntu": 30.0,
+        "temp_water_min_c": 12.0,
+        "temp_water_max_c": 22.0,
+        "wqi_min": 70.0,
+        "growth_cycle_days": 210,
+        "base_yield_kg_ha": 32000.0,
+        "base_price_s_kg": 3.80,
+        "resilience_level": "Muy Baja",
+        "description": "Extremadamente sensible a sales y cloro. Requiere alta calidad de agua y riego presurizado por goteo."
+    },
     "maiz_amarillo": {
         "crop_id": "maiz_amarillo",
         "name": "Maíz Amarillo Duro",
+        "region_natural": "Costa",
         "category": "Granos / Cereales",
         "water_demand_m3_ha": 6200.0,
         "ec_threshold_us_cm": 2700.0,     # 2.7 dS/m
         "salinity_slope_pct": 12.0,
         "ph_min": 5.8,
         "ph_max": 7.8,
+        "turbidity_max_ntu": 120.0,
+        "temp_water_min_c": 14.0,
+        "temp_water_max_c": 30.0,
         "wqi_min": 50.0,
         "growth_cycle_days": 140,
         "base_yield_kg_ha": 8500.0,
@@ -82,31 +140,61 @@ DEFAULT_CROPS_PARAMS: Dict[str, Dict[str, Any]] = {
         "resilience_level": "Media-Alta",
         "description": "Cultivo transitorio tradicional de la costa con demanda hídrica moderada y alta rotación."
     },
-    "maiz_chala": {
-        "crop_id": "maiz_chala",
-        "name": "Maíz Chala (Forraje)",
-        "category": "Forrajes",
-        "water_demand_m3_ha": 5500.0,
-        "ec_threshold_us_cm": 3000.0,
-        "salinity_slope_pct": 10.0,
-        "ph_min": 5.5,
-        "ph_max": 8.0,
-        "wqi_min": 45.0,
-        "growth_cycle_days": 90,
-        "base_yield_kg_ha": 35000.0,
-        "base_price_s_kg": 0.35,
-        "resilience_level": "Alta",
-        "description": "Forraje para ganado lechero del valle, tolerante a variaciones de calidad de agua."
+    "cebolla": {
+        "crop_id": "cebolla",
+        "name": "Cebolla Roja / Amarilla",
+        "region_natural": "Costa",
+        "category": "Hortalizas",
+        "water_demand_m3_ha": 4800.0,
+        "ec_threshold_us_cm": 1200.0,
+        "salinity_slope_pct": 16.0,
+        "ph_min": 6.0,
+        "ph_max": 7.2,
+        "turbidity_max_ntu": 50.0,
+        "temp_water_min_c": 12.0,
+        "temp_water_max_c": 24.0,
+        "wqi_min": 65.0,
+        "growth_cycle_days": 130,
+        "base_yield_kg_ha": 38000.0,
+        "base_price_s_kg": 1.15,
+        "resilience_level": "Baja",
+        "description": "Sensible a la salinidad en germinación y desarrollo inicial de bulbos."
     },
+    "algodon": {
+        "crop_id": "algodon",
+        "name": "Algodón (Tangüis / Pima)",
+        "region_natural": "Costa",
+        "category": "Industriales / Fibras",
+        "water_demand_m3_ha": 7500.0,
+        "ec_threshold_us_cm": 4500.0,     # 4.5 dS/m
+        "salinity_slope_pct": 5.2,
+        "ph_min": 6.0,
+        "ph_max": 8.5,
+        "turbidity_max_ntu": 150.0,
+        "temp_water_min_c": 16.0,
+        "temp_water_max_c": 32.0,
+        "wqi_min": 45.0,
+        "growth_cycle_days": 180,
+        "base_yield_kg_ha": 3200.0,
+        "base_price_s_kg": 4.20,
+        "resilience_level": "Alta",
+        "description": "Fibra textil peruana con excelente tolerancia a sales y calor en valles de Ica, Pisco y Piura."
+    },
+
+    # --- SIERRA ---
     "papa": {
         "crop_id": "papa",
         "name": "Papa (Blanca / Canchán / Yungay)",
+        "region_natural": "Sierra",
         "category": "Tubérculos",
         "water_demand_m3_ha": 5200.0,
-        "ec_threshold_us_cm": 1700.0,
+        "ec_threshold_us_cm": 1700.0,     # 1.7 dS/m
         "salinity_slope_pct": 12.0,
         "ph_min": 5.5,
         "ph_max": 7.2,
+        "turbidity_max_ntu": 60.0,
+        "temp_water_min_c": 8.0,
+        "temp_water_max_c": 20.0,
         "wqi_min": 60.0,
         "growth_cycle_days": 120,
         "base_yield_kg_ha": 22000.0,
@@ -114,79 +202,263 @@ DEFAULT_CROPS_PARAMS: Dict[str, Dict[str, Any]] = {
         "resilience_level": "Media",
         "description": "Sensible al déficit hídrico en fase de tuberización y a salinidades medias."
     },
-    "fresa": {
-        "crop_id": "fresa",
-        "name": "Fresa (San Andreas / Camarosa)",
-        "category": "Hortalizas / Bayas",
-        "water_demand_m3_ha": 5800.0,
-        "ec_threshold_us_cm": 1000.0,     # 1.0 dS/m (Muy sensible)
-        "salinity_slope_pct": 33.0,
-        "ph_min": 5.8,
-        "ph_max": 6.8,
-        "wqi_min": 70.0,
-        "growth_cycle_days": 210,
-        "base_yield_kg_ha": 32000.0,
-        "base_price_s_kg": 3.80,
-        "resilience_level": "Muy Baja",
-        "description": "Extremadamente sensible a sales y cloro. Alta demanda de calidad de agua y riego por goteo."
+    "papa_nativa": {
+        "crop_id": "papa_nativa",
+        "name": "Papa Nativa (Huamantanga / Peruanita / Tumbay)",
+        "region_natural": "Sierra",
+        "category": "Tubérculos",
+        "water_demand_m3_ha": 4600.0,
+        "ec_threshold_us_cm": 2000.0,
+        "salinity_slope_pct": 10.0,
+        "ph_min": 5.0,
+        "ph_max": 7.0,
+        "turbidity_max_ntu": 80.0,
+        "temp_water_min_c": 6.0,
+        "temp_water_max_c": 18.0,
+        "wqi_min": 55.0,
+        "growth_cycle_days": 150,
+        "base_yield_kg_ha": 16000.0,
+        "base_price_s_kg": 2.60,
+        "resilience_level": "Media-Alta",
+        "description": "Cultivo andino de altura con alta rusticidad y cotización premium en gastronomía."
     },
-    "esparrago": {
-        "crop_id": "esparrago",
-        "name": "Espárrago Verde / Blanco",
-        "category": "Hortalizas / Agroexportación",
-        "water_demand_m3_ha": 11500.0,
-        "ec_threshold_us_cm": 4100.0,     # 4.1 dS/m (Muy tolerante)
-        "salinity_slope_pct": 2.0,
-        "ph_min": 6.0,
-        "ph_max": 8.0,
-        "wqi_min": 50.0,
-        "growth_cycle_days": 365,
-        "base_yield_kg_ha": 12000.0,
-        "base_price_s_kg": 6.50,
-        "resilience_level": "Alta",
-        "description": "Alta demanda volumétrica de agua pero excelente tolerancia a la salinidad."
-    },
-    "manzano": {
-        "crop_id": "manzano",
-        "name": "Manzano (Delicia / Ana)",
-        "category": "Frutales",
-        "water_demand_m3_ha": 8200.0,
-        "ec_threshold_us_cm": 1700.0,
-        "salinity_slope_pct": 12.0,
-        "ph_min": 6.0,
+    "maiz_amilaceo": {
+        "crop_id": "maiz_amilaceo",
+        "name": "Maíz Amiláceo / Choclo (Cusco / Mantaro)",
+        "region_natural": "Sierra",
+        "category": "Granos / Cereales",
+        "water_demand_m3_ha": 5400.0,
+        "ec_threshold_us_cm": 2200.0,
+        "salinity_slope_pct": 11.0,
+        "ph_min": 5.5,
         "ph_max": 7.5,
+        "turbidity_max_ntu": 90.0,
+        "temp_water_min_c": 8.0,
+        "temp_water_max_c": 22.0,
+        "wqi_min": 55.0,
+        "growth_cycle_days": 180,
+        "base_yield_kg_ha": 4800.0,
+        "base_price_s_kg": 3.10,
+        "resilience_level": "Media",
+        "description": "Maíz blanco gigante y choclo de valles interandinos con alto arraigo cultural y alimentario."
+    },
+    "quinua": {
+        "crop_id": "quinua",
+        "name": "Quinua (Blanca Junín / Salcedo / Pasankalla)",
+        "region_natural": "Sierra",
+        "category": "Resilientes / Granos Andinos",
+        "water_demand_m3_ha": 3500.0,
+        "ec_threshold_us_cm": 6000.0,     # 6.0 dS/m (Halófita facultativa)
+        "salinity_slope_pct": 1.5,
+        "ph_min": 5.2,
+        "ph_max": 8.5,
+        "turbidity_max_ntu": 150.0,
+        "temp_water_min_c": 5.0,
+        "temp_water_max_c": 22.0,
+        "wqi_min": 35.0,
+        "growth_cycle_days": 135,
+        "base_yield_kg_ha": 3200.0,
+        "base_price_s_kg": 6.80,
+        "resilience_level": "Excepcional",
+        "description": "Extrema resiliencia a la sequía, frío y salinidad, con alta cotización en mercado internacional."
+    },
+    "haba": {
+        "crop_id": "haba",
+        "name": "Haba (Verde / Grano Seco)",
+        "region_natural": "Sierra",
+        "category": "Leguminosas",
+        "water_demand_m3_ha": 4200.0,
+        "ec_threshold_us_cm": 1600.0,
+        "salinity_slope_pct": 13.5,
+        "ph_min": 6.0,
+        "ph_max": 7.8,
+        "turbidity_max_ntu": 70.0,
+        "temp_water_min_c": 8.0,
+        "temp_water_max_c": 20.0,
+        "wqi_min": 60.0,
+        "growth_cycle_days": 140,
+        "base_yield_kg_ha": 6500.0,
+        "base_price_s_kg": 2.40,
+        "resilience_level": "Media",
+        "description": "Leguminosa fijadora de nitrógeno fundamental para rotación de parcelas en la sierra."
+    },
+    "cebada": {
+        "crop_id": "cebada",
+        "name": "Cebada (Grano / Forrajera)",
+        "region_natural": "Sierra",
+        "category": "Granos / Cereales",
+        "water_demand_m3_ha": 4000.0,
+        "ec_threshold_us_cm": 5000.0,     # 5.0 dS/m
+        "salinity_slope_pct": 5.0,
+        "ph_min": 5.8,
+        "ph_max": 8.2,
+        "turbidity_max_ntu": 120.0,
+        "temp_water_min_c": 6.0,
+        "temp_water_max_c": 22.0,
+        "wqi_min": 45.0,
+        "growth_cycle_days": 125,
+        "base_yield_kg_ha": 3800.0,
+        "base_price_s_kg": 1.60,
+        "resilience_level": "Alta",
+        "description": "Cereal de gran rusticidad, tolerante a suelos salinos y escasez hídrica en puna y altiplano."
+    },
+    "avena_forrajera": {
+        "crop_id": "avena_forrajera",
+        "name": "Avena Forrajera (Vilcanota / Mantaro)",
+        "region_natural": "Sierra",
+        "category": "Forrajes",
+        "water_demand_m3_ha": 4500.0,
+        "ec_threshold_us_cm": 3500.0,
+        "salinity_slope_pct": 8.0,
+        "ph_min": 5.5,
+        "ph_max": 7.8,
+        "turbidity_max_ntu": 100.0,
+        "temp_water_min_c": 6.0,
+        "temp_water_max_c": 22.0,
+        "wqi_min": 45.0,
+        "growth_cycle_days": 110,
+        "base_yield_kg_ha": 28000.0,
+        "base_price_s_kg": 0.38,
+        "resilience_level": "Alta",
+        "description": "Forraje verde y henificado indispensable para ganado vacuno y ovino en Puno, Cusco y Junín."
+    },
+    "alcachofa": {
+        "crop_id": "alcachofa",
+        "name": "Alcachofa (Sin Espinas / Criolla)",
+        "region_natural": "Sierra",
+        "category": "Hortalizas / Agroexportación",
+        "water_demand_m3_ha": 7200.0,
+        "ec_threshold_us_cm": 3000.0,
+        "salinity_slope_pct": 8.5,
+        "ph_min": 6.0,
+        "ph_max": 7.8,
+        "turbidity_max_ntu": 60.0,
+        "temp_water_min_c": 10.0,
+        "temp_water_max_c": 22.0,
+        "wqi_min": 55.0,
+        "growth_cycle_days": 180,
+        "base_yield_kg_ha": 18500.0,
+        "base_price_s_kg": 2.80,
+        "resilience_level": "Media-Alta",
+        "description": "Hortaliza de agroexportación cultivada con éxito en el Valle del Mantaro (Junín) y costa."
+    },
+
+    # --- SELVA ---
+    "cafe": {
+        "crop_id": "cafe",
+        "name": "Café Pergamino (Typica, Bourbon, Caturra)",
+        "region_natural": "Selva",
+        "category": "Agroforestería / Agroexportación",
+        "water_demand_m3_ha": 8500.0,
+        "ec_threshold_us_cm": 1400.0,
+        "salinity_slope_pct": 15.0,
+        "ph_min": 5.0,
+        "ph_max": 6.8,     # Prefiere aguas/suelos ligeramente ácidos
+        "turbidity_max_ntu": 50.0,
+        "temp_water_min_c": 16.0,
+        "temp_water_max_c": 26.0,
+        "wqi_min": 65.0,
+        "growth_cycle_days": 365,
+        "base_yield_kg_ha": 1800.0,
+        "base_price_s_kg": 9.50,
+        "resilience_level": "Media",
+        "description": "Cultivo bandera de selva alta (San Martín, Chanchamayo, Jaén). Requiere suelos sin sales y buen drenaje."
+    },
+    "cacao": {
+        "crop_id": "cacao",
+        "name": "Cacao (Criollo / Fino de Aroma / CCN-51)",
+        "region_natural": "Selva",
+        "category": "Agroforestería / Agroexportación",
+        "water_demand_m3_ha": 9500.0,
+        "ec_threshold_us_cm": 1500.0,
+        "salinity_slope_pct": 14.0,
+        "ph_min": 5.5,
+        "ph_max": 7.2,
+        "turbidity_max_ntu": 60.0,
+        "temp_water_min_c": 18.0,
+        "temp_water_max_c": 28.0,
         "wqi_min": 60.0,
         "growth_cycle_days": 365,
-        "base_yield_kg_ha": 18000.0,
-        "base_price_s_kg": 2.10,
+        "base_yield_kg_ha": 1400.0,
+        "base_price_s_kg": 12.00,
         "resilience_level": "Media",
-        "description": "Cultivo frutal tradicional en los valles intermedios (Huaral, Viscas)."
+        "description": "Cultivo de selva de alto valor internacional, sensible al estrés salino y anegamiento prolongado."
     },
-    "cebolla": {
-        "crop_id": "cebolla",
-        "name": "Cebolla Roja / Amarilla",
-        "category": "Hortalizas",
-        "water_demand_m3_ha": 4800.0,
-        "ec_threshold_us_cm": 1200.0,
-        "salinity_slope_pct": 16.0,
-        "ph_min": 6.0,
-        "ph_max": 7.2,
-        "wqi_min": 65.0,
-        "growth_cycle_days": 130,
-        "base_yield_kg_ha": 38000.0,
-        "base_price_s_kg": 1.15,
-        "resilience_level": "Baja",
-        "description": "Sensible a la salinidad en germinación y desarrollo inicial."
+    "palma_aceitera": {
+        "crop_id": "palma_aceitera",
+        "name": "Palma Aceitera (Tenera)",
+        "region_natural": "Selva",
+        "category": "Industriales / Oleaginosas",
+        "water_demand_m3_ha": 12500.0,
+        "ec_threshold_us_cm": 2500.0,
+        "salinity_slope_pct": 8.0,
+        "ph_min": 4.8,
+        "ph_max": 7.0,
+        "turbidity_max_ntu": 100.0,
+        "temp_water_min_c": 20.0,
+        "temp_water_max_c": 32.0,
+        "wqi_min": 50.0,
+        "growth_cycle_days": 365,
+        "base_yield_kg_ha": 22000.0,
+        "base_price_s_kg": 0.65,
+        "resilience_level": "Alta",
+        "description": "Oleaginosa perenne de selva baja (Ucayali, San Martín) con alta demanda de humedad constante."
     },
+    "platano": {
+        "crop_id": "platano",
+        "name": "Plátano / Banano (Bellaco / Seda / Isla)",
+        "region_natural": "Selva",
+        "category": "Frutales",
+        "water_demand_m3_ha": 11000.0,
+        "ec_threshold_us_cm": 1500.0,
+        "salinity_slope_pct": 14.0,
+        "ph_min": 5.5,
+        "ph_max": 7.5,
+        "turbidity_max_ntu": 80.0,
+        "temp_water_min_c": 18.0,
+        "temp_water_max_c": 30.0,
+        "wqi_min": 55.0,
+        "growth_cycle_days": 365,
+        "base_yield_kg_ha": 26000.0,
+        "base_price_s_kg": 1.20,
+        "resilience_level": "Media-Baja",
+        "description": "Frutal básico para seguridad alimentaria en la cuenca amazónica y costa norte."
+    },
+    "yuca": {
+        "crop_id": "yuca",
+        "name": "Yuca (Brava / Dulce / Señorita)",
+        "region_natural": "Selva",
+        "category": "Tubérculos / Raíces",
+        "water_demand_m3_ha": 5200.0,
+        "ec_threshold_us_cm": 3000.0,
+        "salinity_slope_pct": 8.0,
+        "ph_min": 4.5,     # Muy tolerante a acidez de selva
+        "ph_max": 7.5,
+        "turbidity_max_ntu": 120.0,
+        "temp_water_min_c": 16.0,
+        "temp_water_max_c": 32.0,
+        "wqi_min": 45.0,
+        "growth_cycle_days": 270,
+        "base_yield_kg_ha": 18000.0,
+        "base_price_s_kg": 1.10,
+        "resilience_level": "Alta",
+        "description": "Raíz rústica tropical con excelente capacidad de adaptación a suelos ácidos y periodos de sequía."
+    },
+
+    # --- RESILIENTES IA ---
     "granado": {
         "crop_id": "granado",
         "name": "Granado (Wonderful) - [Cultivo Resiliente IA]",
+        "region_natural": "Costa",
         "category": "Resilientes / Alternativos",
         "water_demand_m3_ha": 5200.0,
         "ec_threshold_us_cm": 4000.0,     # 4.0 dS/m
         "salinity_slope_pct": 4.5,
         "ph_min": 6.0,
         "ph_max": 8.2,
+        "turbidity_max_ntu": 100.0,
+        "temp_water_min_c": 12.0,
+        "temp_water_max_c": 30.0,
         "wqi_min": 45.0,
         "growth_cycle_days": 365,
         "base_yield_kg_ha": 17000.0,
@@ -197,55 +469,35 @@ DEFAULT_CROPS_PARAMS: Dict[str, Dict[str, Any]] = {
     "olivo": {
         "crop_id": "olivo",
         "name": "Olivo (Aceituna Criolla / Sevillana) - [Cultivo Resiliente IA]",
+        "region_natural": "Costa",
         "category": "Resilientes / Alternativos",
         "water_demand_m3_ha": 4200.0,
         "ec_threshold_us_cm": 4500.0,     # 4.5 dS/m
         "salinity_slope_pct": 3.0,
         "ph_min": 6.0,
         "ph_max": 8.5,
+        "turbidity_max_ntu": 120.0,
+        "temp_water_min_c": 10.0,
+        "temp_water_max_c": 30.0,
         "wqi_min": 40.0,
         "growth_cycle_days": 365,
         "base_yield_kg_ha": 9000.0,
         "base_price_s_kg": 5.20,
         "resilience_level": "Muy Alta",
         "description": "Excelente tolerancia a la escasez de agua y a aguas con alta carga de sales solubles."
-    },
-    "quinua": {
-        "crop_id": "quinua",
-        "name": "Quinua (Blanca Junín / Salcedo) - [Cultivo Resiliente IA]",
-        "category": "Resilientes / Alternativos",
-        "water_demand_m3_ha": 3500.0,
-        "ec_threshold_us_cm": 6000.0,     # 6.0 dS/m (Halófita facultativa)
-        "salinity_slope_pct": 1.5,
-        "ph_min": 5.5,
-        "ph_max": 8.5,
-        "wqi_min": 35.0,
-        "growth_cycle_days": 135,
-        "base_yield_kg_ha": 3200.0,
-        "base_price_s_kg": 6.80,
-        "resilience_level": "Excepcional",
-        "description": "Extrema resiliencia a la sequía y a la salinidad, con alta cotización en mercado."
-    },
-    "alfalfa": {
-        "crop_id": "alfalfa",
-        "name": "Alfalfa (Monsefú / California)",
-        "category": "Forrajes",
-        "water_demand_m3_ha": 9800.0,
-        "ec_threshold_us_cm": 2000.0,
-        "salinity_slope_pct": 7.3,
-        "ph_min": 6.5,
-        "ph_max": 7.8,
-        "wqi_min": 50.0,
-        "growth_cycle_days": 365,
-        "base_yield_kg_ha": 45000.0,
-        "base_price_s_kg": 0.40,
-        "resilience_level": "Media-Alta",
-        "description": "Forraje perenne de alta cobertura en parcelas de sierra y valles costeros."
     }
 }
 
+# Regional Classification of Peru
+REGIONS_INFO = {
+    "COSTA": ["LIMA", "ICA", "LA LIBERTAD", "PIURA", "LAMBAYEQUE", "AREQUIPA", "ANCASH", "TACNA", "MOQUEGUA", "TUMBES"],
+    "SIERRA": ["JUNIN", "CUSCO", "PUNO", "AYACUCHO", "CAJAMARCA", "HUANUCO", "APURIMAC", "HUANCAVELICA", "PASCO"],
+    "SELVA": ["SAN MARTIN", "UCAYALI", "LORETO", "MADRE DE DIOS", "AMAZONAS"],
+    "NACIONAL": ["NACIONAL"]
+}
+
 class MIDAGRIProcessor:
-    """Processes SIEA and ENA agricultural data and manages caching."""
+    """Processes SIEA and ENA agricultural data across Costa, Sierra and Selva."""
 
     def __init__(self, data_root: Optional[str] = None):
         if data_root is None:
@@ -271,6 +523,14 @@ class MIDAGRIProcessor:
             return ""
         s = str(s).strip()
         return unicodedata.normalize("NFKD", s).encode("ASCII", "ignore").decode("ASCII").upper()
+
+    def get_natural_region_for_department(self, dept: str) -> str:
+        """Returns Costa, Sierra or Selva for a given department."""
+        d_clean = self.clean_text(dept)
+        for nat_reg, depts in REGIONS_INFO.items():
+            if d_clean in depts:
+                return nat_reg
+        return "COSTA"
 
     def load_or_build_all(self, force_rebuild: bool = False) -> None:
         """Loads processed data from cache if available; otherwise builds from raw datasets."""
@@ -412,7 +672,7 @@ class MIDAGRIProcessor:
                             "excess_water_flood_count": 0,
                             "salinity_soil_count": 0,
                             "pests_count": 0,
-                            "other_causes_count": 0,
+                            "frost_hail_count": 0,
                             "total_area_lost_ha": 0.0
                         }
                     
@@ -421,6 +681,7 @@ class MIDAGRIProcessor:
                     losses_by_region[reg_clean]["excess_water_flood_count"] += int(group["P224E_2"].fillna(0).sum()) if "P224E_2" in group.columns else 0
                     losses_by_region[reg_clean]["salinity_soil_count"] += int(group["P224E_3"].fillna(0).sum()) if "P224E_3" in group.columns else 0
                     losses_by_region[reg_clean]["pests_count"] += int(group["P224E_4"].fillna(0).sum()) if "P224E_4" in group.columns else 0
+                    losses_by_region[reg_clean]["frost_hail_count"] += int(group["P224E_5"].fillna(0).sum()) if "P224E_5" in group.columns else 0
                     if "P224D_SUP_1" in group.columns:
                         losses_by_region[reg_clean]["total_area_lost_ha"] += float(group["P224D_SUP_1"].fillna(0).sum())
             except Exception as e:
@@ -437,7 +698,7 @@ class MIDAGRIProcessor:
                     if reg_clean not in intentions_by_region:
                         intentions_by_region[reg_clean] = []
                     
-                    top_crops = group["P1202_NOM"].value_counts().head(8)
+                    top_crops = group["P1202_NOM"].value_counts().head(10)
                     for crop_name, count in top_crops.items():
                         c_clean = self.clean_text(crop_name)
                         sub = group[group["P1202_NOM"] == crop_name]
@@ -466,7 +727,7 @@ class MIDAGRIProcessor:
                         "gravity_pct": round((grav / tot) * 100, 1),
                         "sprinkler_pct": round((asp / tot) * 100, 1),
                         "drip_pct": round((got / tot) * 100, 1),
-                        "average_efficiency": round((grav*0.50 + asp*0.75 + got*0.88) / tot, 2)
+                        "average_efficiency": round((grav*0.55 + asp*0.75 + got*0.88) / tot, 2)
                     }
             except Exception as e:
                 logger.warning(f"Error parsing ENA irrigation file {irrf}: {e}")
@@ -482,26 +743,42 @@ class MIDAGRIProcessor:
             "palto": ["PALTO", "PALTA"],
             "mandarina": ["MANDARINA", "TANGELO", "NARANJA", "CITRICOS"],
             "vid": ["VID", "UVA"],
-            "maiz_amarillo": ["MAIZ A. DURO", "MAIZ AMARILLO DURO", "MAIZ DURO"],
-            "maiz_chala": ["MAIZ CHALA", "CHALA"],
-            "papa": ["PAPA", "PAPA BLANCA", "PAPA NATIVA", "PAPA COLOR"],
-            "fresa": ["FRESA"],
             "esparrago": ["ESPARRAGO"],
-            "manzano": ["MANZANO", "MANZANA"],
+            "fresa": ["FRESA"],
+            "maiz_amarillo": ["MAIZ A. DURO", "MAIZ AMARILLO DURO", "MAIZ DURO"],
             "cebolla": ["CEBOLLA", "CEBOLLA CABEZA"],
-            "alfalfa": ["ALFALFA"],
-            "quinua": ["QUINUA"]
+            "algodon": ["ALGODON", "ALGODON RAMA"],
+            "papa": ["PAPA", "PAPA BLANCA", "PAPA COLOR"],
+            "papa_nativa": ["PAPA NATIVA", "PAPA AMARILLA", "HUAMANTANGA"],
+            "maiz_amilaceo": ["MAIZ AMILACEO", "MAIZ CHOCLO", "CHOCLO"],
+            "quinua": ["QUINUA"],
+            "haba": ["HABA", "HABA GRANO SECO", "HABA VERDE"],
+            "cebada": ["CEBADA", "CEBADA GRANO", "CEBADA FORRAJERA"],
+            "avena_forrajera": ["AVENA FORRAJERA", "AVENA GRANO"],
+            "alcachofa": ["ALCACHOFA"],
+            "cafe": ["CAFE", "CAFE PERGAMINO"],
+            "cacao": ["CACAO"],
+            "palma_aceitera": ["PALMA ACEITERA", "PALMA"],
+            "platano": ["PLATANO", "BANANO"],
+            "yuca": ["YUCA"]
         }
 
         df_siea = pd.DataFrame(siea_recs) if siea_recs else pd.DataFrame()
         
-        self.regional_benchmarks = {}
-        regions = set(df_siea['region'].unique()) if not df_siea.empty else {'LIMA', 'ICA', 'LA LIBERTAD', 'ANCASH', 'PIURA', 'AREQUIPA', 'NACIONAL'}
+        all_regions = [
+            'LIMA', 'ICA', 'LA LIBERTAD', 'PIURA', 'LAMBAYEQUE', 'AREQUIPA', 'ANCASH', 'TACNA', 'MOQUEGUA', 'TUMBES',
+            'JUNIN', 'CUSCO', 'PUNO', 'AYACUCHO', 'CAJAMARCA', 'HUANUCO', 'APURIMAC', 'HUANCAVELICA', 'PASCO',
+            'SAN MARTIN', 'UCAYALI', 'LORETO', 'MADRE DE DIOS', 'AMAZONAS', 'CALLAO', 'NACIONAL'
+        ]
         
-        for reg in regions:
+        self.regional_benchmarks = {}
+        for reg in all_regions:
             reg_clean = self.clean_text(reg)
+            nat_reg = self.get_natural_region_for_department(reg_clean)
+            
             self.regional_benchmarks[reg_clean] = {
                 "region": reg_clean,
+                "natural_region": nat_reg,
                 "crops_stats": {},
                 "loss_profile": ena_losses.get(reg_clean, {
                     "total_incidents": 150,
@@ -509,13 +786,14 @@ class MIDAGRIProcessor:
                     "salinity_soil_pct": 20.0,
                     "excess_water_pct": 10.0,
                     "pests_pct": 35.0,
+                    "frost_hail_pct": 15.0,
                     "annual_loss_risk_score": 0.28
                 }),
                 "irrigation_profile": ena_irrig.get(reg_clean, {
-                    "gravity_pct": 60.0,
-                    "sprinkler_pct": 10.0,
-                    "drip_pct": 30.0,
-                    "average_efficiency": 0.64
+                    "gravity_pct": 65.0,
+                    "sprinkler_pct": 15.0,
+                    "drip_pct": 20.0,
+                    "average_efficiency": 0.65
                 }),
                 "planting_intentions": ena_intentions.get(reg_clean, [])
             }
@@ -527,20 +805,21 @@ class MIDAGRIProcessor:
                 lp["salinity_soil_pct"] = round((lp.get("salinity_soil_count", 0) / tot) * 100, 1)
                 lp["excess_water_pct"] = round((lp.get("excess_water_flood_count", 0) / tot) * 100, 1)
                 lp["pests_pct"] = round((lp.get("pests_count", 0) / tot) * 100, 1)
+                lp["frost_hail_pct"] = round((lp.get("frost_hail_count", 0) / tot) * 100, 1)
                 lp["annual_loss_risk_score"] = round((lp.get("drought_deficit_count", 0) + lp.get("salinity_soil_count", 0)) / max(1, tot), 2)
 
             if not df_siea.empty:
-                df_reg = df_siea[df_siea['region'] == reg]
+                df_reg = df_siea[df_siea['region'] == reg_clean]
                 for cid, aliases in crop_aliases.items():
                     sub = df_reg[df_reg['crop'].isin(aliases)]
                     if not sub.empty:
                         rdto_vals = sub[sub['metric'] == 'rendimiento_kgha']['value'].values
-                        rdto_vals = [v for v in rdto_vals if v > 100]
-                        mean_rdto = float(np.mean(rdto_vals)) if rdto_vals else DEFAULT_CROPS_PARAMS[cid]["base_yield_kg_ha"]
+                        rdto_vals = [v for v in rdto_vals if v > 50]
+                        mean_rdto = float(np.mean(rdto_vals)) if len(rdto_vals) > 0 else DEFAULT_CROPS_PARAMS.get(cid, {}).get("base_yield_kg_ha", 10000.0)
                         
                         price_vals = sub[sub['metric'] == 'precio_chacra_skg']['value'].values
                         price_vals = [v for v in price_vals if v > 0.1]
-                        mean_price = float(np.mean(price_vals)) if price_vals else DEFAULT_CROPS_PARAMS[cid]["base_price_s_kg"]
+                        mean_price = float(np.mean(price_vals)) if len(price_vals) > 0 else DEFAULT_CROPS_PARAMS.get(cid, {}).get("base_price_s_kg", 2.0)
 
                         area_vals = sub[sub['metric'] == 'cosecha_ha']['value'].values
                         mean_area = float(np.mean(area_vals)) if len(area_vals) > 0 else 0.0
@@ -550,15 +829,6 @@ class MIDAGRIProcessor:
                             "mean_price_s_kg": round(mean_price, 2),
                             "avg_harvested_ha": round(mean_area, 1)
                         }
-
-        if "NACIONAL" in self.regional_benchmarks:
-            nac_stats = self.regional_benchmarks["NACIONAL"]["crops_stats"]
-            for cid, stat in nac_stats.items():
-                if cid in self.crops_catalog:
-                    if stat["mean_yield_kg_ha"] > 0:
-                        self.crops_catalog[cid]["base_yield_kg_ha"] = stat["mean_yield_kg_ha"]
-                    if stat["mean_price_s_kg"] > 0:
-                        self.crops_catalog[cid]["base_price_s_kg"] = stat["mean_price_s_kg"]
 
     def _save_cache(self) -> None:
         """Serializes catalog and regional benchmarks to JSON."""
@@ -577,9 +847,12 @@ class MIDAGRIProcessor:
         """Returns metadata and agronomic parameters for a given crop."""
         return self.crops_catalog.get(crop_id)
 
-    def list_crops(self) -> List[Dict[str, Any]]:
-        """Returns the full list of available crops."""
-        return list(self.crops_catalog.values())
+    def list_crops(self, natural_region: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Returns the list of available crops, optionally filtered by natural region."""
+        crops = list(self.crops_catalog.values())
+        if natural_region and natural_region.upper() != "TODAS":
+            return [c for c in crops if c.get("region_natural", "").lower() == natural_region.lower()]
+        return crops
 
     def get_regional_benchmark(self, region: str = "LIMA") -> Dict[str, Any]:
         """Returns historical benchmark statistics for a region."""
@@ -587,5 +860,4 @@ class MIDAGRIProcessor:
         return self.regional_benchmarks.get(reg_clean, self.regional_benchmarks.get("LIMA", {}))
 
 
-# Global singleton instance for high performance
 midagri_processor = MIDAGRIProcessor()

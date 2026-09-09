@@ -14,7 +14,9 @@ from backend.app.schemas.predictions import (
     MitaAuditRequest, MitaAuditResponse,
     AgroCropItem, AgroRegionalBenchmarkResponse,
     CropSuitabilityRequest, CropSuitabilityResponse, CropSuitabilityItem,
-    AgroScenarioWhatIfRequest, AgroScenarioWhatIfResponse, AgroCropSummaryItem
+    AgroScenarioWhatIfRequest, AgroScenarioWhatIfResponse, AgroCropSummaryItem,
+    WaterQualityStressSimulationRequest, WaterQualityStressSimulationResponse,
+    PlantingIntentionsFeasibilityRequest, PlantingIntentionsFeasibilityResponse
 )
 from backend.app.ml.gru_predictor import GRUTimeSeriesPredictor
 from backend.app.ml.lead_time import HydraulicLeadTimeEstimator
@@ -212,18 +214,18 @@ def sync_all_forecasts_batch(db: Session = Depends(get_db)):
     }
 
 
-# =========================================================================
+# # =========================================================================
 # NUEVOS ENDPOINTS: INTELIGENCIA AGRO-HÍDRICA & MODELOS MIDAGRI
 # =========================================================================
 
 @router.get("/agro/crops", response_model=List[AgroCropItem])
-def get_agro_crops_catalog():
+def get_agro_crops_catalog(natural_region: Optional[str] = Query(None, description="Filtrar por región natural ('Costa', 'Sierra', 'Selva')")):
     """
     **Catálogo Agronómico de Cultivos MIDAGRI**:
     Retorna el listado de cultivos calibrados con requerimientos hídricos (m³/ha),
-    umbrales de salinidad (uS/cm), rendimientos base y cotizaciones en chacra (S/./kg).
+    umbrales de salinidad (uS/cm), rangos de pH, turbidez, temperatura y cotizaciones en chacra (S/./kg).
     """
-    crops = midagri_processor.list_crops()
+    crops = midagri_processor.list_crops(natural_region=natural_region)
     return [AgroCropItem(**c) for c in crops]
 
 
@@ -249,14 +251,15 @@ def evaluate_crop_suitability(req: CropSuitabilityRequest):
     """
     **Evaluador de Aptitud Agronómica & Resiliencia por Cultivo (IA & FAO-56)**:
     Calcula el índice de aptitud (0-100%), retención de rendimiento y semáforo de viabilidad
-    para cultivos agrícolas frente a la salinidad (EC), pH, WQI y disponibilidad hídrica del agua.
+    para cultivos agrícolas frente a la salinidad (EC), pH, turbidez, temperatura y disponibilidad hídrica.
     """
     if req.crop_id:
         eval_res = crop_suitability_engine.evaluate_crop(
             crop_id=req.crop_id,
             ec_us_cm=req.ec_us_cm,
             ph=req.ph,
-            wqi=req.wqi,
+            turbidity_ntu=req.turbidity_ntu or 20.0,
+            temp_water_c=req.temp_water_c or 18.5,
             water_availability_ratio=req.water_availability_ratio,
             region=req.region
         )
@@ -265,16 +268,18 @@ def evaluate_crop_suitability(req: CropSuitabilityRequest):
         all_res = crop_suitability_engine.evaluate_all_crops(
             ec_us_cm=req.ec_us_cm,
             ph=req.ph,
-            wqi=req.wqi,
+            turbidity_ntu=req.turbidity_ntu or 20.0,
+            temp_water_c=req.temp_water_c or 18.5,
             water_availability_ratio=req.water_availability_ratio,
-            region=req.region
+            region=req.region,
+            natural_region=req.natural_region
         )
         evaluated_list = [CropSuitabilityItem(**r) for r in all_res]
 
     return CropSuitabilityResponse(
         ec_us_cm=req.ec_us_cm,
         ph=req.ph,
-        wqi=req.wqi,
+        wqi=req.wqi or 75.0,
         water_availability_ratio=req.water_availability_ratio,
         region=req.region,
         evaluated_crops=evaluated_list
@@ -285,7 +290,7 @@ def evaluate_crop_suitability(req: CropSuitabilityRequest):
 def simulate_agro_whatif_scenario(req: AgroScenarioWhatIfRequest):
     """
     **Simulador What-If de Cédula Agrícola & Pérdidas Económicas (MIDAGRI Engine)**:
-    Evalúa un plan de siembra multicultivo contra la oferta de agua disponible del río y la salinidad,
+    Evalúa un plan de siembra multicultivo contra la oferta de agua disponible del río, salinidad, pH y turbidez,
     proyectando el balance hídrico en MMC, pérdidas económicas en S/. y recomendaciones de cultivo sustituto.
     """
     sim_res = agro_risk_model.simulate_agro_scenario(
@@ -293,6 +298,8 @@ def simulate_agro_whatif_scenario(req: AgroScenarioWhatIfRequest):
         available_flow_m3s=req.available_flow_m3s,
         ec_us_cm=req.ec_us_cm,
         ph=req.ph or 7.2,
+        turbidity_ntu=req.turbidity_ntu or 20.0,
+        temp_water_c=req.temp_water_c or 18.5,
         wqi=req.wqi or 75.0,
         irrigation_type=req.irrigation_type or "gravity",
         water_tariff_s_m3=req.water_tariff_s_m3 or 0.045,
@@ -304,6 +311,7 @@ def simulate_agro_whatif_scenario(req: AgroScenarioWhatIfRequest):
         AgroCropSummaryItem(
             crop_id=c["crop_id"],
             crop_name=c["crop_name"],
+            region_natural=c.get("region_natural", "Costa"),
             category=c["category"],
             planned_ha=c["planned_ha"],
             suitability_score=c["suitability_score"],
@@ -315,7 +323,9 @@ def simulate_agro_whatif_scenario(req: AgroScenarioWhatIfRequest):
             economic_loss_s=c["economic_loss_s"],
             loss_pct=c["loss_pct"],
             water_cost_s=c["water_cost_s"],
+            filtration_extra_cost_s=c.get("filtration_extra_cost_s", 0.0),
             net_margin_s=c["net_margin_s"],
+            diagnostics=c.get("diagnostics", {}),
             substitutes=c.get("substitutes", [])
         )
         for c in sim_res["crops_summary"]
@@ -340,9 +350,87 @@ def simulate_agro_whatif_scenario(req: AgroScenarioWhatIfRequest):
         total_economic_loss_s=sim_res["total_economic_loss_s"],
         total_loss_pct=sim_res["total_loss_pct"],
         total_water_cost_s=sim_res["total_water_cost_s"],
+        total_extra_filtration_cost_s=sim_res.get("total_extra_filtration_cost_s", 0.0),
         net_agricultural_margin_s=sim_res["net_agricultural_margin_s"],
         at_risk_crops_count=sim_res["at_risk_crops_count"],
         loss_attribution=sim_res["loss_attribution"],
         tech_upgrade_potential=sim_res["tech_upgrade_potential"],
         crops_summary=crops_summary_items
     )
+
+
+@router.post("/agro/stress-simulation", response_model=WaterQualityStressSimulationResponse)
+def simulate_water_quality_stress(req: WaterQualityStressSimulationRequest):
+    """
+    **Simulador What-If de Estrés por Parámetros de Calidad de Agua (pH, Salinidad, Turbidez, Temperatura)**:
+    Evalúa el impacto individual y sinérgico de alteraciones físico-químicas del agua en un cultivo específico,
+    calculando pérdidas directas por hectárea, costos adicionales de filtración y recomendaciones de mitigación.
+    """
+    eval_res = crop_suitability_engine.evaluate_crop(
+        crop_id=req.crop_id,
+        ec_us_cm=req.ec_us_cm,
+        ph=req.ph,
+        turbidity_ntu=req.turbidity_ntu,
+        temp_water_c=req.temp_water_c,
+        water_availability_ratio=req.water_availability_ratio,
+        region=req.region
+    )
+
+    pot_revenue_ha = float(eval_res["base_yield_kg_ha"] * eval_res["farmgate_price_s_kg"])
+    stressed_revenue_ha = float(eval_res["expected_yield_kg_ha"] * eval_res["farmgate_price_s_kg"])
+    loss_ha = max(0.0, pot_revenue_ha - stressed_revenue_ha)
+
+    substitutes = crop_suitability_engine.recommend_resilient_substitutes(
+        stressed_crop_id=req.crop_id,
+        ec_us_cm=req.ec_us_cm,
+        ph=req.ph,
+        turbidity_ntu=req.turbidity_ntu,
+        temp_water_c=req.temp_water_c,
+        water_availability_ratio=req.water_availability_ratio,
+        region=req.region,
+        top_k=3
+    )
+
+    return WaterQualityStressSimulationResponse(
+        crop_id=eval_res["crop_id"],
+        crop_name=eval_res["crop_name"],
+        region_natural=eval_res.get("region_natural", "Costa"),
+        category=eval_res.get("category", "General"),
+        suitability_score=eval_res["suitability_score"],
+        status=eval_res["status"],
+        status_color=eval_res["status_color"],
+        resilience_level=eval_res["resilience_level"],
+        stress_factor_ks=eval_res["stress_factor_ks"],
+        expected_yield_kg_ha=eval_res["expected_yield_kg_ha"],
+        base_yield_kg_ha=eval_res["base_yield_kg_ha"],
+        regional_mean_yield_kg_ha=eval_res["regional_mean_yield_kg_ha"],
+        farmgate_price_s_kg=eval_res["farmgate_price_s_kg"],
+        potential_revenue_ha_s=round(pot_revenue_ha, 2),
+        stressed_revenue_ha_s=round(stressed_revenue_ha, 2),
+        economic_loss_ha_s=round(loss_ha, 2),
+        extra_filtration_cost_s_ha=eval_res.get("extra_filtration_cost_s_ha", 0.0),
+        salinity_retention_pct=eval_res["salinity_retention_pct"],
+        ph_factor_pct=eval_res["ph_factor_pct"],
+        turbidity_factor_pct=eval_res.get("turbidity_factor_pct", 100.0),
+        temperature_factor_pct=eval_res.get("temperature_factor_pct", 100.0),
+        water_availability_pct=eval_res["water_availability_pct"],
+        diagnostics=eval_res.get("diagnostics", {}),
+        recommendation=eval_res["recommendation"],
+        substitutes=substitutes
+    )
+
+
+@router.post("/agro/intentions-feasibility", response_model=PlantingIntentionsFeasibilityResponse)
+def check_planting_intentions_feasibility(req: PlantingIntentionsFeasibilityRequest):
+    """
+    **Auditoría de Factibilidad de Intenciones de Siembra ENA vs Disponibilidad de Cuenca**:
+    Cruza las intenciones de siembra declaradas por agricultores en la Encuesta Nacional Agraria (ENA)
+    con la disponibilidad de caudal de la cuenca para advertir sobre-siembras y quiebres de campaña.
+    """
+    res = agro_risk_model.check_planting_intentions_feasibility(
+        region=req.region,
+        available_flow_m3s=req.available_flow_m3s,
+        irrigation_type=req.irrigation_type,
+        simulated_duration_days=req.simulated_duration_days
+    )
+    return PlantingIntentionsFeasibilityResponse(**res)
