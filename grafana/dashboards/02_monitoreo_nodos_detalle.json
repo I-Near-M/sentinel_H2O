@@ -391,7 +391,7 @@
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, caudal_m3s AS `Caudal (m³/s)` FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "rawSql": "SELECT timestamp AS time, caudal_m3s AS caudal FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
           "refId": "A"
         }
       ],
@@ -433,7 +433,7 @@
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ph AS `pH (Acidez/Alcalinidad)` FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "rawSql": "SELECT timestamp AS time, ph AS ph FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
           "refId": "A"
         }
       ],
@@ -474,7 +474,7 @@
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, ec_us_cm AS `Conductividad Eléctrica (µS/cm)` FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "rawSql": "SELECT timestamp AS time, ec_us_cm AS conductividad FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
           "refId": "A"
         }
       ],
@@ -514,7 +514,7 @@
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT timestamp AS time, temp_agua_c AS `Temp Agua (°C)` FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
+          "rawSql": "SELECT timestamp AS time, temp_agua_c AS temp_agua FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND $__timeFilter(timestamp) ORDER BY timestamp ASC;",
           "refId": "A"
         }
       ],
@@ -535,8 +535,8 @@
       {
         "current": {
           "selected": true,
-          "text": "Seleccionar Estación",
-          "value": ""
+          "text": "Estación 01 - Cabecera Glaciar y Lagunas",
+          "value": "NODO-01-CABECERA"
         },
         "datasource": "Sentinel-MySQL",
         "definition": "SELECT id_nodo AS __value, CONCAT(nombre, ' (', sector_cuenca, ' - ', cota_msnm, ' msnm)') AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm DESC;",
@@ -568,5 +568,5 @@
   "timezone": "browser",
   "title": "02. Sentinel-H2O — Telemetría Detallada por Nodo",
   "uid": "sentinel-02-nodo-detalle",
-  "version": 3
+  "version": 5
 }

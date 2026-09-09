@@ -98,7 +98,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(riesgo_estres_hidrico, 'N/A') AS `Nivel de Riesgo` FROM predicciones_ia WHERE id_nodo = '$id_nodo' ORDER BY fecha_emision DESC, horizonte_horas ASC LIMIT 1;",
+          "rawSql": "SELECT COALESCE(riesgo_estres_hidrico, 'N/A') AS nivel_riesgo FROM predicciones_ia WHERE id_nodo = '$id_nodo' ORDER BY fecha_emision DESC, horizonte_horas ASC LIMIT 1;",
           "refId": "A"
         }
       ],
@@ -151,7 +151,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(AVG(caudal_predicho_m3s), 0.0) AS `Caudal Medio 24h` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo');",
+          "rawSql": "SELECT COALESCE(AVG(caudal_predicho_m3s), 0.0) AS caudal_medio_24h FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo');",
           "refId": "A"
         }
       ],
@@ -204,7 +204,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(AVG(wqi_predicho), 0.0) AS `WQI Medio 24h` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo');",
+          "rawSql": "SELECT COALESCE(AVG(wqi_predicho), 0.0) AS wqi_medio_24h FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo');",
           "refId": "A"
         }
       ],
@@ -257,7 +257,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(lead_time_horas_llegada_pluma, 0.0) AS `Lead Time` FROM predicciones_ia WHERE id_nodo = '$id_nodo' ORDER BY fecha_emision DESC LIMIT 1;",
+          "rawSql": "SELECT COALESCE(lead_time_horas_llegada_pluma, 0.0) AS lead_time FROM predicciones_ia WHERE id_nodo = '$id_nodo' ORDER BY fecha_emision DESC LIMIT 1;",
           "refId": "A"
         }
       ],
@@ -305,7 +305,7 @@
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT fecha_proyectada AS time, caudal_predicho_m3s AS `Caudal Predicho (m³/s)` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo') ORDER BY fecha_proyectada ASC;",
+          "rawSql": "SELECT fecha_proyectada AS time, caudal_predicho_m3s AS caudal_predicho FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo') ORDER BY fecha_proyectada ASC;",
           "refId": "A"
         }
       ],
@@ -343,7 +343,7 @@
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT fecha_proyectada AS time, wqi_predicho AS `WQI Proyectado` FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo') ORDER BY fecha_proyectada ASC;",
+          "rawSql": "SELECT fecha_proyectada AS time, wqi_predicho AS wqi_predicho FROM predicciones_ia WHERE id_nodo = '$id_nodo' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = '$id_nodo') ORDER BY fecha_proyectada ASC;",
           "refId": "A"
         }
       ],
@@ -385,7 +385,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT s.id_simulacion AS `ID`, s.fecha_ejecucion AS `Fecha Simulación`, s.titulo_escenario AS `Escenario`, s.delta_precipitacion_pct AS `Δ Lluvia (%)`, s.delta_caudal_cabecera_pct AS `Δ Caudal (%)`, s.delta_salinidad_us_cm AS `Δ EC (µS/cm)`, s.resultado_caudal_valle_m3s AS `Caudal Valle (m³/s)`, s.resultado_wqi_valle AS `WQI Valle`, s.resumen_impacto AS `Impacto Modelado`, COALESCE(s.ejecutado_por, u.nombre_completo, 'Automático') AS `Ejecutor` FROM simulaciones_whatif s LEFT JOIN usuarios u ON s.ejecutado_por_usuario_id = u.id_usuario ORDER BY s.fecha_ejecucion DESC LIMIT 20;",
+          "rawSql": "SELECT s.id_simulacion, s.fecha_ejecucion, s.titulo_escenario, s.delta_precipitacion_pct, s.delta_caudal_cabecera_pct, s.delta_salinidad_us_cm, s.resultado_caudal_valle_m3s, s.resultado_wqi_valle, s.resumen_impacto, COALESCE(s.ejecutado_por, u.nombre_completo, 'Automático') AS ejecutor FROM simulaciones_whatif s LEFT JOIN usuarios u ON s.ejecutado_por_usuario_id = u.id_usuario ORDER BY s.fecha_ejecucion DESC LIMIT 20;",
           "refId": "A"
         }
       ],
@@ -407,8 +407,8 @@
       {
         "current": {
           "selected": true,
-          "text": "Seleccionar Estación",
-          "value": ""
+          "text": "Estación 01 - Cabecera Glaciar y Lagunas",
+          "value": "NODO-01-CABECERA"
         },
         "datasource": "Sentinel-MySQL",
         "definition": "SELECT id_nodo AS __value, CONCAT(nombre, ' (', sector_cuenca, ')') AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm DESC;",
@@ -439,6 +439,6 @@
   },
   "timezone": "browser",
   "title": "03. Sentinel-H2O — Modelos Predictivos IA y Simulador What-If",
-  "uid": "sentinel-03-predicciones-whatif",
-  "version": 3
+  "uid": "sentinel-03-ia-predicciones",
+  "version": 5
 }

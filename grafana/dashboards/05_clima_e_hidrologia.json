@@ -67,11 +67,11 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(MAX(lluvia_1h_mm), 0.0) AS `Lluvia Máxima (1h)` FROM clima_openweather WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(MAX(lluvia_1h_mm), 0.0) AS lluvia_max_1h FROM clima_openweather WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
-      "title": "Precipitación Máx. Cuenca (1h)",
+      "title": "Precipitación Máx. Red (1h)",
       "type": "stat"
     },
     {
@@ -120,7 +120,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(AVG(temp_ambiente_c), 0.0) AS `Temp Media Cuenca` FROM clima_openweather WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(AVG(temp_ambiente_c), 0.0) AS temp_media FROM clima_openweather WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -167,7 +167,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(AVG(humedad_pct), 0.0) AS `Humedad Relativa` FROM clima_openweather WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(AVG(humedad_pct), 0.0) AS humedad_media FROM clima_openweather WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -220,7 +220,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(MAX(viento_vel_ms), 0.0) AS `Viento Máximo` FROM clima_openweather WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(MAX(viento_vel_ms), 0.0) AS viento_max FROM clima_openweather WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -345,7 +345,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT c.timestamp AS `Fecha y Hora`, n.nombre AS `Estación`, c.condicion_principal AS `Condición`, c.descripcion_clima AS `Detalle`, c.temp_ambiente_c AS `Temp (°C)`, c.humedad_pct AS `Humedad (%)`, c.presion_hpa AS `Presión (hPa)`, c.lluvia_1h_mm AS `Lluvia 1h (mm)`, c.viento_vel_ms AS `Viento (m/s)` FROM clima_openweather c JOIN nodos n ON c.id_nodo = n.id_nodo ORDER BY c.timestamp DESC LIMIT 25;",
+          "rawSql": "SELECT c.timestamp, n.nombre AS estacion, c.condicion_principal, c.descripcion_clima, c.temp_ambiente_c, c.humedad_pct, c.presion_hpa, c.lluvia_1h_mm, c.viento_vel_ms FROM clima_openweather c JOIN nodos n ON c.id_nodo = n.id_nodo ORDER BY c.timestamp DESC LIMIT 25;",
           "refId": "A"
         }
       ],
@@ -379,5 +379,5 @@
   "timezone": "browser",
   "title": "05. Sentinel-H2O — Hidrometeorología y Correlación de Crecidas / Sequías",
   "uid": "sentinel-05-clima-hidrologia",
-  "version": 3
+  "version": 5
 }

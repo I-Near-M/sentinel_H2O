@@ -59,7 +59,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT ROUND(COALESCE(SUM(caudal_m3s * (15 * 60)), 0), 0) AS `Volumen Entregado (m³)` FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT ROUND(COALESCE(SUM(caudal_m3s * (15 * 60)), 0), 0) AS volumen_total_m3 FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -104,7 +104,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT ROUND(COALESCE(SUM(caudal_m3s * (15 * 60)), 0), 0) AS `Volumen Nodo Seleccionado` FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT ROUND(COALESCE(SUM(caudal_m3s * (15 * 60)), 0), 0) AS volumen_nodo_m3 FROM mediciones_procesadas WHERE id_nodo = '$id_nodo' AND timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -159,7 +159,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(ROUND(AVG(cumplimiento_pct), 1), 0.0) AS `Cumplimiento Promedio (%)` FROM turnos_riego WHERE fecha_inicio_programada >= NOW() - INTERVAL 7 DAY;",
+          "rawSql": "SELECT COALESCE(ROUND(AVG(cumplimiento_pct), 1), 0.0) AS cumplimiento_promedio FROM turnos_riego WHERE fecha_inicio_programada >= NOW() - INTERVAL 7 DAY;",
           "refId": "A"
         }
       ],
@@ -212,7 +212,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS `Turnos con Desvío` FROM turnos_riego WHERE (cumplimiento_pct < 80 OR cumplimiento_pct > 120) AND fecha_inicio_programada >= NOW() - INTERVAL 7 DAY;",
+          "rawSql": "SELECT COUNT(*) AS turnos_con_desvio FROM turnos_riego WHERE (cumplimiento_pct < 80 OR cumplimiento_pct > 120) AND fecha_inicio_programada >= NOW() - INTERVAL 7 DAY;",
           "refId": "A"
         }
       ],
@@ -254,7 +254,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT t.id_turno AS `Turno #`, n.nombre AS `Punto de Control`, d.nombre_completo AS `Regante / Beneficiario`, d.sector_predio AS `Sector / Parcela`, d.tipo_cultivo AS `Cultivo`, t.fecha_inicio_programada AS `Inicio Programado`, t.horas_programadas AS `Horas`, t.caudal_acordado_ls AS `Caudal Acordado (L/s)`, t.volumen_programado_m3 AS `Volumen Prog. (m³)`, t.volumen_real_entregado_m3 AS `Volumen Entregado (m³)`, t.cumplimiento_pct AS `Cumplimiento (%)`, t.estado_turno AS `Estado` FROM turnos_riego t JOIN nodos n ON t.id_nodo = n.id_nodo JOIN destinatarios_alertas d ON t.id_destinatario = d.id_destinatario ORDER BY t.fecha_inicio_programada DESC LIMIT 25;",
+          "rawSql": "SELECT t.id_turno, n.nombre AS punto_control, d.nombre_completo AS beneficiario, d.sector_predio, d.tipo_cultivo, t.fecha_inicio_programada, t.horas_programadas, t.caudal_acordado_ls, t.volumen_programado_m3, t.volumen_real_entregado_m3, t.cumplimiento_pct, t.estado_turno FROM turnos_riego t JOIN nodos n ON t.id_nodo = n.id_nodo JOIN destinatarios_alertas d ON t.id_destinatario = d.id_destinatario ORDER BY t.fecha_inicio_programada DESC LIMIT 25;",
           "refId": "A"
         }
       ],
@@ -328,8 +328,8 @@
       {
         "current": {
           "selected": true,
-          "text": "Seleccionar Estación",
-          "value": ""
+          "text": "Estación 04 - Bocatoma Valle y Riego Agrícola",
+          "value": "NODO-04-VALLE"
         },
         "datasource": "Sentinel-MySQL",
         "definition": "SELECT id_nodo AS __value, CONCAT(nombre, ' (', sector_cuenca, ')') AS __text FROM nodos WHERE activo = 1 ORDER BY cota_msnm DESC;",
@@ -360,6 +360,6 @@
   },
   "timezone": "browser",
   "title": "04. Sentinel-H2O — Balance Hídrico, Asignación y Auditoría de la Mita",
-  "uid": "sentinel-04-balance-hidrico",
-  "version": 3
+  "uid": "sentinel-04-balance-volumen",
+  "version": 5
 }

@@ -67,7 +67,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(MIN(battery_v), 0.0) AS `Tensión Mínima Baterías` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(MIN(battery_v), 0.0) AS tension_minima FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -122,7 +122,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(ROUND(AVG(signal_rssi), 1), 0.0) AS `Calidad Señal Media` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(ROUND(AVG(signal_rssi), 1), 0.0) AS senal_media FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -171,7 +171,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS `Nodos Online` FROM nodos WHERE activo = 1;",
+          "rawSql": "SELECT COUNT(*) AS nodos_online FROM nodos WHERE activo = 1;",
           "refId": "A"
         }
       ],
@@ -216,7 +216,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS `Paquetes Ingeridos` FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COUNT(*) AS paquetes_ingeridos FROM mediciones_raw WHERE timestamp_servidor >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -248,7 +248,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Batería (V)"
+              "options": "battery_v"
             },
             "properties": [
               {
@@ -292,7 +292,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT n.nombre AS `Estación`, n.id_nodo AS `ID Nodo`, n.sector_cuenca AS `Sector`, n.cota_msnm AS `Cota (msnm)`, r.battery_v AS `Batería (V)`, r.signal_rssi AS `GSM RSSI (0-31)`, CASE WHEN r.battery_v >= 12.4 THEN 'Batería Óptima (Solar)' WHEN r.battery_v >= 11.8 THEN 'Batería Normal' ELSE 'Batería Baja / Alerta' END AS `Estado Energético`, r.timestamp_servidor AS `Último Paquete Recibido` FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp_servidor) AS max_t FROM mediciones_raw GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_raw r ON latest.id_nodo = r.id_nodo AND latest.max_t = r.timestamp_servidor WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
+          "rawSql": "SELECT n.nombre AS estacion, n.id_nodo, n.sector_cuenca, n.cota_msnm, r.battery_v, r.signal_rssi, CASE WHEN r.battery_v >= 12.4 THEN 'Batería Óptima (Solar)' WHEN r.battery_v >= 11.8 THEN 'Batería Normal' ELSE 'Batería Baja / Alerta' END AS estado_energetico, r.timestamp_servidor AS ultimo_paquete FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp_servidor) AS max_t FROM mediciones_raw GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_raw r ON latest.id_nodo = r.id_nodo AND latest.max_t = r.timestamp_servidor WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
           "refId": "A"
         }
       ],
@@ -419,6 +419,6 @@
   },
   "timezone": "browser",
   "title": "06. Sentinel-H2O — Telemetría de Hardware, Energía Solar y Enlaces GSM",
-  "uid": "sentinel-06-salud-iot-energia",
-  "version": 3
+  "uid": "sentinel-06-iot-energia-red",
+  "version": 5
 }

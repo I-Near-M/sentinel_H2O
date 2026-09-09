@@ -18,7 +18,7 @@
         "y": 0
       },
       "id": 100,
-      "title": "SALA DE CONTROL Y SEGURIDAD HÍDRICA — GEMELO VIRTUAL DE CUENCA",
+      "title": "SALA DE CONTROL Y SEGURIDAD HÍDRICA — GEMELO VIRTUAL",
       "type": "row"
     },
     {
@@ -59,7 +59,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COUNT(*) as `Nodos Activos` FROM nodos WHERE activo = 1;",
+          "rawSql": "SELECT COUNT(*) AS total_nodos FROM nodos WHERE activo = 1;",
           "refId": "A"
         }
       ],
@@ -122,11 +122,11 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(AVG(wqi_score), 0.0) as `WQI Promedio` FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(AVG(wqi_score), 0.0) AS wqi_promedio FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
-      "title": "WQI Global de Cuenca (24h)",
+      "title": "WQI Global de Red (24h)",
       "description": "0-30: Excelente | 31-50: Buena | 51-70: Regular | 71-90: Mala | >90: Crítica",
       "type": "stat"
     },
@@ -176,7 +176,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(AVG(ec_us_cm), 0.0) as `Salinidad Media Red` FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(AVG(ec_us_cm), 0.0) AS salinidad_media FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -229,7 +229,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE(AVG(caudal_m3s), 0.0) as `Caudal Medio Red` FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COALESCE(AVG(caudal_m3s), 0.0) AS caudal_medio FROM mediciones_procesadas WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -282,7 +282,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COUNT(*) as `Alertas Activas` FROM alertas_log WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
+          "rawSql": "SELECT COUNT(*) AS total_alertas FROM alertas_log WHERE timestamp >= NOW() - INTERVAL 24 HOUR;",
           "refId": "A"
         }
       ],
@@ -298,7 +298,7 @@
         "y": 4
       },
       "id": 101,
-      "title": "MAPA GEOESPACIAL Y UBICACIÓN SATELITAL DE ESTACIONES",
+      "title": "TOPOLOGÍA GEOESPACIAL Y UBICACIÓN DE ESTACIONES EN LA RED",
       "type": "row"
     },
     {
@@ -313,8 +313,8 @@
       "options": {
         "view": {
           "id": "coords",
-          "lat": -11.4,
-          "lon": -77.0,
+          "lat": -11.25,
+          "lon": -76.85,
           "zoom": 9
         },
         "controls": {
@@ -328,7 +328,7 @@
         "layers": [
           {
             "type": "markers",
-            "name": "Estaciones IoT Sentinel-H2O",
+            "name": "Puntos de Monitoreo Hidrológico",
             "config": {
               "showLegend": true,
               "size": {
@@ -358,7 +358,7 @@
           "refId": "A"
         }
       ],
-      "title": "🗺️ Topología Geoespacial y Calidad en Tiempo Real — Red Hidrológica",
+      "title": "🗺️ Mapa Geoespacial y Calidad en Tiempo Real — Red Hidrográfica",
       "type": "geomap"
     },
     {
@@ -370,7 +370,7 @@
         "y": 15
       },
       "id": 102,
-      "title": "ESTADO Y DINÁMICA DE ESTACIONES HIDROLÓGICAS EN OPERACIÓN",
+      "title": "ESTADO Y DINÁMICA DE ESTACIONES HIDROLÓGICAS ACTIVAS",
       "type": "row"
     },
     {
@@ -386,7 +386,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "WQI Score"
+              "options": "wqi_score"
             },
             "properties": [
               {
@@ -438,11 +438,11 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT n.cota_msnm AS `Cota (msnm)`, n.nombre AS `Estación`, n.sector_cuenca AS `Sector`, n.tipo_fuente AS `Tipo Fuente`, p.caudal_m3s AS `Caudal (m³/s)`, p.ph AS `pH`, p.ec_us_cm AS `EC (µS/cm)`, p.turbidez_ntu AS `Turbidez (NTU)`, p.temp_agua_c AS `Temp (°C)`, p.wqi_score AS `WQI Score`, p.wqi_categoria AS `Categoría WQI`, p.timestamp AS `Última Lectura` FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp) AS max_t FROM mediciones_procesadas GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_procesadas p ON latest.id_nodo = p.id_nodo AND latest.max_t = p.timestamp WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
+          "rawSql": "SELECT n.cota_msnm, n.nombre AS estacion, n.sector_cuenca, n.tipo_fuente, p.caudal_m3s, p.ph, p.ec_us_cm, p.turbidez_ntu, p.temp_agua_c, p.wqi_score, p.wqi_categoria, p.timestamp AS ultima_lectura FROM nodos n INNER JOIN (SELECT id_nodo, MAX(timestamp) AS max_t FROM mediciones_procesadas GROUP BY id_nodo) latest ON n.id_nodo = latest.id_nodo INNER JOIN mediciones_procesadas p ON latest.id_nodo = p.id_nodo AND latest.max_t = p.timestamp WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
           "refId": "A"
         }
       ],
-      "title": "Resumen Integral de Estaciones Activas (Ordenadas por Altitud de Cabecera a Valle)",
+      "title": "Resumen Integral de Estaciones Activas (Ordenadas de Mayor a Menor Altitud)",
       "type": "table"
     },
     {
@@ -454,7 +454,7 @@
         "y": 23
       },
       "id": 103,
-      "title": "SERIES TEMPORALES Y DINÁMICA HIDROLÓGICA (MULTIESTACIÓN)",
+      "title": "SERIES TEMPORALES Y DINÁMICA HIDROLÓGICA MULTIESTACIÓN",
       "type": "row"
     },
     {
@@ -631,7 +631,7 @@
         "y": 38
       },
       "id": 104,
-      "title": "HISTORIAL DE ALERTAS Y EVENTOS HIDROLÓGICOS RECIENTES",
+      "title": "HISTORIAL DE ALERTAS Y EVENTOS HIDROLÓGICOS",
       "type": "row"
     },
     {
@@ -657,7 +657,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT a.timestamp AS `Fecha y Hora`, n.nombre AS `Estación`, a.nivel_severidad AS `Severidad`, a.tipo_evento AS `Evento`, a.variable_origen AS `Variable`, a.valor_registrado AS `Valor`, a.valor_umbral AS `Umbral`, a.mensaje_tecnico AS `Detalle Técnico`, a.estado_envio_whatsapp AS `WhatsApp` FROM alertas_log a JOIN nodos n ON a.id_nodo = n.id_nodo ORDER BY a.timestamp DESC LIMIT 20;",
+          "rawSql": "SELECT a.timestamp AS fecha_hora, n.nombre AS estacion, a.nivel_severidad AS severidad, a.tipo_evento AS evento, a.variable_origen AS variable_origen, a.valor_registrado AS valor, a.valor_umbral AS umbral, a.mensaje_tecnico AS detalle_tecnico, a.estado_envio_whatsapp AS whatsapp FROM alertas_log a JOIN nodos n ON a.id_nodo = n.id_nodo ORDER BY a.timestamp DESC LIMIT 20;",
           "refId": "A"
         }
       ],
@@ -689,6 +689,6 @@
   },
   "timezone": "browser",
   "title": "01. Sentinel-H2O — Gemelo Virtual y Telemetría Global de Cuenca",
-  "uid": "sentinel-01-gemelo-virtual",
-  "version": 3
+  "uid": "sentinel-01-cuenca",
+  "version": 5
 }
