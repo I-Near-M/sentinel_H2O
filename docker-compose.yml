@@ -8,17 +8,17 @@ services:
     restart: always
     environment:
       TZ: "${TZ:-America/Lima}"
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword2026}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-sentinel_h2o_db}
       MYSQL_USER: ${MYSQL_USER:-sentinel_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-sentinel_password_2026}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword2026}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,12 +42,13 @@ services:
       PROJECT_NAME: "${PROJECT_NAME:-Sentinel-H2O Backend API}"
       VERSION: "${VERSION:-2.0.0}"
       ENV: "${ENV:-production}"
-      DATABASE_URL: "${DATABASE_URL:-mysql+pymysql://${MYSQL_USER:-sentinel_user}:${MYSQL_PASSWORD:-sentinel_password_2026}@sentinel-db:3306/${MYSQL_DATABASE:-sentinel_h2o_db}}"
-      OPENWEATHER_API_KEY: "${OPENWEATHER_API_KEY:-be01a2002315a2d063681a21ae6d168b}"
-      WHATSAPP_PROVIDER: "${WHATSAPP_PROVIDER:-meta_cloud}"
+      DATABASE_URL: "${DATABASE_URL:-mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@sentinel-db:3306/${MYSQL_DATABASE:-sentinel_h2o_db}}"
+      OPENWEATHER_API_KEY: "${OPENWEATHER_API_KEY:-}"
+      WHATSAPP_PROVIDER: "${WHATSAPP_PROVIDER:-mock}"
       WHATSAPP_API_TOKEN: "${WHATSAPP_API_TOKEN:-}"
       WHATSAPP_PHONE_NUMBER_ID: "${WHATSAPP_PHONE_NUMBER_ID:-}"
-      MASTER_API_KEY: "${MASTER_API_KEY:-sentinel_h2o_master_secret_2026}"
+      MASTER_API_KEY: "${MASTER_API_KEY}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY}"
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-[\"*\"]}"
     ports:
       - "${BACKEND_PORT:-8000}:8000"
@@ -66,7 +67,7 @@ services:
     environment:
       - TZ=${TZ:-America/Lima}
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-sentinel_admin_2026}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGNUP:-false}
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
@@ -87,7 +88,7 @@ services:
       - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana/
       - MYSQL_DATABASE=${MYSQL_DATABASE:-sentinel_h2o_db}
       - MYSQL_USER=${MYSQL_USER:-sentinel_user}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-sentinel_password_2026}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     volumes:

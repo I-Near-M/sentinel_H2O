@@ -145,6 +145,7 @@ class CascadeHopItem(BaseModel):
     lead_time_pico_horas: float
     lead_time_despeje_horas: float
     salinidad_estimada_llegada_ec: float
+    ph_estimado_llegada: float = 7.4
     wqi_estimado_llegada: float
     estado_compuerta_recomendado: str
     nivel_alerta: str

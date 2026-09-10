@@ -237,7 +237,7 @@ export const GrafanaEmbeddedView = ({ grafanaBaseUrl = 'http://localhost:3000' }
               <strong>1. Visualización Abierta (Viewer)</strong>: Los tableros cuentan con acceso anónimo habilitado para que los operadores y regantes puedan consultar el gemelo virtual sin iniciar sesión adicionalmente en Grafana.
             </p>
             <p className="leading-relaxed">
-              <strong>2. Edición Avanzada de Tableros (Admin Grafana)</strong>: El usuario creado en la Consola de Gobernación administra la plataforma y la base de datos MySQL. Si necesitas editar las consultas SQL de Grafana o crear nuevos paneles en Grafana Pro, debes iniciar sesión en Grafana con el usuario maestro: <code className="font-mono bg-black/30 px-1.5 py-0.5 rounded text-amber-400 font-bold">admin</code> y la contraseña definida en tu docker-compose/env: <code className="font-mono bg-black/30 px-1.5 py-0.5 rounded text-amber-400 font-bold">sentinel_admin_2026</code>.
+              <strong>2. Edición Avanzada de Tableros (Admin Grafana)</strong>: El usuario creado en la Consola de Gobernación administra la plataforma y la base de datos MySQL. Si necesitas editar las consultas SQL de Grafana o crear nuevos paneles en Grafana Pro, debes iniciar sesión en Grafana con el usuario maestro: <code className="font-mono bg-black/30 px-1.5 py-0.5 rounded text-amber-400 font-bold">admin</code> y la contraseña definida en tu archivo <code className="font-mono bg-black/30 px-1.5 py-0.5 rounded text-amber-400 font-bold">.env</code> (<code className="font-mono text-amber-300">GRAFANA_ADMIN_PASSWORD</code>).
             </p>
           </div>
         )}

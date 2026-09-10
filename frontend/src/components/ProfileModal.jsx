@@ -5,6 +5,12 @@ import {
   X, User, Phone, Lock, Shield, Building2, 
   Check, AlertCircle, Calendar, KeyRound, Save 
 } from 'lucide-react';
+import PasswordStrengthMeter from './PasswordStrengthMeter';
+import { 
+  validatePhone, 
+  sanitizePhoneInput, 
+  getPasswordStrength 
+} from '../utils/validators';
 
 export const ProfileModal = ({ isOpen, onClose }) => {
   const { user, updateUserLocal } = useAuth();
@@ -25,7 +31,11 @@ export const ProfileModal = ({ isOpen, onClose }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let finalVal = value;
+    if (name === 'telefono_contacto') {
+      finalVal = sanitizePhoneInput(value);
+    }
+    setFormData(prev => ({ ...prev, [name]: finalVal }));
   };
 
   const handleSubmit = async (e) => {
@@ -33,17 +43,29 @@ export const ProfileModal = ({ isOpen, onClose }) => {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (formData.password_nuevo) {
-      if (!formData.password_actual) {
-        setErrorMsg('Debes ingresar tu contraseña actual para establecer una nueva contraseña.');
+    // Validar teléfono si fue ingresado
+    let cleanedPhone = null;
+    if (formData.telefono_contacto && formData.telefono_contacto.trim()) {
+      const phoneCheck = validatePhone(formData.telefono_contacto, false);
+      if (!phoneCheck.isValid) {
+        setErrorMsg(phoneCheck.error);
         return;
       }
-      if (formData.password_nuevo.length < 6) {
-        setErrorMsg('La nueva contraseña debe tener al menos 6 caracteres.');
+      cleanedPhone = phoneCheck.formatted;
+    }
+
+    if (formData.password_nuevo) {
+      if (!formData.password_actual) {
+        setErrorMsg('Debes ingresar tu contraseña actual para autorizar el cambio.');
+        return;
+      }
+      const pwdStrength = getPasswordStrength(formData.password_nuevo);
+      if (!pwdStrength.isValid) {
+        setErrorMsg(`La nueva contraseña no cumple con la política: ${pwdStrength.errors.join(' ')}`);
         return;
       }
       if (formData.password_nuevo !== formData.password_confirmacion) {
-        setErrorMsg('La confirmación de contraseña no coincide.');
+        setErrorMsg('La confirmación de contraseña no coincide con la nueva contraseña.');
         return;
       }
     }
@@ -52,7 +74,7 @@ export const ProfileModal = ({ isOpen, onClose }) => {
     try {
       const payload = {
         nombre_completo: formData.nombre_completo.trim(),
-        telefono_contacto: formData.telefono_contacto.trim(),
+        telefono_contacto: cleanedPhone,
       };
       if (formData.password_nuevo) {
         payload.password_actual = formData.password_actual;
@@ -200,6 +222,7 @@ export const ProfileModal = ({ isOpen, onClose }) => {
                 <input
                   type="password"
                   name="password_actual"
+                  autoComplete="current-password"
                   value={formData.password_actual}
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500"
@@ -207,30 +230,35 @@ export const ProfileModal = ({ isOpen, onClose }) => {
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 sm:col-span-2">
                 <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
-                  Nueva Contraseña
+                  Nueva Contraseña Segura
                 </label>
                 <input
                   type="password"
                   name="password_nuevo"
+                  autoComplete="new-password"
                   value={formData.password_nuevo}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500"
-                  placeholder="Mínimo 6 caracteres"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 font-mono"
+                  placeholder="Mínimo 8 caracteres (A-Z, a-z, 0-9, @#$)"
                 />
+                {formData.password_nuevo && formData.password_nuevo.length > 0 && (
+                  <PasswordStrengthMeter password={formData.password_nuevo} showCriteria={true} />
+                )}
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 sm:col-span-2">
                 <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
                   Confirmar Contraseña
                 </label>
                 <input
                   type="password"
                   name="password_confirmacion"
+                  autoComplete="new-password"
                   value={formData.password_confirmacion}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 font-mono"
                   placeholder="Repite la nueva contraseña"
                 />
               </div>

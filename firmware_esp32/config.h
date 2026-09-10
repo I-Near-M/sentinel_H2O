@@ -8,7 +8,7 @@
 // ============================================================================
 // Credenciales generadas para la estación telemétrica
 #define NODE_ID "NODO-171-VALLE"
-#define NODE_API_KEY "sec_key_nodo_171_valle_49d32c79881af48081f9ea69"
+#define NODE_API_KEY "sec_key_nodo_171_valle_demo"
 
 // ============================================================================
 // 2. CONFIGURACIÓN DEL SERVIDOR Y ENDPOINT

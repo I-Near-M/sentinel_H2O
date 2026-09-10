@@ -1,6 +1,7 @@
 import datetime
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
+from backend.app.core.validators import validate_email_address, validate_phone_number, validate_ruc_dni
 
 
 class AlertaLogOut(BaseModel):
@@ -34,6 +35,29 @@ class DestinatarioCreate(BaseModel):
     recibe_alertas_calidad: bool = True
     recibe_alertas_caudal: bool = True
     recibe_reporte_diario: bool = False
+
+    @field_validator("telefono_whatsapp")
+    @classmethod
+    def check_whatsapp_phone(cls, v: str) -> str:
+        return validate_phone_number(v, required=True)
+
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: Optional[str]) -> Optional[str]:
+        return validate_email_address(v, required=False) if v else None
+
+    @field_validator("dni_ruc")
+    @classmethod
+    def check_doc(cls, v: Optional[str]) -> Optional[str]:
+        return validate_ruc_dni(v) if v else None
+
+    @field_validator("nombre_completo")
+    @classmethod
+    def check_name(cls, v: str) -> str:
+        name = v.strip()
+        if len(name) < 2:
+            raise ValueError("El nombre completo debe tener al menos 2 caracteres.")
+        return name
 
 
 class DestinatarioOut(DestinatarioCreate):

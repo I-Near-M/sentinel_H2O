@@ -243,22 +243,26 @@ class HydraulicLeadTimeEstimator:
             factor_atenuacion = max(0.85, 1.0 - (dist_acumulada / 200.0) * 0.20)
             ec_llegada = round(salinidad_origen_ec * factor_atenuacion, 1)
 
+            # Amortiguamiento natural de pH hacia neutralidad fluvial (7.35) por tamponamiento carbonatado
+            ph_rio_base = 7.35
+            ph_llegada = round(ph_rio_base + (ph_origen - ph_rio_base) * math.exp(-0.018 * dist_acumulada), 2)
+
             # Estimación WQI aproximado a la llegada
-            if ec_llegada > 1600 or ph_origen < 6.5 or ph_origen > 8.5:
+            if ec_llegada > 1600 or ph_llegada < 6.5 or ph_llegada > 8.5:
                 wqi_est = 42.0
                 alerta = "CRÍTICA"
                 compuerta = "CERRAR_COMPUERTAS_INMEDIATO"
-                indicacion = f"Alerta Roja: Interrumpir captación en {frente_min} min. Salinidad estimada de arribo: {ec_llegada} µS/cm."
-            elif ec_llegada > 1150:
+                indicacion = f"Alerta Roja: Interrumpir captación en {frente_min} min. CE: {ec_llegada} µS/cm, pH: {ph_llegada}."
+            elif ec_llegada > 1150 or ph_llegada < 6.8 or ph_llegada > 8.2:
                 wqi_est = 64.0
                 alerta = "ADVERTENCIA"
                 compuerta = "ALERTA_PREVENTIVA_VIGILANCIA"
-                indicacion = f"Alerta Amarilla: Monitorear paso de pluma en ~{frente_legible}. Salinidad moderada."
+                indicacion = f"Alerta Amarilla: Monitorear paso de pluma en ~{frente_legible}. CE: {ec_llegada} µS/cm, pH: {ph_llegada}."
             else:
                 wqi_est = 86.0
                 alerta = "CONTROLADO"
                 compuerta = "OPERACIÓN_NORMAL"
-                indicacion = f"Condición Segura: Agua apta para riego. Tiempo de tránsito estimado: {frente_legible}."
+                indicacion = f"Condición Segura: Agua apta para riego. Tránsito en ~{frente_legible} (pH {ph_llegada}, CE {ec_llegada})."
 
             secuencia.append({
                 "orden_secuencia": idx,
@@ -277,6 +281,7 @@ class HydraulicLeadTimeEstimator:
                 "lead_time_pico_horas": t_pico_h,
                 "lead_time_despeje_horas": t_despeje_h,
                 "salinidad_estimada_llegada_ec": ec_llegada,
+                "ph_estimado_llegada": ph_llegada,
                 "wqi_estimado_llegada": wqi_est,
                 "estado_compuerta_recomendado": compuerta,
                 "nivel_alerta": alerta,

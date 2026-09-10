@@ -1,6 +1,7 @@
 import datetime
 from typing import Optional, Any, List
-from pydantic import BaseModel, ConfigDict, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
+from backend.app.core.validators import validate_email_address, validate_phone_number, validate_strong_password
 
 
 class LoginRequest(BaseModel):
@@ -54,6 +55,21 @@ class UserCreate(BaseModel):
     telefono_contacto: Optional[str] = None
     cargo_institucional: Optional[str] = None
 
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: str) -> str:
+        return validate_email_address(v, required=True)
+
+    @field_validator("password")
+    @classmethod
+    def check_password(cls, v: str) -> str:
+        return validate_strong_password(v)
+
+    @field_validator("telefono_contacto")
+    @classmethod
+    def check_phone(cls, v: Optional[str]) -> Optional[str]:
+        return validate_phone_number(v, required=False)
+
 
 class UserUpdate(BaseModel):
     nombre_completo: Optional[str] = None
@@ -65,12 +81,37 @@ class UserUpdate(BaseModel):
     activo: Optional[bool] = None
     password: Optional[str] = None
 
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: Optional[str]) -> Optional[str]:
+        return validate_email_address(v, required=False) if v else None
+
+    @field_validator("password")
+    @classmethod
+    def check_password(cls, v: Optional[str]) -> Optional[str]:
+        return validate_strong_password(v) if v else None
+
+    @field_validator("telefono_contacto")
+    @classmethod
+    def check_phone(cls, v: Optional[str]) -> Optional[str]:
+        return validate_phone_number(v, required=False) if v else None
+
 
 class ProfileUpdate(BaseModel):
     nombre_completo: Optional[str] = None
     telefono_contacto: Optional[str] = None
     cargo_institucional: Optional[str] = None
     password: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def check_password(cls, v: Optional[str]) -> Optional[str]:
+        return validate_strong_password(v) if v else None
+
+    @field_validator("telefono_contacto")
+    @classmethod
+    def check_phone(cls, v: Optional[str]) -> Optional[str]:
+        return validate_phone_number(v, required=False) if v else None
 
 
 class AdminBootstrap(BaseModel):
@@ -85,6 +126,21 @@ class AdminBootstrap(BaseModel):
     latitud_centro: Optional[float] = -11.49
     longitud_centro: Optional[float] = -77.05
     zoom_inicial: Optional[int] = 10
+
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: str) -> str:
+        return validate_email_address(v, required=True)
+
+    @field_validator("password")
+    @classmethod
+    def check_password(cls, v: str) -> str:
+        return validate_strong_password(v)
+
+    @field_validator("telefono_contacto")
+    @classmethod
+    def check_phone(cls, v: Optional[str]) -> Optional[str]:
+        return validate_phone_number(v, required=False)
 
 
 

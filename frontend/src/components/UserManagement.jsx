@@ -5,6 +5,13 @@ import {
   Users, UserPlus, Shield, CheckCircle2, 
   XCircle, Mail, Phone, Lock, Building, RefreshCw, Key
 } from 'lucide-react';
+import PasswordStrengthMeter from './PasswordStrengthMeter';
+import { 
+  validatePhone, 
+  sanitizePhoneInput, 
+  validateEmail, 
+  getPasswordStrength 
+} from '../utils/validators';
 
 export const UserManagement = () => {
   const { user: currentUser, hasRole } = useAuth();
@@ -84,24 +91,55 @@ export const UserManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
+
+    // Validar email
+    const emailCheck = validateEmail(formData.email, true);
+    if (!emailCheck.isValid) {
+      setFormError(emailCheck.error);
+      return;
+    }
+
+    // Validar teléfono si fue ingresado
+    let cleanedPhone = null;
+    if (formData.telefono_contacto && formData.telefono_contacto.trim()) {
+      const phoneCheck = validatePhone(formData.telefono_contacto, false);
+      if (!phoneCheck.isValid) {
+        setFormError(phoneCheck.error);
+        return;
+      }
+      cleanedPhone = phoneCheck.formatted;
+    }
+
+    // Validar contraseña
+    if (modalMode === 'create') {
+      const pwdStrength = getPasswordStrength(formData.password);
+      if (!pwdStrength.isValid) {
+        setFormError(`Contraseña no cumple con la política: ${pwdStrength.errors.join(' ')}`);
+        return;
+      }
+    } else if (formData.password && formData.password.trim().length > 0) {
+      const pwdStrength = getPasswordStrength(formData.password);
+      if (!pwdStrength.isValid) {
+        setFormError(`Nueva contraseña insegura: ${pwdStrength.errors.join(' ')}`);
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     try {
       if (modalMode === 'create') {
-        if (!formData.password || formData.password.length < 6) {
-          setFormError('La contraseña debe tener al menos 6 caracteres.');
-          setSubmitting(false);
-          return;
-        }
         await authApi.createUser({
           ...formData,
+          email: emailCheck.formatted,
+          telefono_contacto: cleanedPhone,
           id_entidad: formData.id_entidad ? parseInt(formData.id_entidad) : null,
         });
       } else {
         const updatePayload = {
           nombre_completo: formData.nombre_completo,
-          email: formData.email,
-          telefono_contacto: formData.telefono_contacto,
+          email: emailCheck.formatted,
+          telefono_contacto: cleanedPhone,
           cargo_institucional: formData.cargo_institucional,
           rol: formData.rol,
           id_entidad: formData.id_entidad ? parseInt(formData.id_entidad) : null,
@@ -331,6 +369,7 @@ export const UserManagement = () => {
                   <input
                     type="email"
                     required
+                    autoComplete="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="usuario@junta.pe"
@@ -339,15 +378,19 @@ export const UserManagement = () => {
                 </div>
                 <div>
                   <label className="block text-slate-700 dark:text-cyan-200/80 font-mono mb-1 text-[11px] font-bold">
-                    {modalMode === 'create' ? 'CONTRASEÑA *' : 'NUEVA CONTRASEÑA (Opcional)'}
+                    {modalMode === 'create' ? 'CONTRASEÑA ROBUSTA *' : 'NUEVA CONTRASEÑA (Opcional)'}
                   </label>
                   <input
                     type="password"
+                    autoComplete="new-password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder={modalMode === 'create' ? 'Mínimo 6 caracteres' : 'Dejar vacío para no cambiar'}
+                    placeholder={modalMode === 'create' ? 'Mínimo 8 caracteres (A-Z, a-z, 0-9, @#$)' : 'Dejar vacío para mantener actual'}
                     className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-500/30 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 font-mono"
                   />
+                  {(modalMode === 'create' || (formData.password && formData.password.length > 0)) && (
+                    <PasswordStrengthMeter password={formData.password} showCriteria={true} />
+                  )}
                 </div>
               </div>
 
@@ -393,10 +436,11 @@ export const UserManagement = () => {
                   <input
                     type="text"
                     value={formData.telefono_contacto}
-                    onChange={(e) => setFormData({ ...formData, telefono_contacto: e.target.value })}
-                    placeholder="+51 987654321"
+                    onChange={(e) => setFormData({ ...formData, telefono_contacto: sanitizePhoneInput(e.target.value) })}
+                    placeholder="+51987654321"
                     className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-500/30 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 font-mono"
                   />
+                  <p className="text-[10px] text-slate-500 mt-0.5">Opcional (solo números o +51)</p>
                 </div>
                 <div>
                   <label className="block text-slate-700 dark:text-cyan-200/80 font-mono mb-1 text-[11px] font-bold">CARGO INSTITUCIONAL</label>

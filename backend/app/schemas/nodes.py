@@ -1,6 +1,7 @@
 import datetime
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from backend.app.core.validators import validate_email_address, validate_phone_number, validate_ruc_dni
 
 
 # ============================================================================
@@ -14,6 +15,29 @@ class EntityCreateIn(BaseModel):
     email_contacto: Optional[str] = Field(None, description="Email de contacto")
     direccion: Optional[str] = Field(None, description="Dirección de la sede")
 
+    @field_validator("nombre_entidad")
+    @classmethod
+    def check_nombre(cls, v: str) -> str:
+        name = v.strip()
+        if len(name) < 3:
+            raise ValueError("El nombre de la entidad debe tener al menos 3 caracteres.")
+        return name
+
+    @field_validator("email_contacto")
+    @classmethod
+    def check_email(cls, v: Optional[str]) -> Optional[str]:
+        return validate_email_address(v, required=False) if v else None
+
+    @field_validator("telefono_contacto")
+    @classmethod
+    def check_phone(cls, v: Optional[str]) -> Optional[str]:
+        return validate_phone_number(v, required=False) if v else None
+
+    @field_validator("ruc")
+    @classmethod
+    def check_ruc(cls, v: Optional[str]) -> Optional[str]:
+        return validate_ruc_dni(v) if v else None
+
 
 class EntityUpdateIn(BaseModel):
     nombre_entidad: Optional[str] = None
@@ -23,6 +47,31 @@ class EntityUpdateIn(BaseModel):
     email_contacto: Optional[str] = None
     direccion: Optional[str] = None
     activo: Optional[bool] = None
+
+    @field_validator("nombre_entidad")
+    @classmethod
+    def check_nombre(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            name = v.strip()
+            if len(name) < 3:
+                raise ValueError("El nombre de la entidad debe tener al menos 3 caracteres.")
+            return name
+        return None
+
+    @field_validator("email_contacto")
+    @classmethod
+    def check_email(cls, v: Optional[str]) -> Optional[str]:
+        return validate_email_address(v, required=False) if v else None
+
+    @field_validator("telefono_contacto")
+    @classmethod
+    def check_phone(cls, v: Optional[str]) -> Optional[str]:
+        return validate_phone_number(v, required=False) if v else None
+
+    @field_validator("ruc")
+    @classmethod
+    def check_ruc(cls, v: Optional[str]) -> Optional[str]:
+        return validate_ruc_dni(v) if v else None
 
 
 class EntityOut(BaseModel):
@@ -41,6 +90,19 @@ class EntityOut(BaseModel):
 # ============================================================================
 # SCHEMAS DE CALIBRACIÓN Y UMBRALES
 # ============================================================================
+class CalibrationCreateIn(BaseModel):
+    ph_offset_v: float = Field(default=2.5000, description="Voltaje medido en solución buffer pH 7.0 (V)")
+    ph_slope: float = Field(default=-0.1800, description="Pendiente de respuesta del electrodo de pH (V/pH)")
+    tds_factor_k: float = Field(default=0.5000, description="Factor de conversión TDS/EC")
+    tds_offset_v: float = Field(default=0.0000, description="Voltaje de offset de sonda TDS en seco (V)")
+    turb_v_clear: float = Field(default=4.2000, description="Voltaje del sensor óptico en agua 100% limpia (V)")
+    turb_v_turbid: float = Field(default=2.5000, description="Voltaje del sensor óptico en agua turbia (V)")
+    distancia_fondo_sensor_cm: float = Field(default=100.0, description="Altura fija de montaje del sensor ultrasónico sobre el fondo del canal (cm)")
+    caudal_coef_k: float = Field(default=1.0000, description="Coeficiente K de la ecuación de gasto Q = K * h^N")
+    caudal_exp_n: float = Field(default=1.5500, description="Exponente N de la ecuación de gasto")
+    calibrado_por: Optional[str] = Field(default="Operador de Campo", description="Responsable de calibración")
+
+
 class CalibrationOut(BaseModel):
     id_calibracion: Optional[int] = None
     ph_offset_v: float
@@ -108,6 +170,42 @@ class NodeProvisionIn(BaseModel):
     turb_max_alerta_ntu: float = Field(default=50.0, description="Umbral de turbidez máxima (NTU)")
     tirante_min_alerta_cm: float = Field(default=10.0, description="Tirante mínimo antes de alerta por corte de agua (cm)")
     bateria_min_alerta_v: float = Field(default=11.50, description="Voltaje mínimo de batería de 12V antes de alerta (V)")
+
+    @field_validator("nombre")
+    @classmethod
+    def check_nombre_nodo(cls, v: str) -> str:
+        name = v.strip()
+        if len(name) < 3:
+            raise ValueError("El nombre de la estación debe tener al menos 3 caracteres.")
+        return name
+
+    @field_validator("latitud")
+    @classmethod
+    def check_latitud(cls, v: float) -> float:
+        if not (-90.0 <= v <= 90.0):
+            raise ValueError("La latitud debe encontrarse en el rango de -90.0° a +90.0°.")
+        return v
+
+    @field_validator("longitud")
+    @classmethod
+    def check_longitud(cls, v: float) -> float:
+        if not (-180.0 <= v <= 180.0):
+            raise ValueError("La longitud debe encontrarse en el rango de -180.0° a +180.0°.")
+        return v
+
+    @field_validator("cota_msnm")
+    @classmethod
+    def check_cota(cls, v: float) -> float:
+        if not (0.0 <= v <= 6500.0):
+            raise ValueError("La altitud (cota msnm) debe encontrarse entre 0 y 6500 msnm.")
+        return v
+
+    @field_validator("distancia_fondo_sensor_cm")
+    @classmethod
+    def check_distancia(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("La distancia sensor-fondo debe ser mayor a 0 cm.")
+        return v
 
 
 class NodeProvisionOut(BaseModel):

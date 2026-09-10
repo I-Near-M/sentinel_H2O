@@ -5,10 +5,10 @@ datasources:
     type: mysql
     access: proxy
     url: sentinel-db:3306
-    database: sentinel_h2o_db
-    user: sentinel_user
+    database: ${MYSQL_DATABASE}
+    user: ${MYSQL_USER}
     secureJsonData:
-      password: sentinel_password_2026
+      password: ${MYSQL_PASSWORD}
     isDefault: true
     jsonData:
       sslmode: disable

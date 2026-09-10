@@ -36,6 +36,7 @@ import {
   Square
 } from 'lucide-react';
 import { predictionsApi, nodesApi } from '../services/api';
+import CascadeRiverVisualizer3D from './CascadeRiverVisualizer3D';
 
 const REGIONS_BY_ZONE = {
   Costa: [
@@ -743,94 +744,38 @@ const WhatIfSimulatorView = () => {
 
             {!loadingCascade && cascadeResult && (
               <>
-                {/* STEPPED 3D TOPOLOGY VISUALIZATION WITH HYDRAULIC PULSE */}
-                <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm dark:shadow-xl">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-cyan-500" />
-                        Topología Escalonada 3D del Río Chancay & Trayectoria de Onda
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {cascadeResult.resumen_cascada}
-                      </p>
-                    </div>
-                    {isSimulatingCascadeAnim && (
-                      <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 animate-pulse border border-cyan-500/30">
-                        🌊 Onda en Movimiento
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Stepped elevation cards (Cabecera -> Media -> Valle) */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2">
-                    {cascadeResult.secuencia_nodos?.map((hop, idx) => (
-                      <div
-                        key={hop.id_nodo}
-                        className={`p-4 rounded-xl border relative transition-all duration-300 ${
-                          hop.orden_secuencia === 0
-                            ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-900 dark:text-cyan-200 shadow-md'
-                            : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200'
-                        }`}
-                        style={{
-                          transform: `translateY(${idx * 4}px)`
-                        }}
-                      >
-                        {/* Elevation Tag */}
-                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-1">
-                          <span>Paso #{hop.orden_secuencia + 1}</span>
-                          <span className="font-bold text-slate-700 dark:text-slate-300">▲ {hop.cota_msnm} msnm</span>
-                        </div>
-
-                        <h4 className="text-xs font-black text-slate-900 dark:text-white truncate" title={hop.nombre}>
-                          {hop.nombre}
-                        </h4>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mb-2 font-mono">
-                          +{hop.distancia_acumulada_km} km • {hop.sector_cuenca}
-                        </div>
-
-                        {/* Lead Time Badge */}
-                        <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-800 space-y-1 text-center font-mono">
-                          <span className="text-[10px] text-slate-500 block">Lead Time de Frente:</span>
-                          <span className="text-sm font-black text-cyan-600 dark:text-cyan-400 block">
-                            {hop.lead_time_frente_legible}
-                          </span>
-                        </div>
-
-                        {/* Gate Status */}
-                        <div className="mt-2 text-center">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full block truncate ${
-                            hop.estado_compuerta_recomendado.includes('Cerrar')
-                              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                              : hop.estado_compuerta_recomendado.includes('Monitoreo')
-                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                          }`}>
-                            {hop.estado_compuerta_recomendado}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                {/* 3D DYNAMIC HYDRAULIC PROPAGATION CANVAS & SCRUBBER */}
+                <CascadeRiverVisualizer3D
+                  cascadeResult={cascadeResult}
+                  originSalinity={cascadeSalinity}
+                  originPh={cascadePh}
+                  originFlow={cascadeFlow}
+                />
 
                 {/* HOP-BY-HOP DETAILED TABLE */}
                 <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm dark:shadow-xl overflow-hidden">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-cyan-500" />
-                    Cronograma de Llegada y Prescripción de Compuertas por Estación
-                  </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-cyan-500" />
+                      Cronograma de Llegada, Calidad Físico-Química y Prescripción de Compuertas
+                    </h3>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      Amortiguamiento carbonatado pH & Atenuación de CE
+                    </span>
+                  </div>
 
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs font-mono">
                       <thead>
                         <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold font-sans">
                           <th className="pb-3">Estación / Nodo</th>
-                          <th className="pb-3">Cota (msnm)</th>
-                          <th className="pb-3">Distancia (km)</th>
+                          <th className="pb-3">Cota</th>
+                          <th className="pb-3">Distancia</th>
                           <th className="pb-3">Velocidad Flujo</th>
                           <th className="pb-3">Lead Time Frente</th>
                           <th className="pb-3">Salinidad Llegada</th>
+                          <th className="pb-3">pH Arribo</th>
+                          <th className="pb-3">WQI Llegada</th>
                           <th className="pb-3">Acción Compuerta</th>
                         </tr>
                       </thead>
@@ -846,11 +791,25 @@ const WhatIfSimulatorView = () => {
                             <td className="py-3 text-cyan-600 dark:text-cyan-400 font-bold">{hop.velocidad_media_kmh} km/h</td>
                             <td className="py-3 text-emerald-600 dark:text-emerald-400 font-black">{hop.lead_time_frente_legible}</td>
                             <td className="py-3 text-amber-600 dark:text-amber-400 font-bold">{hop.salinidad_estimada_llegada_ec} µS/cm</td>
+                            <td className="py-3 text-cyan-600 dark:text-cyan-400 font-bold font-mono">
+                              {hop.ph_estimado_llegada ? hop.ph_estimado_llegada.toFixed(2) : '7.40'}
+                            </td>
+                            <td className="py-3 font-bold font-mono">
+                              <span className={`px-2 py-0.5 rounded text-[10px] ${
+                                hop.wqi_estimado_llegada < 50
+                                  ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400'
+                                  : hop.wqi_estimado_llegada < 70
+                                  ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400'
+                                  : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
+                              }`}>
+                                {hop.wqi_estimado_llegada ? hop.wqi_estimado_llegada.toFixed(1) : '85.0'}
+                              </span>
+                            </td>
                             <td className="py-3 font-sans">
                               <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                                hop.estado_compuerta_recomendado.includes('Cerrar')
+                                hop.estado_compuerta_recomendado.includes('Cerrar') || hop.estado_compuerta_recomendado.includes('CERRAR')
                                   ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400'
-                                  : hop.estado_compuerta_recomendado.includes('Monitoreo')
+                                  : hop.estado_compuerta_recomendado.includes('Monitoreo') || hop.estado_compuerta_recomendado.includes('ALERTA')
                                   ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400'
                                   : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
                               }`}>

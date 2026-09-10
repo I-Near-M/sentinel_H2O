@@ -8,7 +8,7 @@ from backend.app.database.models import Nodo, CalibracionNodo, UmbralConfig, Ent
 from backend.app.schemas.nodes import (
     NodeStatusOut, NodeDetailOut, NodeProvisionIn, NodeProvisionOut,
     NodeUpdateIn, ApiKeyRegenerateOut, EntityOut, EntityCreateIn, EntityUpdateIn,
-    CalibrationOut, ThresholdOut
+    CalibrationOut, CalibrationCreateIn, ThresholdOut
 )
 
 router = APIRouter()
@@ -439,3 +439,66 @@ def regenerate_api_key(node_id: str, db: Session = Depends(get_db)):
         cpp_config_snippet=snippet,
         mensaje="API Key regenerada exitosamente. Actualice el archivo config.h del firmware."
     )
+
+
+# ============================================================================
+# 5. GESTIÓN Y RECALIBRACIÓN DE SENSORES Y AFORO
+# ============================================================================
+@router.get("/{node_id}/calibration", response_model=CalibrationOut)
+def get_node_calibration(node_id: str, db: Session = Depends(get_db)):
+    """
+    Obtiene la calibración vigente para los sensores y aforador de un nodo.
+    """
+    calibracion = db.query(CalibracionNodo).filter(
+        CalibracionNodo.id_nodo == node_id,
+        CalibracionNodo.es_vigente == True
+    ).first()
+
+    if not calibracion:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró calibración vigente para el nodo '{node_id}'."
+        )
+
+    return CalibrationOut.model_validate(calibracion)
+
+
+@router.post("/{node_id}/calibration", response_model=CalibrationOut, status_code=status.HTTP_201_CREATED)
+def update_node_calibration(node_id: str, calib_in: CalibrationCreateIn, db: Session = Depends(get_db)):
+    """
+    Registra una nueva calibración física para el nodo (pH, TDS/EC, Turbidez, Altura de montaje, Coeficientes K y N).
+    Desactiva las calibraciones previas y establece esta como la vigente.
+    """
+    nodo = db.query(Nodo).filter(Nodo.id_nodo == node_id).first()
+    if not nodo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"El nodo '{node_id}' no existe en el sistema."
+        )
+
+    # Desactivar calibraciones anteriores
+    db.query(CalibracionNodo).filter(
+        CalibracionNodo.id_nodo == node_id
+    ).update({"es_vigente": False})
+
+    # Crear nueva calibración
+    nueva_calib = CalibracionNodo(
+        id_nodo=node_id,
+        ph_offset_v=calib_in.ph_offset_v,
+        ph_slope=calib_in.ph_slope,
+        tds_factor_k=calib_in.tds_factor_k,
+        tds_offset_v=calib_in.tds_offset_v,
+        turb_v_clear=calib_in.turb_v_clear,
+        turb_v_turbid=calib_in.turb_v_turbid,
+        distancia_fondo_sensor_cm=calib_in.distancia_fondo_sensor_cm,
+        caudal_coef_k=calib_in.caudal_coef_k,
+        caudal_exp_n=calib_in.caudal_exp_n,
+        es_vigente=True,
+        calibrado_por=calib_in.calibrado_por
+    )
+    db.add(nueva_calib)
+    db.commit()
+    db.refresh(nueva_calib)
+
+    return CalibrationOut.model_validate(nueva_calib)
+

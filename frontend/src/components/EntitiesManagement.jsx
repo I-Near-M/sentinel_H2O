@@ -17,6 +17,13 @@ import {
   XCircle
 } from 'lucide-react';
 import { nodesApi } from '../services/api';
+import { 
+  validatePhone, 
+  sanitizePhoneInput, 
+  validateEmail, 
+  validateRucDni, 
+  sanitizeDocInput 
+} from '../utils/validators';
 
 export default function EntitiesManagement({ onEntityCreated }) {
   const [entities, setEntities] = useState([]);
@@ -28,6 +35,7 @@ export default function EntitiesManagement({ onEntityCreated }) {
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
   const [formData, setFormData] = useState({
     nombre_entidad: '',
@@ -67,6 +75,7 @@ export default function EntitiesManagement({ onEntityCreated }) {
       direccion: '',
       activo: true
     });
+    setFormErrors({});
     setShowModal(true);
   };
 
@@ -82,28 +91,103 @@ export default function EntitiesManagement({ onEntityCreated }) {
       direccion: entity.direccion || '',
       activo: entity.activo !== false
     });
+    setFormErrors({});
     setShowModal(true);
   };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    let finalVal = type === 'checkbox' ? checked : value;
+
+    if (name === 'ruc') {
+      finalVal = sanitizeDocInput(value);
+      if (finalVal) {
+        const check = validateRucDni(finalVal, false);
+        setFormErrors(prev => ({ ...prev, ruc: check.error }));
+      } else {
+        setFormErrors(prev => ({ ...prev, ruc: null }));
+      }
+    } else if (name === 'telefono_contacto') {
+      finalVal = sanitizePhoneInput(value);
+      if (finalVal) {
+        const check = validatePhone(finalVal, false);
+        setFormErrors(prev => ({ ...prev, telefono_contacto: check.error }));
+      } else {
+        setFormErrors(prev => ({ ...prev, telefono_contacto: null }));
+      }
+    } else if (name === 'email_contacto') {
+      if (finalVal) {
+        const check = validateEmail(finalVal, false);
+        setFormErrors(prev => ({ ...prev, email_contacto: check.error }));
+      } else {
+        setFormErrors(prev => ({ ...prev, email_contacto: null }));
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: finalVal
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.nombre_entidad.trim()) return;
+    setFormErrors({});
+
+    if (!formData.nombre_entidad.trim()) {
+      setFeedbackMsg({ type: 'error', text: 'El nombre de la entidad es obligatorio.' });
+      return;
+    }
+
+    // Validar RUC si fue ingresado
+    if (formData.ruc && formData.ruc.trim()) {
+      const rucCheck = validateRucDni(formData.ruc, false);
+      if (!rucCheck.isValid || (rucCheck.type && rucCheck.type !== 'RUC')) {
+        const msg = rucCheck.error || 'El RUC debe tener 11 dígitos y comenzar con 10, 15, 17 o 20.';
+        setFormErrors(prev => ({ ...prev, ruc: msg }));
+        setFeedbackMsg({ type: 'error', text: msg });
+        return;
+      }
+    }
+
+    // Validar email si fue ingresado
+    let cleanedEmail = null;
+    if (formData.email_contacto && formData.email_contacto.trim()) {
+      const emailCheck = validateEmail(formData.email_contacto, false);
+      if (!emailCheck.isValid) {
+        setFormErrors(prev => ({ ...prev, email_contacto: emailCheck.error }));
+        setFeedbackMsg({ type: 'error', text: emailCheck.error });
+        return;
+      }
+      cleanedEmail = emailCheck.formatted;
+    }
+
+    // Validar teléfono si fue ingresado
+    let cleanedPhone = null;
+    if (formData.telefono_contacto && formData.telefono_contacto.trim()) {
+      const phoneCheck = validatePhone(formData.telefono_contacto, false);
+      if (!phoneCheck.isValid) {
+        setFormErrors(prev => ({ ...prev, telefono_contacto: phoneCheck.error }));
+        setFeedbackMsg({ type: 'error', text: phoneCheck.error });
+        return;
+      }
+      cleanedPhone = phoneCheck.formatted;
+    }
 
     setSubmitting(true);
     try {
+      const payload = {
+        ...formData,
+        email_contacto: cleanedEmail,
+        telefono_contacto: cleanedPhone,
+        ruc: formData.ruc ? formData.ruc.trim() : null
+      };
+
       if (modalMode === 'create') {
-        await nodesApi.createEntity(formData);
+        await nodesApi.createEntity(payload);
         setFeedbackMsg({ type: 'success', text: `¡Entidad '${formData.nombre_entidad}' registrada con éxito!` });
       } else {
-        await nodesApi.updateEntity(selectedEntity.id_entidad, formData);
+        await nodesApi.updateEntity(selectedEntity.id_entidad, payload);
         setFeedbackMsg({ type: 'success', text: `¡Entidad '${formData.nombre_entidad}' actualizada con éxito!` });
       }
       setShowModal(false);
@@ -454,15 +538,25 @@ export default function EntitiesManagement({ onEntityCreated }) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">RUC / Registro Fiscal</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex justify-between items-center">
+                    <span>RUC (11 dígitos)</span>
+                    <span className="text-[10px] text-slate-500 font-normal">Opcional</span>
+                  </label>
                   <input
                     type="text"
                     name="ruc"
                     placeholder="Ej: 20123456789"
                     value={formData.ruc}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 font-mono"
+                    className={`w-full bg-slate-50 dark:bg-[#061821] border rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none font-mono transition-all ${
+                      formErrors.ruc
+                        ? 'border-rose-500 ring-1 ring-rose-500/50'
+                        : 'border-slate-300 dark:border-cyan-900/60 focus:border-cyan-500'
+                    }`}
                   />
+                  {formErrors.ruc && (
+                    <p className="text-[10px] text-rose-500 font-medium">{formErrors.ruc}</p>
+                  )}
                 </div>
               </div>
 
@@ -475,19 +569,33 @@ export default function EntitiesManagement({ onEntityCreated }) {
                     placeholder="contacto@junta.org"
                     value={formData.email_contacto}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500"
+                    className={`w-full bg-slate-50 dark:bg-[#061821] border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none transition-all ${
+                      formErrors.email_contacto
+                        ? 'border-rose-500 ring-1 ring-rose-500/50'
+                        : 'border-slate-300 dark:border-cyan-900/60 focus:border-cyan-500'
+                    }`}
                   />
+                  {formErrors.email_contacto && (
+                    <p className="text-[10px] text-rose-500 font-medium">{formErrors.email_contacto}</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Teléfono / WhatsApp</label>
                   <input
                     type="text"
                     name="telefono_contacto"
-                    placeholder="+51 987 654 321"
+                    placeholder="+51987654321"
                     value={formData.telefono_contacto}
                     onChange={handleInputChange}
-                    className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 font-mono"
+                    className={`w-full bg-slate-50 dark:bg-[#061821] border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none font-mono transition-all ${
+                      formErrors.telefono_contacto
+                        ? 'border-rose-500 ring-1 ring-rose-500/50'
+                        : 'border-slate-300 dark:border-cyan-900/60 focus:border-cyan-500'
+                    }`}
                   />
+                  {formErrors.telefono_contacto && (
+                    <p className="text-[10px] text-rose-500 font-medium">{formErrors.telefono_contacto}</p>
+                  )}
                 </div>
               </div>
 

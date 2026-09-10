@@ -12,10 +12,12 @@ import {
   ArrowLeft, 
   CheckCircle2, 
   Building2, 
-  AlertTriangle 
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import { nodesApi } from '../services/api';
 import { useSystemConfig } from '../context/SystemConfigContext';
+import { validateCoordinates } from '../utils/validators';
 
 export default function NodeProvisionWizard({ onNodeCreated, setActiveTab }) {
   const { nombre_cuenca, latitud_centro, longitud_centro } = useSystemConfig();
@@ -24,6 +26,7 @@ export default function NodeProvisionWizard({ onNodeCreated, setActiveTab }) {
   const [entities, setEntities] = useState([]);
   const [copied, setCopied] = useState(false);
   const [provisionResult, setProvisionResult] = useState(null);
+  const [step1Error, setStep1Error] = useState('');
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -379,11 +382,29 @@ export default function NodeProvisionWizard({ onNodeCreated, setActiveTab }) {
                 </div>
               </div>
 
+              {step1Error && (
+                <div className="p-3 bg-rose-500/15 border border-rose-500/40 text-rose-800 dark:text-rose-200 text-xs rounded-xl font-medium">
+                  {step1Error}
+                </div>
+              )}
+
               <div className="flex justify-end pt-4">
                 <button
                   type="button"
                   disabled={entities.length === 0}
-                  onClick={() => setStep(2)}
+                  onClick={() => {
+                    setStep1Error('');
+                    if (!formData.nombre || !formData.nombre.trim()) {
+                      setStep1Error('El nombre de la estación es obligatorio.');
+                      return;
+                    }
+                    const coordCheck = validateCoordinates(formData.latitud, formData.longitud, formData.cota_msnm);
+                    if (!coordCheck.isValid) {
+                      setStep1Error(coordCheck.errors.join(' '));
+                      return;
+                    }
+                    setStep(2);
+                  }}
                   className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-extrabold text-xs shadow-md transition-all ${
                     entities.length > 0 
                       ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 hover:from-cyan-400 hover:to-teal-400 cursor-pointer' 
@@ -397,66 +418,254 @@ export default function NodeProvisionWizard({ onNodeCreated, setActiveTab }) {
             </div>
           )}
 
-          {/* PASO 2: Estructura Hidráulica y Calibración */}
+          {/* PASO 2: Estructura Hidráulica y Calibración de Sensores */}
           {step === 2 && (
             <div className="space-y-6">
-              <h3 className="text-base font-black text-slate-900 dark:text-white border-b border-cyan-500/20 pb-3 flex items-center space-x-2">
-                <Sliders className="w-5 h-5 text-cyan-500" />
-                <span>Paso 2: Estructura de Aforo y Calibración de Caudal (Q = K · hᴺ)</span>
-              </h3>
-
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tipo de Estructura de Aforo Instalada</label>
-                  <select
-                    value={formData.estructura_tipo}
-                    onChange={handleStructureChange}
-                    className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 font-medium"
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-3">
+                <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center space-x-2">
+                  <Sliders className="w-5 h-5 text-cyan-500" />
+                  <span>Paso 2: Calibración Físico-Química de Sensores y Aforo Hidráulico</span>
+                </h3>
+                
+                {/* Presets Rápidos */}
+                <div className="flex items-center space-x-1 text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-bold mr-1">Presets:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        ph_offset_v: 2.5000,
+                        ph_slope: -0.1800,
+                        tds_factor_k: 0.5000,
+                        tds_offset_v: 0.0000,
+                        turb_v_clear: 4.2000,
+                        turb_v_turbid: 2.5000
+                      }));
+                    }}
+                    className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-cyan-500/20 text-slate-700 dark:text-cyan-300 font-bold transition-colors cursor-pointer"
                   >
-                    <option value="PARSHALL_3_INCH" className="bg-[#072433] text-white">Canal Parshall 3 pulgadas (W=0.076m) - K: 0.177, N: 1.55</option>
-                    <option value="PARSHALL_6_INCH" className="bg-[#072433] text-white">Canal Parshall 6 pulgadas (W=0.152m) - K: 0.381, N: 1.58</option>
-                    <option value="PARSHALL_9_INCH" className="bg-[#072433] text-white">Canal Parshall 9 pulgadas (W=0.229m) - K: 0.535, N: 1.53</option>
-                    <option value="PARSHALL_1_FOOT" className="bg-[#072433] text-white">Canal Parshall 1 pie (W=0.305m) - K: 0.690, N: 1.522</option>
-                    <option value="PARSHALL_2_FOOT" className="bg-[#072433] text-white">Canal Parshall 2 pies (W=0.610m) - K: 1.426, N: 1.550</option>
-                    <option value="VERTEDERO_TRIANG_90" className="bg-[#072433] text-white">Vertedero Triangular 90° (Thompson) - K: 1.380, N: 2.50</option>
-                    <option value="VERTEDERO_RECT_50CM" className="bg-[#072433] text-white">Vertedero Rectangular 0.50m - K: 0.920, N: 1.50</option>
-                    <option value="CANAL_MANNING_TRAPECIO" className="bg-[#072433] text-white">Canal Abierto Trapezoidal (Manning) - K: 1.250, N: 1.667</option>
-                  </select>
+                    Estándar Lab
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        ph_offset_v: 2.4800,
+                        ph_slope: -0.1840,
+                        tds_factor_k: 0.5000,
+                        tds_offset_v: 0.0000,
+                        turb_v_clear: 4.2000,
+                        turb_v_turbid: 2.4000
+                      }));
+                    }}
+                    className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-cyan-500/20 text-slate-700 dark:text-cyan-300 font-bold transition-colors cursor-pointer"
+                  >
+                    Valle Chancay
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        ph_offset_v: 2.5000,
+                        ph_slope: -0.1800,
+                        tds_factor_k: 0.5000,
+                        tds_offset_v: 0.0000,
+                        turb_v_clear: 4.2500,
+                        turb_v_turbid: 2.5000
+                      }));
+                    }}
+                    className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-cyan-500/20 text-slate-700 dark:text-cyan-300 font-bold transition-colors cursor-pointer"
+                  >
+                    Alta Cabecera
+                  </button>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-3 gap-3 p-4 bg-slate-100 dark:bg-[#061821] rounded-2xl border border-slate-300 dark:border-cyan-900/60 text-xs">
-                  <div className="space-y-1">
-                    <label className="text-slate-600 dark:text-slate-400 font-bold">Distancia Sensor-Fondo (cm)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      name="distancia_fondo_sensor_cm"
-                      value={formData.distancia_fondo_sensor_cm}
-                      onChange={handleInputChange}
-                      className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
-                    />
+              {/* SECCIÓN A: CALIBRACIÓN ELECTROQUÍMICA & ÓPTICA */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-black uppercase tracking-wider text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>A. Calibración de Sondas Analógicas (Voltajes Crudos ADC1)</span>
+                </h4>
+
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {/* Calibración pH */}
+                  <div className="p-4 bg-slate-50 dark:bg-[#061821] rounded-2xl border border-slate-300 dark:border-cyan-900/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white">Sonda pH (PH-4502C)</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 font-bold font-mono">ADC1_CH4</span>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Offset pH 7.0 (V)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        name="ph_offset_v"
+                        value={formData.ph_offset_v}
+                        onChange={handleInputChange}
+                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-xs text-slate-900 dark:text-white font-bold focus:border-cyan-500"
+                        title="Voltaje medido en solución buffer neutra pH 7.00"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Típico: 2.500 V en Buffer 7.0</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Pendiente Slope (V/pH)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        name="ph_slope"
+                        value={formData.ph_slope}
+                        onChange={handleInputChange}
+                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-xs text-slate-900 dark:text-white font-bold focus:border-cyan-500"
+                        title="Sensibilidad del electrodo en Voltios por unidad de pH"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Típico: -0.180 a -0.184 V/pH</span>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-slate-600 dark:text-slate-400 font-bold">Coeficiente K</label>
-                    <input
-                      type="number"
-                      step="0.001"
-                      name="caudal_coef_k"
-                      value={formData.caudal_coef_k}
-                      onChange={handleInputChange}
-                      className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
-                    />
+
+                  {/* Calibración Salinidad / TDS */}
+                  <div className="p-4 bg-slate-50 dark:bg-[#061821] rounded-2xl border border-slate-300 dark:border-cyan-900/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white">Salinidad (Keyestudio TDS)</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-500 font-bold font-mono">ADC1_CH6</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Factor Conversión K</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        name="tds_factor_k"
+                        value={formData.tds_factor_k}
+                        onChange={handleInputChange}
+                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-xs text-slate-900 dark:text-white font-bold focus:border-cyan-500"
+                        title="Factor de correlación TDS (ppm) vs Conductividad (µS/cm)"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Típico: 0.500 (NaCl estándar)</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Offset en Seco (V)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        name="tds_offset_v"
+                        value={formData.tds_offset_v || 0.0}
+                        onChange={handleInputChange}
+                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-xs text-slate-900 dark:text-white font-bold focus:border-cyan-500"
+                        title="Voltaje residual medido con electrodo en el aire"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Típico: 0.000 V en aire</span>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-slate-600 dark:text-slate-400 font-bold">Exponente N</label>
-                    <input
-                      type="number"
-                      step="0.001"
-                      name="caudal_exp_n"
-                      value={formData.caudal_exp_n}
-                      onChange={handleInputChange}
-                      className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
-                    />
+
+                  {/* Calibración Turbidez */}
+                  <div className="p-4 bg-slate-50 dark:bg-[#061821] rounded-2xl border border-slate-300 dark:border-cyan-900/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white">Turbidez (TS-300B)</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-500 font-bold font-mono">ADC1_CH7</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Voltaje Agua Clara (V)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        name="turb_v_clear"
+                        value={formData.turb_v_clear}
+                        onChange={handleInputChange}
+                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-xs text-slate-900 dark:text-white font-bold focus:border-cyan-500"
+                        title="Voltaje medido en agua 100% clara / 0 NTU"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Típico: 4.200 V a 0 NTU</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Voltaje Agua Turbia (V)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        name="turb_v_turbid"
+                        value={formData.turb_v_turbid}
+                        onChange={handleInputChange}
+                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-xs text-slate-900 dark:text-white font-bold focus:border-cyan-500"
+                        title="Voltaje medido en suspensión turbia patrón / 100 NTU"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Típico: 2.400 - 2.500 V a 100 NTU</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECCIÓN B: AFORADOR HIDRÁULICO & ULTRASONIDO */}
+              <div className="space-y-4 pt-2">
+                <h4 className="text-xs font-black uppercase tracking-wider text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>B. Estructura de Aforo y Ecuación de Gasto (Q = K · hᴺ)</span>
+                </h4>
+
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tipo de Estructura de Aforo Instalada</label>
+                    <select
+                      value={formData.estructura_tipo}
+                      onChange={handleStructureChange}
+                      className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 font-medium"
+                    >
+                      <option value="PARSHALL_3_INCH" className="bg-[#072433] text-white">Canal Parshall 3 pulgadas (W=0.076m) - K: 0.177, N: 1.55</option>
+                      <option value="PARSHALL_6_INCH" className="bg-[#072433] text-white">Canal Parshall 6 pulgadas (W=0.152m) - K: 0.381, N: 1.58</option>
+                      <option value="PARSHALL_9_INCH" className="bg-[#072433] text-white">Canal Parshall 9 pulgadas (W=0.229m) - K: 0.535, N: 1.53</option>
+                      <option value="PARSHALL_1_FOOT" className="bg-[#072433] text-white">Canal Parshall 1 pie (W=0.305m) - K: 0.690, N: 1.522</option>
+                      <option value="PARSHALL_2_FOOT" className="bg-[#072433] text-white">Canal Parshall 2 pies (W=0.610m) - K: 1.426, N: 1.550</option>
+                      <option value="VERTEDERO_TRIANG_90" className="bg-[#072433] text-white">Vertedero Triangular 90° (Thompson) - K: 1.380, N: 2.50</option>
+                      <option value="VERTEDERO_RECT_50CM" className="bg-[#072433] text-white">Vertedero Rectangular 0.50m - K: 0.920, N: 1.50</option>
+                      <option value="CANAL_MANNING_TRAPECIO" className="bg-[#072433] text-white">Canal Abierto Trapezoidal (Manning) - K: 1.250, N: 1.667</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 p-4 bg-slate-100 dark:bg-[#061821] rounded-2xl border border-slate-300 dark:border-cyan-900/60 text-xs">
+                    <div className="space-y-1">
+                      <label className="text-slate-600 dark:text-slate-400 font-bold">Distancia Sensor-Fondo (cm)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        name="distancia_fondo_sensor_cm"
+                        value={formData.distancia_fondo_sensor_cm}
+                        onChange={handleInputChange}
+                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
+                        title="Distancia en cm medida con cinta métrica desde la cara del sensor ultrasónico JSN-SR04T hasta el piso/fondo del canal"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">h = Dist.Fondo - Eco</span>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-slate-600 dark:text-slate-400 font-bold">Coeficiente K</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        name="caudal_coef_k"
+                        value={formData.caudal_coef_k}
+                        onChange={handleInputChange}
+                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Factor de escala de gasto</span>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-slate-600 dark:text-slate-400 font-bold">Exponente N</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        name="caudal_exp_n"
+                        value={formData.caudal_exp_n}
+                        onChange={handleInputChange}
+                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Exponente hidráulico</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -473,7 +682,7 @@ export default function NodeProvisionWizard({ onNodeCreated, setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-md"
+                  className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-md cursor-pointer"
                 >
                   <span>Continuar a Umbrales</span>
                   <ArrowRight className="w-4 h-4" />

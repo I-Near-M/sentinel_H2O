@@ -6,6 +6,8 @@ import {
   Sparkles, CheckCircle2, ChevronRight, Droplets, 
   MapPin, Globe2, Compass 
 } from 'lucide-react';
+import PasswordStrengthMeter from './PasswordStrengthMeter';
+import { validateEmail, getPasswordStrength } from '../utils/validators';
 
 export const LoginPage = () => {
   const { login, registerFirstAdmin, error: authError } = useAuth();
@@ -78,13 +80,28 @@ export const LoginPage = () => {
         setLoading(false);
         return;
       }
+
+      const emailCheck = validateEmail(email, true);
+      if (!emailCheck.isValid) {
+        setErrorMessage(emailCheck.error);
+        setLoading(false);
+        return;
+      }
+
+      const pwdStrength = getPasswordStrength(password);
+      if (!pwdStrength.isValid) {
+        setErrorMessage(`La contraseña no cumple la política de seguridad: ${pwdStrength.errors.join(' ')}`);
+        setLoading(false);
+        return;
+      }
+
       if (!basinConfig.nombre_cuenca.trim() || !basinConfig.pais_region.trim()) {
         setErrorMessage('Por favor ingrese el nombre de la cuenca y la región/país.');
         setLoading(false);
         return;
       }
       const res = await registerFirstAdmin({
-        email: email.trim(),
+        email: emailCheck.formatted,
         password: password.trim(),
         nombre_completo: bootstrapName.trim(),
         cargo_institucional: bootstrapCargo.trim(),
@@ -311,6 +328,7 @@ export const LoginPage = () => {
                 <input
                   type="email"
                   required
+                  autoComplete="username"
                   placeholder="admin@institucion.gob.pe"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -321,19 +339,23 @@ export const LoginPage = () => {
 
             <div>
               <label className="block text-xs font-medium text-cyan-200/80 mb-1 font-mono">
-                CONTRASEÑA SEGURA *
+                {isFirstSetup ? 'CONTRASEÑA ROBUSTA *' : 'CONTRASEÑA *'}
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-cyan-500/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   required
-                  placeholder="••••••••••••"
+                  autoComplete={isFirstSetup ? "new-password" : "current-password"}
+                  placeholder={isFirstSetup ? 'Mínimo 8 caracteres (A-Z, a-z, 0-9, @#$)' : '••••••••••••'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#061e2b]/90 border border-cyan-500/30 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-all"
+                  className="w-full bg-[#061e2b]/90 border border-cyan-500/30 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-all font-mono"
                 />
               </div>
+              {isFirstSetup && password.length > 0 && (
+                <PasswordStrengthMeter password={password} showCriteria={true} />
+              )}
             </div>
 
             <button

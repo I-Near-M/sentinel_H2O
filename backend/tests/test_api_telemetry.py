@@ -162,3 +162,36 @@ def test_node_provisioning_wizard_dynamic():
     tel_data = tel_resp.json()
     assert tel_data["id_nodo"] == node_unique_id
     assert tel_data["ph"] >= 6.5
+
+
+def test_node_calibration_get_and_update():
+    # 1. Actualizar/Registrar calibración para un nodo existente
+    node_id = "NODO-01-CABECERA"
+    update_payload = {
+        "ph_offset_v": 2.485,
+        "ph_slope": -0.183,
+        "tds_factor_k": 0.520,
+        "tds_offset_v": 0.010,
+        "turb_v_clear": 4.150,
+        "turb_v_turbid": 2.420,
+        "distancia_fondo_sensor_cm": 135.5,
+        "caudal_coef_k": 0.535,
+        "caudal_exp_n": 1.530,
+        "calibrado_por": "Ing. Residente de Prueba"
+    }
+    post_resp = client.post(f"/api/v1/nodes/{node_id}/calibration", json=update_payload)
+    assert post_resp.status_code == 201
+    saved_data = post_resp.json()
+    assert saved_data["ph_offset_v"] == 2.485
+    assert saved_data["calibrado_por"] == "Ing. Residente de Prueba"
+    assert saved_data["distancia_fondo_sensor_cm"] == 135.5
+
+    # 2. Consultar la calibración activa mediante GET
+    calib_resp = client.get(f"/api/v1/nodes/{node_id}/calibration")
+    assert calib_resp.status_code == 200
+    calib_data = calib_resp.json()
+    assert calib_data["ph_offset_v"] == 2.485
+    assert calib_data["caudal_coef_k"] == 0.535
+    assert calib_data["es_vigente"] is True
+
+

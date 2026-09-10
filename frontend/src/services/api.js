@@ -70,6 +70,8 @@ export const nodesApi = {
   updateNode: (id, data) => api.put(`/nodes/${id}`, data),
   deleteNode: (id) => api.delete(`/nodes/${id}`),
   regenerateApiKey: (id) => api.post(`/nodes/${id}/regenerate-api-key`),
+  getNodeCalibration: (id) => api.get(`/nodes/${id}/calibration`),
+  updateNodeCalibration: (id, data) => api.post(`/nodes/${id}/calibration`, data),
   getEntities: (includeInactive = true) => api.get(`/nodes/entities/all?include_inactive=${includeInactive}`),
   createEntity: (data) => api.post('/nodes/entities', data),
   updateEntity: (id, data) => api.put(`/nodes/entities/${id}`, data),
