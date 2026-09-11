@@ -35,6 +35,20 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 horas de vigencia
     ALLOWED_ORIGINS: Union[List[str], str] = ["*"]
 
+    @field_validator("JWT_SECRET_KEY", mode="before")
+    @classmethod
+    def validate_jwt_secret(cls, v: Any) -> str:
+        if v is None or not str(v).strip():
+            return "sentinel_dev_jwt_secret_change_in_production_32b"
+        return str(v).strip()
+
+    @field_validator("MASTER_API_KEY", mode="before")
+    @classmethod
+    def validate_master_key(cls, v: Any) -> str:
+        if v is None or not str(v).strip():
+            return "sentinel_dev_master_key_change_in_prod"
+        return str(v).strip()
+
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:

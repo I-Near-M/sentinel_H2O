@@ -19,7 +19,11 @@ router = APIRouter(prefix="/auth", tags=["Autenticación & Gobernanza RBAC"])
 
 
 def _to_user_response(user: Usuario) -> UserResponse:
-    nombre_entidad = user.entidad.nombre_entidad if user.entidad else None
+    try:
+        nombre_entidad = user.entidad.nombre_entidad if user.entidad else None
+    except Exception:
+        nombre_entidad = None
+    created_at = user.created_at or datetime.datetime.now(datetime.timezone.utc)
     return UserResponse(
         id_usuario=user.id_usuario,
         id_entidad=user.id_entidad,
@@ -29,9 +33,9 @@ def _to_user_response(user: Usuario) -> UserResponse:
         telefono_contacto=user.telefono_contacto,
         cargo_institucional=user.cargo_institucional,
         rol=user.rol,
-        activo=user.activo,
+        activo=bool(user.activo),
         ultimo_login=user.ultimo_login,
-        created_at=user.created_at
+        created_at=created_at
     )
 
 
@@ -55,50 +59,64 @@ def get_setup_status(db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 def login(credentials: LoginRequest, request: Request, db: Session = Depends(get_db)):
     """Inicia sesión con email y contraseña, retornando el token JWT y el perfil."""
-    user = db.query(Usuario).filter(Usuario.email == credentials.email.strip().lower()).first()
-    if not user or not verify_password(credentials.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales incorrectas (correo o contraseña no válidos)"
+    try:
+        user = db.query(Usuario).filter(Usuario.email == credentials.email.strip().lower()).first()
+        if not user or not verify_password(credentials.password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Credenciales incorrectas (correo o contraseña no válidos)"
+            )
+        
+        if not user.activo:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cuenta de usuario desactivada. Contacte al Administrador del Sistema."
+            )
+        
+        # Actualizar último login de forma segura
+        try:
+            user.ultimo_login = datetime.datetime.now(datetime.timezone.utc)
+            db.commit()
+            db.refresh(user)
+        except Exception as e:
+            db.rollback()
+            print(f"[AUTH_WARNING] No se pudo actualizar ultimo_login: {e}")
+
+        token_data = {
+            "sub": str(user.id_usuario),
+            "email": user.email,
+            "rol": user.rol,
+            "nombre_completo": user.nombre_completo,
+            "id_entidad": user.id_entidad
+        }
+        access_token = create_access_token(token_data)
+
+        # Registrar evento de login en auditoría
+        client_ip = request.client.host if request.client else None
+        register_audit_event(
+            db=db,
+            usuario=user,
+            accion="LOGIN_SUCCESS",
+            tabla_afectada="usuarios",
+            id_registro_afectado=str(user.id_usuario),
+            ip_origen=client_ip
         )
-    
-    if not user.activo:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cuenta de usuario desactivada. Contacte al Administrador del Sistema."
+
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in_minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+            user=_to_user_response(user)
         )
-    
-    # Actualizar último login
-    user.ultimo_login = datetime.datetime.now(datetime.timezone.utc)
-    db.commit()
-    db.refresh(user)
-
-    token_data = {
-        "sub": str(user.id_usuario),
-        "email": user.email,
-        "rol": user.rol,
-        "nombre_completo": user.nombre_completo,
-        "id_entidad": user.id_entidad
-    }
-    access_token = create_access_token(token_data)
-
-    # Registrar evento de login en auditoría
-    client_ip = request.client.host if request.client else None
-    register_audit_event(
-        db=db,
-        usuario=user,
-        accion="LOGIN_SUCCESS",
-        tabla_afectada="usuarios",
-        id_registro_afectado=str(user.id_usuario),
-        ip_origen=client_ip
-    )
-
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        expires_in_minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
-        user=_to_user_response(user)
-    )
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno en autenticación: {str(e)}"
+        )
 
 
 @router.get("/me", response_model=UserResponse)

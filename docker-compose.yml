@@ -46,9 +46,8 @@ services:
       OPENWEATHER_API_KEY: "${OPENWEATHER_API_KEY:-}"
       WHATSAPP_PROVIDER: "${WHATSAPP_PROVIDER:-mock}"
       WHATSAPP_API_TOKEN: "${WHATSAPP_API_TOKEN:-}"
-      WHATSAPP_PHONE_NUMBER_ID: "${WHATSAPP_PHONE_NUMBER_ID:-}"
-      MASTER_API_KEY: "${MASTER_API_KEY}"
-      JWT_SECRET_KEY: "${JWT_SECRET_KEY}"
+      MASTER_API_KEY: "${MASTER_API_KEY:-sentinel_master_key_chancay_2026_secure}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-sentinel_production_jwt_secret_key_2026_secure_32bytes}"
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-[\"*\"]}"
     ports:
       - "${BACKEND_PORT:-8000}:8000"

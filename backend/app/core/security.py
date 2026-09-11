@@ -24,16 +24,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[datetime.timedelta] = None) -> str:
+    secret = str(settings.JWT_SECRET_KEY).strip() if settings.JWT_SECRET_KEY and str(settings.JWT_SECRET_KEY).strip() else "sentinel_dev_jwt_secret_change_in_production_32b"
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.datetime.now(datetime.timezone.utc) + expires_delta
     else:
         expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({'exp': expire, 'iat': datetime.datetime.now(datetime.timezone.utc)})
-    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(to_encode, secret, algorithm=settings.JWT_ALGORITHM)
+
 
 def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
+    secret = str(settings.JWT_SECRET_KEY).strip() if settings.JWT_SECRET_KEY and str(settings.JWT_SECRET_KEY).strip() else "sentinel_dev_jwt_secret_change_in_production_32b"
     try:
-        return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        return jwt.decode(token, secret, algorithms=[settings.JWT_ALGORITHM])
     except Exception:
         return None
+
