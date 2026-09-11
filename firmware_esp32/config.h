@@ -7,8 +7,8 @@
 // 1. IDENTIFICACIÓN Y AUTENTICACIÓN DEL NODO IOT
 // ============================================================================
 // Credenciales generadas para la estación telemétrica
-#define NODE_ID "NODO-171-VALLE"
-#define NODE_API_KEY "sec_key_nodo_171_valle_demo"
+#define NODE_ID "NODO-01-CABECERA"
+#define NODE_API_KEY "sec_key_nodo_01_cabecera_67c935eec78775536188d962"
 
 // ============================================================================
 // 2. CONFIGURACIÓN DEL SERVIDOR Y ENDPOINT
