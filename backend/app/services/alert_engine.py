@@ -48,6 +48,14 @@ class AlertEngine:
             wqi_score=processed_data["wqi_score"]
         )
 
+        if eval_ia["is_anomaly"]:
+            anomaly_detector.record_anomaly_event(
+                db=db,
+                id_nodo=id_nodo,
+                reading_dict=processed_data,
+                eval_dict=eval_ia
+            )
+
         # Si el nodo está aguas arriba (Cabecera o Conducción), calcular Lead Time hacia la parcela
         lead_time_info = ""
         if id_nodo in ["NODO-01-CABECERA", "NODO-02-CONDUCCION"]:

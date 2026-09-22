@@ -39,12 +39,11 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"}
         )
     
-    user_id = payload.get("sub")
-    try:
-        user_id_int = int(user_id)
-        user = db.query(Usuario).filter(Usuario.id_usuario == user_id_int, Usuario.activo == True).first()
-    except (ValueError, TypeError):
-        user = db.query(Usuario).filter(Usuario.email == str(user_id), Usuario.activo == True).first()
+    user_id = str(payload.get("sub"))
+    user = db.query(Usuario).filter(
+        (Usuario.id_usuario == user_id) | (Usuario.email == user_id),
+        Usuario.activo == True
+    ).first()
         
     if not user:
         raise HTTPException(

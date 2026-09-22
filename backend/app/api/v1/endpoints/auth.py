@@ -1,17 +1,20 @@
 import datetime
+import re
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from backend.app.database.session import get_db
-from backend.app.database.models import Usuario, Entidad, AuditoriaLog, ConfiguracionSistema
+from backend.app.database.models import (
+    Usuario, Entidad, TipoEntidad, CargoInstitucional, TipoRecursoHidrico, AuditoriaLog, ConfiguracionSistema
+)
 from backend.app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 from backend.app.core.config import settings
 from backend.app.schemas.auth import (
     LoginRequest, TokenResponse, UserResponse, UserCreate, UserUpdate, ProfileUpdate, AdminBootstrap, AuditLogResponse
 )
-from backend.app.schemas.system import SetupStatusOut, SystemConfigOut, DashboardGrafanaItem, DEFAULT_GRAFANA_DASHBOARDS
+from backend.app.schemas.system import SetupStatusOut, SystemConfigOut
 from backend.app.api.deps import get_current_user, require_roles, register_audit_event
 from backend.app.api.v1.endpoints.system import get_or_create_system_config, _to_system_config_out
 
@@ -25,11 +28,14 @@ def _to_user_response(user: Usuario) -> UserResponse:
         nombre_entidad = None
     created_at = user.created_at or datetime.datetime.now(datetime.timezone.utc)
     return UserResponse(
-        id_usuario=user.id_usuario,
-        id_entidad=user.id_entidad,
+        id_usuario=str(user.id_usuario),
+        id_entidad=str(user.id_entidad) if user.id_entidad else None,
+        id_cargo=str(user.id_cargo) if getattr(user, 'id_cargo', None) else None,
         nombre_entidad=nombre_entidad,
         email=user.email,
-        nombre_completo=user.nombre_completo,
+        nombres=user.nombres or "Usuario",
+        apellidos=user.apellidos or "Sistema",
+        nombre_completo=user.nombre_completo or f"{user.nombres} {user.apellidos}".strip(),
         telefono_contacto=user.telefono_contacto,
         cargo_institucional=user.cargo_institucional,
         rol=user.rol,
@@ -184,38 +190,122 @@ def bootstrap_first_admin(payload: AdminBootstrap, request: Request, db: Session
     if existing:
         raise HTTPException(status_code=400, detail="El correo ya se encuentra registrado.")
     
-    new_user = Usuario(
-        email=payload.email.strip().lower(),
-        password_hash=hash_password(payload.password),
-        nombre_completo=payload.nombre_completo.strip(),
-        telefono_contacto=payload.telefono_contacto,
-        cargo_institucional=payload.cargo_institucional or "Superadministrador de Sistema",
-        rol="ADMIN_SISTEMA",
-        activo=True
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    try:
+        # 1. Resolver o Registrar la Entidad Administradora de la Cuenca
+        entidad = None
+        if payload.nombre_entidad and payload.nombre_entidad.strip():
+            nombre_ent = payload.nombre_entidad.strip()
+            entidad = db.query(Entidad).filter(Entidad.nombre_entidad == nombre_ent).first()
+            if not entidad:
+                cod_tipo = (payload.tipo_entidad or "JUNTA_USUARIOS").strip().upper()
+                tipo_ent = db.query(TipoEntidad).filter(
+                    (TipoEntidad.codigo == cod_tipo) | (TipoEntidad.id_tipo_entidad == cod_tipo)
+                ).first()
+                if not tipo_ent:
+                    tipo_ent = db.query(TipoEntidad).first()
+                
+                id_tipo = tipo_ent.id_tipo_entidad if tipo_ent else "TE-02-JUNTA-USUARIOS"
+                entidad = Entidad(
+                    nombre_entidad=nombre_ent,
+                    id_tipo_entidad=id_tipo,
+                    telefono_contacto=payload.telefono_contacto,
+                    email_contacto=payload.email.strip().lower(),
+                    activo=True
+                )
+                db.add(entidad)
+                db.flush()
+        else:
+            # Fallback: entidad raíz si no se especificó nombre
+            entidad = db.query(Entidad).first()
 
-    # Actualizar o inicializar la configuración de la cuenca en el mismo paso
-    config = get_or_create_system_config(db)
-    if payload.nombre_cuenca and payload.nombre_cuenca.strip():
-        config.nombre_cuenca = payload.nombre_cuenca.strip()
-    if payload.pais_region and payload.pais_region.strip():
-        config.pais_region = payload.pais_region.strip()
-    if payload.descripcion_cuenca and payload.descripcion_cuenca.strip():
-        config.descripcion_cuenca = payload.descripcion_cuenca.strip()
-    if payload.latitud_centro is not None:
-        config.latitud_centro = payload.latitud_centro
-    if payload.longitud_centro is not None:
-        config.longitud_centro = payload.longitud_centro
-    if payload.zoom_inicial is not None:
-        config.zoom_inicial = payload.zoom_inicial
-    config.actualizado_por_usuario_id = new_user.id_usuario
-    config.updated_at = datetime.datetime.now(datetime.timezone.utc)
+        # 2. Resolver o Crear el Cargo Institucional
+        cargo = None
+        cargo_nombre = (payload.cargo_institucional or "Superadministrador de Plataforma").strip()
+        if entidad and entidad.id_tipo_entidad:
+            cargo = db.query(CargoInstitucional).filter(
+                CargoInstitucional.id_tipo_entidad == entidad.id_tipo_entidad,
+                CargoInstitucional.nombre_cargo == cargo_nombre
+            ).first()
+            if not cargo:
+                codigo_cargo = re.sub(r'[^A-Z0-9_]', '_', cargo_nombre.upper().replace(' ', '_'))[:50]
+                cargo = CargoInstitucional(
+                    id_tipo_entidad=entidad.id_tipo_entidad,
+                    codigo_cargo=codigo_cargo or "ADMIN_GRAL",
+                    nombre_cargo=cargo_nombre,
+                    nivel_jerarquia=1,
+                    descripcion="Cargo institucional asignado al Superadministrador",
+                    activo=True
+                )
+                db.add(cargo)
+                db.flush()
 
-    db.commit()
-    db.refresh(config)
+        # 3. Registrar el Superadministrador vinculado
+        new_user = Usuario(
+            email=payload.email.strip().lower(),
+            password_hash=hash_password(payload.password),
+            nombres=payload.nombres or "Superadministrador",
+            apellidos=payload.apellidos or "Principal",
+            nombre_completo=payload.nombre_completo.strip(),
+            telefono_contacto=payload.telefono_contacto,
+            id_entidad=entidad.id_entidad if entidad else None,
+            id_cargo=cargo.id_cargo if cargo else None,
+            rol="ADMIN_SISTEMA",
+            activo=True
+        )
+        db.add(new_user)
+        db.flush()
+
+        # 4. Actualizar o inicializar la configuración del recurso hídrico
+        config = get_or_create_system_config(db)
+        if payload.nombre_recurso and payload.nombre_recurso.strip():
+            config.nombre_recurso = payload.nombre_recurso.strip()
+        elif payload.nombre_cuenca and payload.nombre_cuenca.strip():
+            config.nombre_recurso = payload.nombre_cuenca.strip()
+
+        if payload.tipo_recurso and payload.tipo_recurso.strip():
+            config.tipo_recurso = payload.tipo_recurso.strip().upper()
+        if payload.pais and payload.pais.strip():
+            config.pais = payload.pais.strip()
+        if payload.region and payload.region.strip():
+            config.region = payload.region.strip()
+
+        if payload.ubicacion_detallada and payload.ubicacion_detallada.strip():
+            config.ubicacion_detallada = payload.ubicacion_detallada.strip()
+        elif payload.descripcion_cuenca and payload.descripcion_cuenca.strip():
+            config.ubicacion_detallada = payload.descripcion_cuenca.strip()
+
+        if payload.latitud_centro is not None:
+            config.latitud_centro = payload.latitud_centro
+        if payload.longitud_centro is not None:
+            config.longitud_centro = payload.longitud_centro
+        if payload.zoom_inicial is not None:
+            config.zoom_inicial = payload.zoom_inicial
+
+        # Vincular TipoRecursoHidrico si existe en catálogo
+        tipo_rec = db.query(TipoRecursoHidrico).filter(TipoRecursoHidrico.codigo == config.tipo_recurso).first()
+        if tipo_rec:
+            config.id_tipo_recurso = tipo_rec.id_tipo_recurso
+
+        if entidad:
+            config.id_entidad_administradora = entidad.id_entidad
+        config.personal_encargado = new_user.nombre_completo
+        config.telefono_contacto_encargado = new_user.telefono_contacto
+        config.email_contacto_encargado = new_user.email
+        config.configuracion_inicial_completada = True
+        config.id_superadmin_responsable = new_user.id_usuario
+        config.actualizado_por_usuario_id = new_user.id_usuario
+        config.updated_at = datetime.datetime.now(datetime.timezone.utc)
+
+        db.commit()
+        db.refresh(new_user)
+        db.refresh(config)
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error durante el aprovisionamiento atómico del sistema: {str(e)}"
+        )
 
     client_ip = request.client.host if request.client else None
     register_audit_event(
@@ -227,8 +317,11 @@ def bootstrap_first_admin(payload: AdminBootstrap, request: Request, db: Session
         valores_nuevos={
             "email": new_user.email,
             "rol": new_user.rol,
-            "cuenca": config.nombre_cuenca,
-            "pais": config.pais_region
+            "entidad": entidad.nombre_entidad if entidad else None,
+            "recurso": config.nombre_recurso,
+            "tipo": config.tipo_recurso,
+            "pais": config.pais,
+            "region": config.region
         },
         ip_origen=client_ip
     )
@@ -239,10 +332,10 @@ def bootstrap_first_admin(payload: AdminBootstrap, request: Request, db: Session
 @router.get("/users", response_model=List[UserResponse])
 def list_users(
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_roles(["ADMIN_SISTEMA", "OPERADOR_JUNTA"]))
+    current_user: Usuario = Depends(require_roles(["ADMIN_SISTEMA", "OPERADOR_CENTRAL", "OPERADOR_JUNTA", "OPERADOR_AGRARIO"]))
 ):
-    """Lista los usuarios registrados. Si es ADMIN ve todos; si es OPERADOR ve solo los de su entidad."""
-    if current_user.rol == "ADMIN_SISTEMA":
+    """Lista los usuarios registrados. Si es ADMIN o CENTRAL ve todos; si es de entidad ve solo los de su entidad."""
+    if current_user.rol in ["ADMIN_SISTEMA", "OPERADOR_CENTRAL"]:
         users = db.query(Usuario).order_by(Usuario.created_at.desc()).all()
     else:
         users = db.query(Usuario).filter(Usuario.id_entidad == current_user.id_entidad).order_by(Usuario.created_at.desc()).all()
@@ -255,13 +348,13 @@ def create_user(
     payload: UserCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_roles(["ADMIN_SISTEMA", "OPERADOR_JUNTA"]))
+    current_user: Usuario = Depends(require_roles(["ADMIN_SISTEMA", "OPERADOR_CENTRAL", "OPERADOR_JUNTA", "OPERADOR_AGRARIO"]))
 ):
     """Crea un nuevo usuario con rol asignado."""
-    # Operador de junta solo puede crear Tomeros o Auditores para su misma entidad
-    if current_user.rol == "OPERADOR_JUNTA":
-        if payload.rol in ["ADMIN_SISTEMA", "OPERADOR_JUNTA"]:
-            raise HTTPException(status_code=403, detail="No tiene permisos para crear usuarios con rol administrativo.")
+    # Operador agrario o de junta solo puede crear roles de campo/lectura para su misma entidad
+    if current_user.rol in ["OPERADOR_JUNTA", "OPERADOR_AGRARIO"]:
+        if payload.rol in ["ADMIN_SISTEMA", "OPERADOR_CENTRAL", "OPERADOR_JUNTA", "OPERADOR_AGRARIO"]:
+            raise HTTPException(status_code=403, detail="No tiene permisos para crear usuarios con rol administrativo o central.")
         payload.id_entidad = current_user.id_entidad
 
     existing = db.query(Usuario).filter(Usuario.email == payload.email.strip().lower()).first()
@@ -298,18 +391,18 @@ def create_user(
 
 @router.put("/users/{user_id}", response_model=UserResponse)
 def update_user(
-    user_id: int,
+    user_id: str,
     payload: UserUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_roles(["ADMIN_SISTEMA", "OPERADOR_JUNTA"]))
+    current_user: Usuario = Depends(require_roles(["ADMIN_SISTEMA", "OPERADOR_CENTRAL", "OPERADOR_JUNTA", "OPERADOR_AGRARIO"]))
 ):
     """Actualiza la información de un usuario."""
-    user = db.query(Usuario).filter(Usuario.id_usuario == user_id).first()
+    user = db.query(Usuario).filter(Usuario.id_usuario == str(user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    if current_user.rol == "OPERADOR_JUNTA" and user.id_entidad != current_user.id_entidad:
+    if current_user.rol in ["OPERADOR_JUNTA", "OPERADOR_AGRARIO"] and user.id_entidad != current_user.id_entidad:
         raise HTTPException(status_code=403, detail="No puede editar usuarios de otra entidad.")
 
     old_values = {
@@ -322,7 +415,7 @@ def update_user(
     if payload.nombre_completo is not None:
         user.nombre_completo = payload.nombre_completo.strip()
     if payload.telefono_contacto is not None:
-        user.telefono_contacto = payload.telefono_contacto
+        user.telefono_contacto = payload.telefono_contacto.strip() if payload.telefono_contacto else None
     if payload.cargo_institucional is not None:
         user.cargo_institucional = payload.cargo_institucional
     if payload.email is not None and payload.email.strip().lower() != user.email:
@@ -331,9 +424,9 @@ def update_user(
         if exist_mail:
             raise HTTPException(status_code=400, detail="El correo ya se encuentra en uso.")
         user.email = payload.email.strip().lower()
-    if payload.rol is not None and current_user.rol == "ADMIN_SISTEMA":
+    if payload.rol is not None and current_user.rol in ["ADMIN_SISTEMA", "OPERADOR_CENTRAL"]:
         user.rol = payload.rol
-    if payload.id_entidad is not None and current_user.rol == "ADMIN_SISTEMA":
+    if payload.id_entidad is not None and current_user.rol in ["ADMIN_SISTEMA", "OPERADOR_CENTRAL"]:
         user.id_entidad = payload.id_entidad
     if payload.activo is not None:
         user.activo = payload.activo
@@ -360,16 +453,16 @@ def update_user(
 
 @router.delete("/users/{user_id}")
 def deactivate_user(
-    user_id: int,
+    user_id: str,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(require_roles(["ADMIN_SISTEMA"]))
+    current_user: Usuario = Depends(require_roles(["ADMIN_SISTEMA", "OPERADOR_CENTRAL"]))
 ):
     """Desactiva lógicamente un usuario."""
-    if current_user.id_usuario == user_id:
+    if str(current_user.id_usuario) == str(user_id):
         raise HTTPException(status_code=400, detail="No puede desactivar su propia cuenta de superadministrador.")
 
-    user = db.query(Usuario).filter(Usuario.id_usuario == user_id).first()
+    user = db.query(Usuario).filter(Usuario.id_usuario == str(user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
@@ -409,96 +502,3 @@ def get_audit_logs(
     return logs
 
 
-# -------------------------------------------------------------------------------------------------
-# SINGLE SIGN-ON (SSO) & AUTH PROXY INTEGRATION CON GRAFANA
-# -------------------------------------------------------------------------------------------------
-@router.get("/grafana-sso")
-def grafana_sso_launcher(
-    token: Optional[str] = Query(None),
-    redirect_to: Optional[str] = Query("/grafana/"),
-    request: Request = None,
-    db: Session = Depends(get_db)
-):
-    """
-    Punto de entrada SSO para acceder a Grafana con un solo clic.
-    Establece la cookie segura 'sentinel_sso_token' y redirige a la interfaz de Grafana.
-    """
-    target_token = token
-    if not target_token and request:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            target_token = auth_header.replace("Bearer ", "").strip()
-        elif "sentinel_sso_token" in request.cookies:
-            target_token = request.cookies.get("sentinel_sso_token")
-
-    response = RedirectResponse(url=redirect_to, status_code=status.HTTP_302_FOUND)
-    
-    # Limpiar cookies de sesión antiguas de Grafana para evitar conflictos de rotación de tokens
-    response.delete_cookie(key="grafana_session", path="/")
-    response.delete_cookie(key="grafana_session", path="/grafana/")
-    response.delete_cookie(key="grafana_session_expiry", path="/")
-    response.delete_cookie(key="grafana_session_expiry", path="/grafana/")
-
-    if target_token:
-        # Validar que el token sea legítimo antes de setear la cookie
-        payload = decode_access_token(target_token)
-        if payload and ("sub" in payload or "email" in payload):
-            response.set_cookie(
-                key="sentinel_sso_token",
-                value=target_token,
-                httponly=True,
-                samesite="lax",
-                max_age=86400 * 7,
-                path="/"
-            )
-    return response
-
-
-@router.get("/auth-proxy-verify")
-def auth_proxy_verify(request: Request):
-    """
-    Subconsulta de autenticación ultrarrápida invocada por Nginx (auth_request).
-    Lee la cookie 'sentinel_sso_token' o la cabecera 'Authorization' o parámetro 'token',
-    valida el JWT de forma puramente in-memory (0 queries a DB) y retorna las cabeceras
-    X-WEBAUTH-* para que Grafana active la sesión y rol del usuario.
-    """
-    token = None
-    if "sentinel_sso_token" in request.cookies:
-        token = request.cookies.get("sentinel_sso_token")
-    elif "Authorization" in request.headers:
-        auth_header = request.headers["Authorization"]
-        if auth_header.startswith("Bearer "):
-            token = auth_header.replace("Bearer ", "").strip()
-    elif "token" in request.query_params:
-        token = request.query_params.get("token")
-
-    if not token:
-        # Retornar 200 sin cabeceras para que Grafana active el usuario anónimo (Viewer)
-        return Response(status_code=status.HTTP_200_OK)
-
-    payload = decode_access_token(token)
-    if not payload or ("sub" not in payload and "email" not in payload):
-        return Response(status_code=status.HTTP_200_OK)
-
-    email = payload.get("email") or str(payload.get("sub"))
-    nombre = payload.get("nombre_completo") or email
-    rol = payload.get("rol", "AUDITOR_VISOR")
-
-    # Mapeo de roles de Sentinel-H2O a Grafana
-    # ADMIN_SISTEMA -> Admin
-    # OPERADOR_JUNTA -> Editor
-    # TOMERO_COMISION, AUDITOR_VISOR -> Viewer
-    if rol == "ADMIN_SISTEMA":
-        grafana_role = "Admin"
-    elif rol == "OPERADOR_JUNTA":
-        grafana_role = "Editor"
-    else:
-        grafana_role = "Viewer"
-
-    headers = {
-        "X-WEBAUTH-USER": email,
-        "X-WEBAUTH-NAME": nombre,
-        "X-WEBAUTH-EMAIL": email,
-        "X-WEBAUTH-ROLE": grafana_role,
-    }
-    return Response(status_code=status.HTTP_200_OK, headers=headers)

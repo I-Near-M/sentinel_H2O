@@ -8,44 +8,6 @@ const DEFAULT_CONFIG = {
   latitud_centro: -11.49,
   longitud_centro: -77.05,
   zoom_inicial: 10,
-  dashboards_grafana: [
-    {
-      uid: 'sentinel-01-cuenca',
-      label: '01 · Sala de Control & Gemelo Cuenca',
-      desc: 'Visión integral, WQI y caudales por sector',
-      icon: 'Layers',
-    },
-    {
-      uid: 'sentinel-02-nodo-detalle',
-      label: '02 · Monitoreo de Nodos en Detalle',
-      desc: 'Series temporales individuales de cada estación',
-      icon: 'Radio',
-    },
-    {
-      uid: 'sentinel-03-ia-predicciones',
-      label: '03 · Predicciones IA & What-If',
-      desc: 'Modelos predictivos y tiempos de viaje hídrico',
-      icon: 'Cpu',
-    },
-    {
-      uid: 'sentinel-04-balance-volumen',
-      label: '04 · Balance Hídrico & Volúmenes',
-      desc: 'Estimación de volumen entregado a comisiones',
-      icon: 'Waves',
-    },
-    {
-      uid: 'sentinel-05-clima-hidrologia',
-      label: '05 · Clima & Hidrología OpenWeather',
-      desc: 'Correlación lluvia-caudal y meteorología',
-      icon: 'CloudSun',
-    },
-    {
-      uid: 'sentinel-06-iot-energia-red',
-      label: '06 · Salud IoT & Telemetría Cruda',
-      desc: 'Tensión de baterías, señal GSM y voltajes crudos',
-      icon: 'Activity',
-    },
-  ],
 };
 
 const SystemConfigContext = createContext(null);
@@ -97,7 +59,6 @@ export const SystemConfigProvider = ({ children }) => {
     latitud_centro: config.latitud_centro ?? DEFAULT_CONFIG.latitud_centro,
     longitud_centro: config.longitud_centro ?? DEFAULT_CONFIG.longitud_centro,
     zoom_inicial: config.zoom_inicial ?? DEFAULT_CONFIG.zoom_inicial,
-    dashboards_grafana: config.dashboards_grafana || DEFAULT_CONFIG.dashboards_grafana,
   };
 
   return (

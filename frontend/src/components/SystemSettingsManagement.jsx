@@ -1,19 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSystemConfig } from '../context/SystemConfigContext';
 import { 
-  Settings, Globe2, MapPin, Layers, Plus, 
-  Trash2, Save, RefreshCw, Check, AlertCircle, 
-  BarChart3, Sparkles, Compass, Lock, ShieldCheck
+  Settings, Globe2, Save, RefreshCw, Check, AlertCircle
 } from 'lucide-react';
-
-const SYSTEM_DASHBOARD_UIDS = [
-  'sentinel-01-cuenca',
-  'sentinel-02-nodo-detalle',
-  'sentinel-03-ia-predicciones',
-  'sentinel-04-balance-volumen',
-  'sentinel-05-clima-hidrologia',
-  'sentinel-06-iot-energia-red',
-];
 
 export const SystemSettingsManagement = () => {
   const { config, updateConfig, refreshConfig } = useSystemConfig();
@@ -24,8 +13,7 @@ export const SystemSettingsManagement = () => {
     descripcion_cuenca: '',
     latitud_centro: -11.49,
     longitud_centro: -77.05,
-    zoom_inicial: 10,
-    dashboards_grafana: []
+    zoom_inicial: 10
   });
 
   const [loading, setLoading] = useState(false);
@@ -40,8 +28,7 @@ export const SystemSettingsManagement = () => {
         descripcion_cuenca: config.descripcion_cuenca || '',
         latitud_centro: config.latitud_centro ?? -11.49,
         longitud_centro: config.longitud_centro ?? -77.05,
-        zoom_inicial: config.zoom_inicial ?? 10,
-        dashboards_grafana: config.dashboards_grafana ? [...config.dashboards_grafana] : []
+        zoom_inicial: config.zoom_inicial ?? 10
       });
     }
   }, [config]);
@@ -51,45 +38,6 @@ export const SystemSettingsManagement = () => {
     setFormData(prev => ({
       ...prev,
       [name]: type === 'number' ? parseFloat(value) || 0 : value
-    }));
-  };
-
-  const handleDashboardChange = (index, field, value) => {
-    setFormData(prev => {
-      const updated = [...prev.dashboards_grafana];
-      updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, dashboards_grafana: updated };
-    });
-  };
-
-  const handleAddDashboard = () => {
-    setFormData(prev => ({
-      ...prev,
-      dashboards_grafana: [
-        ...prev.dashboards_grafana,
-        {
-          uid: `sentinel-${prev.dashboards_grafana.length + 1}-custom`,
-          label: `Nuevo Tablero (${prev.dashboards_grafana.length + 1})`,
-          desc: 'Descripción del nuevo tablero de telemetría',
-          icon: 'BarChart3'
-        }
-      ]
-    }));
-  };
-
-  const handleRemoveDashboard = (index) => {
-    const target = formData.dashboards_grafana[index];
-    if (target && SYSTEM_DASHBOARD_UIDS.includes(target.uid)) {
-      alert("Los tableros base del sistema no pueden ser eliminados ya que forman parte del núcleo de telemetría.");
-      return;
-    }
-    if (formData.dashboards_grafana.length <= 1) {
-      alert("Debe existir al menos un tablero de Grafana configurado.");
-      return;
-    }
-    setFormData(prev => ({
-      ...prev,
-      dashboards_grafana: prev.dashboards_grafana.filter((_, i) => i !== index)
     }));
   };
 
@@ -124,7 +72,7 @@ export const SystemSettingsManagement = () => {
             Ajustes del Sistema & Identidad de Cuenca
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">
-            Personaliza el nombre de la cuenca, país, coordenadas de mapa satelital y lista de tableros de Grafana sin modificar el código fuente.
+            Personaliza el nombre de la cuenca, país y coordenadas de mapa satelital sin modificar el código fuente.
           </p>
         </div>
 
@@ -246,120 +194,6 @@ export const SystemSettingsManagement = () => {
                 className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white"
               />
             </div>
-          </div>
-        </div>
-
-        {/* BLOQUE 2: TABLEROS DE GRAFANA DINÁMICOS */}
-        <div className="spatial-card p-6 sm:p-8 space-y-5">
-          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3">
-            <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-cyan-500" />
-              <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">
-                  2. Tableros de Grafana Vinculados
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Configura los UIDs y nombres de los tableros accesibles en el Gemelo Virtual
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleAddDashboard}
-              className="px-3.5 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Agregar Tablero</span>
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {formData.dashboards_grafana.map((dash, index) => {
-              const isSystem = SYSTEM_DASHBOARD_UIDS.includes(dash.uid);
-
-              return (
-                <div
-                  key={dash.uid || index}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                    isSystem 
-                      ? 'bg-slate-50/80 dark:bg-[#061821]/80 border-slate-200 dark:border-cyan-900/40'
-                      : 'bg-emerald-500/5 dark:bg-emerald-950/20 border-emerald-500/30'
-                  }`}
-                >
-                  <div className="grid sm:grid-cols-3 gap-3 flex-1 w-full">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase">UID Grafana</label>
-                        {isSystem ? (
-                          <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold flex items-center gap-1 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
-                            <Lock className="w-2.5 h-2.5" /> Base Sistema
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                            <Sparkles className="w-2.5 h-2.5" /> Personalizado
-                          </span>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        disabled={isSystem}
-                        value={dash.uid}
-                        onChange={(e) => handleDashboardChange(index, 'uid', e.target.value)}
-                        className={`w-full border rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold ${
-                          isSystem
-                            ? 'bg-slate-100 dark:bg-[#041219] border-slate-200 dark:border-cyan-950 text-cyan-600 dark:text-cyan-400 cursor-not-allowed opacity-85'
-                            : 'bg-white dark:bg-[#072433] border-emerald-500/40 text-emerald-600 dark:text-emerald-300'
-                        }`}
-                        title={isSystem ? 'UID vinculado permanentemente al aprovisionamiento base de Grafana' : 'UID del nuevo dashboard en Grafana'}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Título Visible</label>
-                      <input
-                        type="text"
-                        required
-                        value={dash.label}
-                        onChange={(e) => handleDashboardChange(index, 'label', e.target.value)}
-                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:border-cyan-500"
-                        placeholder="ej: 01 · Sala de Control..."
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descripción</label>
-                      <input
-                        type="text"
-                        value={dash.desc}
-                        onChange={(e) => handleDashboardChange(index, 'desc', e.target.value)}
-                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 dark:text-slate-300 focus:border-cyan-500"
-                        placeholder="Descripción breve..."
-                      />
-                    </div>
-                  </div>
-
-                  {isSystem ? (
-                    <div 
-                      className="p-2 text-slate-400 dark:text-slate-600 rounded-lg cursor-not-allowed self-end sm:self-center flex items-center justify-center opacity-60"
-                      title="Tablero base del sistema no eliminable"
-                    >
-                      <Lock className="w-4 h-4" />
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDashboard(index)}
-                      className="p-2 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer self-end sm:self-center"
-                      title="Eliminar tablero personalizado"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
           </div>
         </div>
 

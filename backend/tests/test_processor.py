@@ -35,7 +35,7 @@ def test_tds_thermal_compensation():
 
 def test_water_level_and_flow():
     # Soporte a 100 cm, sensor mide 40 cm -> Tirante = 60 cm (0.6 m)
-    tirante, q_m3s, q_ls = TelemetryProcessor.calc_water_level_and_flow(
+    tirante, v_ms, area_m2, q_m3s, q_ls = TelemetryProcessor.calc_water_level_and_flow(
         raw_dist_cm=40.0,
         distancia_fondo_sensor_cm=100.0,
         caudal_coef_k=1.0,
@@ -45,6 +45,32 @@ def test_water_level_and_flow():
     # Q = 1.0 * (0.6)^1.5 ≈ 0.4648 m³/s ≈ 464.76 l/s
     assert q_m3s > 0.45 and q_m3s < 0.48
     assert q_ls > 450.0 and q_ls < 480.0
+
+
+def test_hall_effect_molinete_velocity_and_flow():
+    # V = a * (RPM / 60) + b
+    # A 120 RPM (2 rps) -> V = 0.25 * 2 + 0.05 = 0.55 m/s
+    v = TelemetryProcessor.calc_flow_velocity_hall(hall_rpm=120.0, constante_a=0.25, constante_b=0.05)
+    assert round(v, 2) == 0.55
+
+    # Flujo con RPM reales de campo: RPM=240 (4 rps) -> V = 0.25*4 + 0.05 = 1.05 m/s
+    v_field = TelemetryProcessor.calc_flow_velocity_hall(hall_rpm=240.0, constante_a=0.25, constante_b=0.05)
+    assert round(v_field, 2) == 1.05
+
+    # Área de sección transversal rectangular: b=1.5m, h=0.8m -> A = 1.2 m²
+    area = TelemetryProcessor.calc_cross_sectional_area(tirante_cm=80.0, tipo_seccion="RECTANGULAR", ancho_solera_m=1.5)
+    assert round(area, 2) == 1.20
+
+
+def test_pisciculture_cold_water_suitability():
+    # Agua óptima para trucha: 14°C, Oxígeno 8.5 mg/L
+    od, sat, aptitud = TelemetryProcessor.calc_pisciculture_suitability(temp_c=14.0, oxigeno_mgl=8.5)
+    assert aptitud == "OPTIMO"
+    assert sat > 80.0
+
+    # Agua crítica (demasiado caliente > 20°C):
+    _, _, aptitud_caliente = TelemetryProcessor.calc_pisciculture_suitability(temp_c=22.0, oxigeno_mgl=5.0)
+    assert aptitud_caliente == "NO_APTO"
 
 
 def test_wqi_calculation():

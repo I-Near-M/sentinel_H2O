@@ -153,44 +153,62 @@ class WhatIfSimulator:
         )
 
         # 7. Modelo Maas-Hoffman de Pérdida Agronómica
-        crop_info = cls.CROP_THRESHOLDS.get(cultivo_diana, cls.CROP_THRESHOLDS["PALTOS_AGUACATE"])
+        from backend.app.database.models import CultivoAgricola
+        db_crop = db.query(CultivoAgricola).filter(
+            (CultivoAgricola.id_cultivo.ilike(cultivo_diana)) |
+            (CultivoAgricola.nombre.ilike(f"%{cultivo_diana}%"))
+        ).first()
+
+        if db_crop:
+            crop_id_resolved = db_crop.id_cultivo
+            crop_name = db_crop.nombre
+            a_thresh = db_crop.ec_umbral_us_cm / 1000.0
+            b_slope = db_crop.salinidad_pendiente_pct
+            ec_umbral = db_crop.ec_umbral_us_cm
+            alerta_cierre = f"Cerrar compuertas o aplicar dilución si EC supera {ec_umbral:.0f} µS/cm."
+        else:
+            crop_id_resolved = None
+            crop_info = cls.CROP_THRESHOLDS.get(cultivo_diana, cls.CROP_THRESHOLDS["PALTOS_AGUACATE"])
+            crop_name = crop_info["nombre"]
+            a_thresh = crop_info["a_threshold_ds_m"]
+            b_slope = crop_info["b_slope_pct"]
+            ec_umbral = crop_info["umbral_ec_us_cm"]
+            alerta_cierre = crop_info["alerta_cierre"]
+
         ec_w_ds_m = sim_ec / 1000.0  # Salinidad del agua en dS/m
         ec_e_ds_m = round(ec_w_ds_m * 1.5, 2)  # Extracto de saturación del suelo
-
-        a_thresh = crop_info["a_threshold_ds_m"]
-        b_slope = crop_info["b_slope_pct"]
 
         if ec_e_ds_m > a_thresh:
             perdida_pct = round(min(100.0, b_slope * (ec_e_ds_m - a_thresh)), 1)
         else:
             perdida_pct = 0.0
 
-        if perdida_pct >= 25.0 or sim_ec >= crop_info["umbral_ec_us_cm"]:
+        if perdida_pct >= 25.0 or sim_ec >= ec_umbral:
             estres = "CRÍTICO (Severo)"
             alerta_critica = True
-            accion = crop_info["alerta_cierre"]
+            accion = alerta_cierre
             diag = (
-                f"Estrés osmótico agudo en {crop_info['nombre']}. Salinidad en suelo proyectada: {ec_e_ds_m} dS/m "
+                f"Estrés osmótico agudo en {crop_name}. Salinidad en suelo proyectada: {ec_e_ds_m} dS/m "
                 f"(Umbral: {a_thresh} dS/m). Pérdida estimada de cosecha: {perdida_pct}%."
             )
-        elif perdida_pct > 5.0 or sim_ec >= (crop_info["umbral_ec_us_cm"] * 0.85):
+        elif perdida_pct > 5.0 or sim_ec >= (ec_umbral * 0.85):
             estres = "MODERADO (Precaución)"
             alerta_critica = False
             accion = "Monitorear compuertas y programar riego complementario de lavado de sales."
             diag = (
-                f"Pérdida potencial de {perdida_pct}% en {crop_info['nombre']}. "
+                f"Pérdida potencial de {perdida_pct}% en {crop_name}. "
                 f"La conductividad se encuentra cercana al umbral límite."
             )
         else:
             estres = "CONTROLADO (Óptimo)"
             alerta_critica = False
             accion = "Operación normal. Calidad hídrica y caudal aptos para riego tecnificado."
-            diag = f"Condición óptima para {crop_info['nombre']}. Sin pérdidas de rendimiento estimadas (0%)."
+            diag = f"Condición óptima para {crop_name}. Sin pérdidas de rendimiento estimadas (0%)."
 
         resumen = (
             f"Escenario '{titulo_escenario}': Caudal proyectado en {sim_caudal:.3f} m³/s ({sim_caudal*1000:.0f} l/s). "
             f"Salinidad: {sim_ec:.1f} µS/cm | pH: {sim_ph:.2f} | WQI: {wqi_sim:.1f} ({wqi_cat}). "
-            f"Cultivo {crop_info['nombre']}: Pérdida proyectada de {perdida_pct}% ({estres})."
+            f"Cultivo {crop_name}: Pérdida proyectada de {perdida_pct}% ({estres})."
         )
 
         # 8. Persistir en base de datos
@@ -200,8 +218,14 @@ class WhatIfSimulator:
             delta_precipitacion_pct=delta_precipitacion_pct,
             delta_salinidad_us_cm=delta_salinidad_us_cm,
             delta_caudal_cabecera_pct=delta_caudal_pct,
+            delta_ph=delta_ph,
+            duracion_horas=duracion_horas,
+            id_cultivo=crop_id_resolved,
             resultado_wqi_valle=wqi_sim,
             resultado_caudal_valle_m3s=sim_caudal,
+            perdida_rendimiento_pct=perdida_pct,
+            nivel_estres_osmotico=estres,
+            volumen_desembalse_m3=None,
             resumen_impacto=resumen,
             ejecutado_por=ejecutado_por
         )

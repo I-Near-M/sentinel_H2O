@@ -6,37 +6,42 @@ import { LoginPage } from './components/LoginPage';
 import { OpsHeader } from './components/OpsHeader';
 import OpsSidebar from './components/OpsSidebar';
 import { DashboardOverview } from './components/DashboardOverview';
-import { GrafanaEmbeddedView } from './components/GrafanaEmbeddedView';
-import EntitiesManagement from './components/EntitiesManagement';
-import { UserManagement } from './components/UserManagement';
-import NodeManagement from './components/NodeManagement';
-import NodeProvisionWizard from './components/NodeProvisionWizard';
-import RecipientsManagement from './components/RecipientsManagement';
+import ThreeDigitalTwin3D from './components/ThreeDigitalTwin3D';
 import WhatIfSimulatorView from './components/WhatIfSimulatorView';
-import { AuditManagement } from './components/AuditManagement';
-import { SystemSettingsManagement } from './components/SystemSettingsManagement';
+import GovernanceHub from './components/GovernanceHub';
 import { ProfileModal } from './components/ProfileModal';
 import { nodesApi, alertsApi } from './services/api';
 import { Droplets } from 'lucide-react';
 
 const VALID_OPS_TABS = [
   'dashboard',
-  'entities',
-  'users',
-  'wizard',
-  'nodes',
-  'grafana_embed',
-  'recipients',
+  'twin3d',
   'simulator',
-  'audit',
-  'settings'
+  'governance'
 ];
+
+// Mapeo retrocompatible para links directos que apuntan a subsecciones de gobernanza
+const GOVERNANCE_HASH_MAP = {
+  entities: 'entities',
+  users: 'users',
+  nodes: 'nodes',
+  wizard: 'nodes',
+  alerts: 'alerts',
+  recipients: 'alerts',
+  water: 'water',
+  settings: 'water',
+  irrigation: 'water',
+  audit: 'audit'
+};
 
 const getInitialOpsTab = () => {
   if (typeof window !== 'undefined') {
     const hash = window.location.hash.replace(/^#\/?/, '').trim();
     if (hash && VALID_OPS_TABS.includes(hash)) {
       return hash;
+    }
+    if (hash && GOVERNANCE_HASH_MAP[hash]) {
+      return 'governance';
     }
     const stored = localStorage.getItem('sentinel_active_tab');
     if (stored && VALID_OPS_TABS.includes(stored)) {
@@ -46,28 +51,60 @@ const getInitialOpsTab = () => {
   return 'dashboard';
 };
 
+const getInitialGovSubTab = () => {
+  if (typeof window !== 'undefined') {
+    const hash = window.location.hash.replace(/^#\/?/, '').trim();
+    if (hash && GOVERNANCE_HASH_MAP[hash]) {
+      return GOVERNANCE_HASH_MAP[hash];
+    }
+    const stored = localStorage.getItem('sentinel_gov_subtab');
+    if (stored) return stored;
+  }
+  return 'entities';
+};
+
 function OpsConsoleContent() {
   const { isAuthenticated, loading, user, hasRole } = useAuth();
   const [activeOpsTab, setActiveOpsTabState] = useState(getInitialOpsTab);
+  const [govSubTab, setGovSubTab] = useState(getInitialGovSubTab);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const setActiveOpsTab = (tab) => {
+  const setActiveOpsTab = (tab, subTab = null) => {
     if (VALID_OPS_TABS.includes(tab)) {
       setActiveOpsTabState(tab);
       localStorage.setItem('sentinel_active_tab', tab);
-      if (typeof window !== 'undefined' && window.location.hash !== `#${tab}`) {
+      if (subTab) {
+        setGovSubTab(subTab);
+        localStorage.setItem('sentinel_gov_subtab', subTab);
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(null, '', `#${subTab}`);
+        }
+      } else if (typeof window !== 'undefined' && window.location.hash !== `#${tab}`) {
+        window.history.replaceState(null, '', `#${tab}`);
+      }
+    } else if (GOVERNANCE_HASH_MAP[tab]) {
+      setActiveOpsTabState('governance');
+      const mappedSub = GOVERNANCE_HASH_MAP[tab];
+      setGovSubTab(mappedSub);
+      localStorage.setItem('sentinel_active_tab', 'governance');
+      localStorage.setItem('sentinel_gov_subtab', mappedSub);
+      if (typeof window !== 'undefined') {
         window.history.replaceState(null, '', `#${tab}`);
       }
     }
   };
 
-  // Sincronizar si el usuario navega con botones de atrás/adelante del navegador
+  // Sincronizar navegación con historial (atrás / adelante)
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace(/^#\/?/, '').trim();
       if (hash && VALID_OPS_TABS.includes(hash) && hash !== activeOpsTab) {
         setActiveOpsTabState(hash);
         localStorage.setItem('sentinel_active_tab', hash);
+      } else if (hash && GOVERNANCE_HASH_MAP[hash]) {
+        setActiveOpsTabState('governance');
+        setGovSubTab(GOVERNANCE_HASH_MAP[hash]);
+        localStorage.setItem('sentinel_active_tab', 'governance');
       }
     };
 
@@ -75,27 +112,15 @@ function OpsConsoleContent() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [activeOpsTab]);
 
-  // Asegurar que el hash refleje la pestaña activa inicial
-  useEffect(() => {
-    if (isAuthenticated && activeOpsTab) {
-      localStorage.setItem('sentinel_active_tab', activeOpsTab);
-      if (typeof window !== 'undefined' && window.location.hash !== `#${activeOpsTab}`) {
-        window.history.replaceState(null, '', `#${activeOpsTab}`);
-      }
-    }
-  }, [isAuthenticated, activeOpsTab]);
-
-  // Validar permisos RBAC y redirigir si el rol no tiene acceso a la pestaña solicitada
+  // Validar permisos RBAC y redirigir automáticamente
   useEffect(() => {
     if (!isAuthenticated || loading) return;
 
     const roleRequirements = {
-      entities: ['ADMIN_SISTEMA'],
-      users: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA'],
-      wizard: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA'],
-      recipients: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA', 'TOMERO_COMISION'],
-      audit: ['ADMIN_SISTEMA'],
-      settings: ['ADMIN_SISTEMA'],
+      governance: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA'],
+      simulator: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA'],
+      twin3d: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA', 'TOMERO_COMISION', 'AUDITOR_VISOR'],
+      dashboard: ['ADMIN_SISTEMA', 'OPERADOR_JUNTA', 'TOMERO_COMISION', 'AUDITOR_VISOR']
     };
 
     const required = roleRequirements[activeOpsTab];
@@ -104,60 +129,14 @@ function OpsConsoleContent() {
     }
   }, [isAuthenticated, loading, activeOpsTab, hasRole]);
 
-  const [stats, setStats] = useState({
-    totalNodes: 0,
-    onlineNodes: 0,
-    totalSubscribers: 0,
-  });
-
-  const getDynamicGrafanaUrl = () => {
-    return '/grafana';
-  };
-
-  const getGrafanaSsoUrl = (targetPath = '/grafana/') => {
-    const token = (typeof localStorage !== 'undefined' && localStorage.getItem('sentinel_token')) || '';
-    const redirectTarget = targetPath.startsWith('/grafana') ? targetPath : `/grafana${targetPath.startsWith('/') ? '' : '/'}${targetPath}`;
-    return `/api/v1/auth/grafana-sso?token=${encodeURIComponent(token)}&redirect_to=${encodeURIComponent(redirectTarget)}`;
-  };
-
-  const grafanaBaseUrl = getDynamicGrafanaUrl();
-  const grafanaSsoUrl = getGrafanaSsoUrl('/grafana/');
-
-  const fetchGlobalStats = async () => {
-    if (!isAuthenticated) return;
-    try {
-      const [nodesRes, recRes] = await Promise.all([
-        nodesApi.getNodes(),
-        alertsApi.getRecipients()
-      ]);
-      const nodes = nodesRes.data || [];
-      const online = nodes.filter(n => n.estado_operativo === 'ONLINE').length;
-      setStats({
-        totalNodes: nodes.length,
-        onlineNodes: online,
-        totalSubscribers: (recRes.data || []).length,
-      });
-    } catch (err) {
-      console.error("Error cargando estadísticas de cuenca:", err);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchGlobalStats();
-    }
-  }, [isAuthenticated]);
-
   // Pantalla de carga mientras se verifica la sesión
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#073145] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="inline-flex p-4 bg-cyan-950/80 border border-cyan-500/30 rounded-2xl animate-pulse">
-            <Droplets className="w-10 h-10 text-cyan-400" />
-          </div>
-          <div className="text-sm font-mono text-cyan-200/80 tracking-widest uppercase">
-            Cargando Consola Sentinel-H2O...
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          <div className="text-sm font-mono text-cyan-600 dark:text-cyan-300 tracking-widest uppercase">
+            Cargando Consola Sentinel-H2O Digital Twin...
           </div>
         </div>
       </div>
@@ -169,77 +148,53 @@ function OpsConsoleContent() {
     return <LoginPage />;
   }
 
-  // Usuario autenticado: Consola de Operaciones y Gobernanza Pura
+  // Consola de Operaciones y Gemelo Digital
   return (
-    <div className="min-h-screen font-sans flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-transparent text-slate-900 dark:text-slate-100 font-sans flex flex-col transition-colors duration-300">
       <OpsHeader 
         onOpenProfile={() => setIsProfileOpen(true)} 
-        grafanaUrl={grafanaSsoUrl}
       />
 
-      <div className="flex-1 flex flex-col lg:flex-row p-3 sm:p-5 gap-6 max-w-[1750px] mx-auto w-full">
-        {/* Barra lateral con filtrado de roles RBAC y colapso inteligente */}
+      <div className="flex-1 flex flex-col lg:flex-row p-3 sm:p-5 gap-6 max-w-[1850px] mx-auto w-full">
+        {/* Barra lateral de los 4 Pilares Operativos con subsecciones desplegables */}
         <OpsSidebar
           activeOpsTab={activeOpsTab}
           setActiveOpsTab={setActiveOpsTab}
-          grafanaUrl={grafanaSsoUrl}
+          activeGovSubTab={govSubTab}
+          setActiveGovSubTab={(sub) => setActiveOpsTab('governance', sub)}
         />
 
         {/* Espacio de trabajo activo */}
         <main className="flex-1 w-full pb-20 lg:pb-6 overflow-y-auto">
+          
+          {/* PILAR 1: SALA DE SITUACIÓN */}
           {activeOpsTab === 'dashboard' && (
             <DashboardOverview
               setActiveTab={setActiveOpsTab}
-              grafanaUrl={grafanaSsoUrl}
             />
           )}
 
-          {activeOpsTab === 'grafana_embed' && (
-            <GrafanaEmbeddedView
-              grafanaBaseUrl={grafanaBaseUrl}
+          {/* PILAR 2: GEMELO DIGITAL 3D (THREE.JS WEBGL) */}
+          {activeOpsTab === 'twin3d' && (
+            <ThreeDigitalTwin3D 
+              onNavigateWhatIf={(nodeId) => setActiveOpsTab('simulator')}
+              onNavigateMaintenance={(nodeId) => setActiveOpsTab('governance', 'nodes')}
             />
           )}
 
-          {activeOpsTab === 'entities' && hasRole('ADMIN_SISTEMA') && (
-            <EntitiesManagement onEntityCreated={fetchGlobalStats} />
-          )}
-
-          {activeOpsTab === 'users' && hasRole(['ADMIN_SISTEMA', 'OPERADOR_JUNTA']) && (
-            <UserManagement />
-          )}
-
-          {activeOpsTab === 'wizard' && hasRole(['ADMIN_SISTEMA', 'OPERADOR_JUNTA']) && (
-            <NodeProvisionWizard
-              setActiveTab={setActiveOpsTab}
-              onNodeCreated={() => {
-                fetchGlobalStats();
-                setActiveOpsTab('nodes');
-              }}
-            />
-          )}
-
-          {activeOpsTab === 'nodes' && (
-            <NodeManagement
-              setActiveTab={setActiveOpsTab}
-              grafanaUrl={grafanaSsoUrl}
-            />
-          )}
-
-          {activeOpsTab === 'recipients' && hasRole(['ADMIN_SISTEMA', 'OPERADOR_JUNTA', 'TOMERO_COMISION']) && (
-            <RecipientsManagement />
-          )}
-
-          {activeOpsTab === 'simulator' && (
+          {/* PILAR 3: SIMULADOR WHAT-IF (SANDBOX) */}
+          {activeOpsTab === 'simulator' && hasRole(['ADMIN_SISTEMA', 'OPERADOR_JUNTA']) && (
             <WhatIfSimulatorView />
           )}
 
-          {activeOpsTab === 'audit' && hasRole('ADMIN_SISTEMA') && (
-            <AuditManagement />
+          {/* PILAR 4: GOBERNANZA & CENTRO DE CONTROL UNIFICADO */}
+          {activeOpsTab === 'governance' && hasRole(['ADMIN_SISTEMA', 'OPERADOR_JUNTA']) && (
+            <GovernanceHub 
+              activeSubTab={govSubTab} 
+              setActiveSubTab={(sub) => setActiveOpsTab('governance', sub)}
+            />
           )}
 
-          {activeOpsTab === 'settings' && hasRole('ADMIN_SISTEMA') && (
-            <SystemSettingsManagement />
-          )}
         </main>
       </div>
 

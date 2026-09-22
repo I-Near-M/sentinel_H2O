@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from sklearn.ensemble import IsolationForest, RandomForestClassifier
 from backend.app.ml.preprocessor import TimeSeriesPreprocessor
 
@@ -122,7 +122,6 @@ class OnlineAnomalyDetector:
             diagnostico = "ANOMALIA_MULTIVARIABLE_DESCONOCIDA"
             severidad = "ADVERTENCIA_AMARILLA"
 
-        # Confianza del diagnóstico (0.5 a 0.99)
         confianza = min(0.99, max(0.50, round(0.70 + abs(raw_score) * 0.5, 2)))
 
         return {
@@ -132,6 +131,50 @@ class OnlineAnomalyDetector:
             "nivel_severidad": severidad,
             "confianza": confianza
         }
+
+    def record_anomaly_event(
+        self,
+        db: Any,
+        id_nodo: str,
+        reading_dict: Dict[str, Any],
+        eval_dict: Dict[str, Any]
+    ) -> Optional[Any]:
+        """
+        Persists detected anomaly incident into anomalias_detectadas_ia table.
+        """
+        try:
+            from backend.app.database.models import AnomaliaDetectadaIA, ModeloIA
+            
+            mod = db.query(ModeloIA).filter(ModeloIA.codigo_modelo == "ISOFOREST_ANOMALY_V1").first()
+            id_mod = mod.id_modelo if mod else None
+            
+            action_map = {
+                "RIESGO_CRITICO_ESTRES_OSMOTICO": "Cerrar compuertas de tomas agrícolas sensibles. Notificar a regantes.",
+                "VERTIMIENTO_ACIDO_O_PASIVO_MINERO": "Alerta ambiental de emergencia. Cerrar captaciones de agua potable y riego.",
+                "ALCALINIDAD_ELEVADA_RESIDUOS": "Inspeccionar efluentes industriales o agroindustriales aguas arriba.",
+                "CRECIDA_O_SEDIMENTACION_EXCESIVA": "Activar desarenadores y proteger compuertas contra colmatación.",
+                "ANOMALIA_MULTIVARIABLE_DESCONOCIDA": "Verificar calibración de sensores en la estación y contrastar con nodos vecinos."
+            }
+            accion = action_map.get(eval_dict.get("diagnostico_ia"), "Monitorear evolución de telemetría.")
+            severidad = "CRITICA" if "CRITICO" in eval_dict.get("nivel_severidad", "") else "MEDIA"
+            
+            anomalia = AnomaliaDetectadaIA(
+                id_nodo=id_nodo,
+                id_modelo=id_mod,
+                anomaly_score=eval_dict.get("anomaly_score", -0.5),
+                tipo_evento=eval_dict.get("diagnostico_ia", "ANOMALIA_DETECTADA"),
+                severidad=severidad,
+                vector_lectura_json=reading_dict,
+                diagnostico_ia=f"{eval_dict.get('diagnostico_ia')} (Score: {eval_dict.get('anomaly_score')})",
+                accion_recomendada=accion,
+                estado_resolucion="PENDIENTE"
+            )
+            db.add(anomalia)
+            db.commit()
+            db.refresh(anomalia)
+            return anomalia
+        except Exception as e:
+            return None
 
 
 # Instancia singleton para inferencia in-line rápida en memoria

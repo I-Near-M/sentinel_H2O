@@ -7,11 +7,11 @@ import { formatTime, formatDate } from '../utils/dateUtils';
 import { 
   Activity, Radio, Droplets, ShieldAlert, 
   Building2, PlusCircle, Users, ArrowRight, 
-  CheckCircle2, Sparkles, ExternalLink, RefreshCw, 
-  Zap, CloudSun, Waves, BarChart3
+  CheckCircle2, Sparkles, RefreshCw, 
+  Zap, CloudSun, Waves, Box
 } from 'lucide-react';
 
-export const DashboardOverview = ({ setActiveTab, grafanaUrl = 'http://localhost:3000' }) => {
+export const DashboardOverview = ({ setActiveTab }) => {
   const { user, hasRole } = useAuth();
   const { nombre_cuenca, pais_region } = useSystemConfig();
   
@@ -22,6 +22,15 @@ export const DashboardOverview = ({ setActiveTab, grafanaUrl = 'http://localhost
   const [liveEvents, setLiveEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
+
+  const handleAcknowledgeAlert = async (id_alerta) => {
+    try {
+      await alertsApi.acknowledgeAlert(id_alerta);
+      setRecentAlerts(prev => prev.map(a => a.id_alerta === id_alerta ? { ...a, estado_envio_whatsapp: 'RECONOCIDA' } : a));
+    } catch (err) {
+      console.error("Error al reconocer alerta:", err);
+    }
+  };
 
   const wsRef = useRef(null);
 
@@ -172,11 +181,11 @@ export const DashboardOverview = ({ setActiveTab, grafanaUrl = 'http://localhost
           )}
 
           <button
-            onClick={() => setActiveTab('grafana_embed')}
-            className="px-4 py-2.5 bg-slate-100 dark:bg-cyan-950/60 hover:bg-slate-200 dark:hover:bg-cyan-900/60 border border-slate-300 dark:border-cyan-500/30 text-slate-800 dark:text-cyan-300 text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+            onClick={() => setActiveTab('twin3d')}
+            className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 text-xs font-extrabold rounded-xl shadow-lg flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <BarChart3 className="w-4 h-4 text-cyan-400" />
-            <span>Gemelo Virtual Grafana</span>
+            <Box className="w-4 h-4" />
+            <span>Gemelo Digital 3D (WebGL)</span>
           </button>
         </div>
       </div>
@@ -299,19 +308,19 @@ export const DashboardOverview = ({ setActiveTab, grafanaUrl = 'http://localhost
             <div className="p-4 rounded-xl border bg-slate-50 dark:bg-[#061821] border-slate-200 dark:border-cyan-900/60">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Paso 4 · Visualización
+                  Paso 4 · Telemetría
                 </span>
                 <span className="w-2 h-2 rounded-full bg-cyan-400" />
               </div>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-1">Gemelo en Grafana</h4>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-1">Directorio de Nodos</h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
-                Visualiza hidrogramas, correlaciones electroquímicas y mapas térmicos.
+                Monitorea telemetría en tiempo real, caudales y alertas electroquímicas.
               </p>
               <button
-                onClick={() => setActiveTab('grafana_embed')}
+                onClick={() => setActiveTab('nodes')}
                 className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer"
               >
-                <span>Ver Dashboards</span>
+                <span>Ver Estaciones</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -522,6 +531,19 @@ export const DashboardOverview = ({ setActiveTab, grafanaUrl = 'http://localhost
                   <p className="text-[11px] text-slate-300 line-clamp-2">
                     {alert.mensaje_campesino_whatsapp || alert.descripcion}
                   </p>
+                  <div className="flex items-center justify-between pt-1 border-t border-rose-500/20">
+                    <span className="text-[10px] font-mono text-rose-300">
+                      Estado: {alert.estado_envio_whatsapp || 'PENDIENTE'}
+                    </span>
+                    {alert.estado_envio_whatsapp !== 'RECONOCIDA' && (
+                      <button
+                        onClick={() => handleAcknowledgeAlert(alert.id_alerta)}
+                        className="px-2 py-0.5 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-[10px] rounded transition-colors"
+                      >
+                        Reconocer (ACK)
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

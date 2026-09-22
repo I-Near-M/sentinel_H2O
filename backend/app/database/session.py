@@ -18,8 +18,8 @@ if db_url.startswith("sqlite"):
 else:
     engine = None
     is_testing = ("pytest" in sys.modules or any("pytest" in arg for arg in sys.argv))
-    max_retries = 1 if is_testing else 15
-    retry_interval = 2
+    max_retries = 1 if is_testing else 2
+    retry_interval = 1
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -30,7 +30,7 @@ else:
                 pool_size=15,
                 max_overflow=25,
                 pool_recycle=1800,
-                pool_timeout=30
+                pool_timeout=5
             )
             with candidate_engine.connect() as conn:
                 logger.info(f"Conexión exitosa a MySQL en intento {attempt}.")
@@ -42,13 +42,10 @@ else:
                 time.sleep(retry_interval)
 
     if engine is None:
-        if settings.ENV == "development" or settings.ENV == "testing" or "pytest" in sys.modules:
-            logger.warning("No se pudo conectar a MySQL. Usando fallback a SQLite local para pruebas.")
-            db_url = "sqlite:///./sentinel_h2o.db"
-            connect_args = {"check_same_thread": False}
-            engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
-        else:
-            raise RuntimeError(f"Error crítico: No se pudo conectar a la base de datos MySQL requerida: {db_url}")
+        logger.warning("No se pudo conectar a MySQL (ejecución fuera de contenedor Docker). Usando fallback a SQLite local.")
+        db_url = "sqlite:///./sentinel_h2o.db"
+        connect_args = {"check_same_thread": False}
+        engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

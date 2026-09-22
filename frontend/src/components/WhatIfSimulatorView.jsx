@@ -468,8 +468,39 @@ const WhatIfSimulatorView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 p-4 md:p-6 space-y-6 transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 p-4 md:p-6 space-y-6 transition-colors duration-200 border-2 border-violet-900/30 rounded-3xl">
       
+      {/* BANNER SUPERIOR DE MODO SIMULACIÓN AISLADO */}
+      <div className="bg-gradient-to-r from-violet-950/90 via-purple-900/80 to-fuchsia-950/90 border-2 border-violet-500 rounded-2xl p-4 shadow-2xl shadow-violet-950/50 flex flex-col md:flex-row items-center justify-between gap-3 backdrop-blur-md">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-violet-500/20 border border-violet-500/40 text-violet-400 flex items-center justify-center shrink-0">
+            <FlaskConical className="w-5 h-5 animate-pulse text-violet-300" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-violet-500 text-slate-950 uppercase tracking-wider">
+                SANDBOX AISLADO
+              </span>
+              <span className="text-xs font-mono text-violet-300 font-bold">
+                HEC-RAS 1D/2D Sync • T+12h
+              </span>
+            </div>
+            <h2 className="text-sm font-bold text-white mt-0.5">
+              MODO SIMULACIÓN ACTIVO — ENTORNO DE LABORATORIO HIPOTÉTICO
+            </h2>
+            <p className="text-xs text-violet-200/80">
+              Las perturbaciones de caudal, compuertas y salinidad son aisladas y no afectan las operaciones de campo en vivo.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <span className="px-3 py-1.5 bg-violet-900/60 border border-violet-700/50 rounded-xl text-xs font-mono text-violet-200">
+            Cluster GPU: En Línea (42ms)
+          </span>
+        </div>
+      </div>
+
       {/* HEADER WITH REGION SELECTOR */}
       <header className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm dark:shadow-xl backdrop-blur-md">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">

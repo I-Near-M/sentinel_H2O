@@ -166,7 +166,7 @@ def get_telemetry_history(
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene la serie temporal histórica procesada de un nodo (para Grafana o análisis).
+    Obtiene la serie temporal histórica procesada de un nodo (para el gemelo digital o análisis).
     """
     records = db.query(MedicionProcesada).filter(
         MedicionProcesada.id_nodo == node_id
