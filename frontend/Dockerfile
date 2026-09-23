@@ -6,15 +6,15 @@
 FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
-# Copiar manifiestos e instalar dependencias
-COPY package.json ./
-RUN bun install
+# Copiar manifiesto y lockfile para cache de dependencias
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile || bun install
 
-# Copiar código fuente y compilar bundle de producción
+# Copiar código fuente y compilar bundle optimizado de producción
 COPY . .
 RUN bun run build
 
-# Stage 2: Producción ligera con Nginx
+# Stage 2: Servidor Nginx Alpine
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

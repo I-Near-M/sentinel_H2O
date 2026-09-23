@@ -71,12 +71,13 @@ class CropSuitabilityEngine:
         turbidity_ntu: float = 20.0,
         temp_water_c: float = 18.5,
         water_availability_ratio: float = 1.0,
-        region: str = "LIMA"
+        region: str = "LIMA",
+        db: Optional[Any] = None
     ) -> Dict[str, Any]:
         """
         Evaluates a single crop's agronomic suitability under specified water quality & flow conditions.
         """
-        crop = self.processor.get_crop(crop_id)
+        crop = self.processor.get_crop(crop_id, db=db)
         if not crop:
             raise ValueError(f"Crop '{crop_id}' not found in catalog.")
 
@@ -223,10 +224,11 @@ class CropSuitabilityEngine:
         temp_water_c: float = 18.5,
         water_availability_ratio: float = 1.0,
         region: str = "LIMA",
-        natural_region: Optional[str] = None
+        natural_region: Optional[str] = None,
+        db: Optional[Any] = None
     ) -> List[Dict[str, Any]]:
-        """Evaluates and ranks crops in the catalog from most to least suitable."""
-        crops_list = self.processor.list_crops(natural_region=natural_region)
+        """Evaluates all crops in catalog (optionally filtered by natural region) and ranks by suitability score."""
+        crops_list = self.processor.list_crops(natural_region, db=db)
         results = []
         for crop in crops_list:
             eval_res = self.evaluate_crop(
@@ -236,7 +238,8 @@ class CropSuitabilityEngine:
                 turbidity_ntu=turbidity_ntu,
                 temp_water_c=temp_water_c,
                 water_availability_ratio=water_availability_ratio,
-                region=region
+                region=region,
+                db=db
             )
             results.append(eval_res)
 
@@ -252,26 +255,28 @@ class CropSuitabilityEngine:
         temp_water_c: float = 18.5,
         water_availability_ratio: float = 1.0,
         region: str = "LIMA",
-        top_k: int = 3
+        top_k: int = 3,
+        db: Optional[Any] = None
     ) -> List[Dict[str, Any]]:
         """Finds the best resilient replacement crops that maintain > 75% suitability under current stress."""
-        orig_crop = self.processor.get_crop(stressed_crop_id)
+        orig_crop = self.processor.get_crop(stressed_crop_id, db=db)
         nat_reg = orig_crop.get("region_natural") if orig_crop else None
 
-        all_evaluated = self.evaluate_all_crops(
+        all_crops = self.evaluate_all_crops(
             ec_us_cm=ec_us_cm,
             ph=ph,
             turbidity_ntu=turbidity_ntu,
             temp_water_c=temp_water_c,
             water_availability_ratio=water_availability_ratio,
             region=region,
-            natural_region=None
+            natural_region=nat_reg,
+            db=db
         )
 
         orig_demand = orig_crop["water_demand_m3_ha"] if orig_crop else 10000.0
 
         substitutes = []
-        for eval_c in all_evaluated:
+        for eval_c in all_crops:
             if eval_c["crop_id"] != stressed_crop_id and eval_c["suitability_score"] >= 75.0:
                 water_saving_m3_ha = max(0.0, orig_demand - eval_c["water_demand_m3_ha"])
                 expected_gross_income_ha = round(float(eval_c["expected_yield_kg_ha"] * eval_c["farmgate_price_s_kg"]), 2)

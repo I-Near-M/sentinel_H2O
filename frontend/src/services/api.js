@@ -77,11 +77,42 @@ export const nodesApi = {
   updateEntity: (id, data) => api.put(`/nodes/entities/${id}`, data),
   deleteEntity: (id) => api.delete(`/nodes/entities/${id}`),
   toggleEntityActive: (id) => api.patch(`/nodes/entities/${id}/toggle-active`),
+  getAllMaintenances: (params) => api.get('/nodes/maintenances/all', { params }),
+  getNodeMaintenances: (nodeId, params) => api.get(`/nodes/${nodeId}/maintenances`, { params }),
+  createMaintenance: (nodeId, data) => api.post(`/nodes/${nodeId}/maintenances`, data),
+  updateMaintenance: (id, data) => api.put(`/nodes/maintenances/${id}`, data),
+  deleteMaintenance: (id) => api.delete(`/nodes/maintenances/${id}`),
+};
+
+export const governanceApi = {
+  getEntityTypes: () => api.get('/governance/entity-types'),
+  createEntityType: (data) => api.post('/governance/entity-types', data),
+  updateEntityType: (id, data) => api.put(`/governance/entity-types/${id}`, data),
+  getRoles: (entityTypeId) => api.get(`/governance/roles${entityTypeId ? `?entity_type_id=${entityTypeId}` : ''}`),
+  createRole: (data) => api.post('/governance/roles', data),
+  updateRole: (id, data) => api.put(`/governance/roles/${id}`, data),
+  deleteRole: (id) => api.delete(`/governance/roles/${id}`),
+  getWaterUses: () => api.get('/governance/water-uses'),
+  createWaterUse: (data) => api.post('/governance/water-uses', data),
+  updateWaterUse: (id, data) => api.put(`/governance/water-uses/${id}`, data),
+  getResourceTypes: () => api.get('/governance/water-resource-types'),
+  createResourceType: (data) => api.post('/governance/water-resource-types', data),
+  updateResourceType: (id, data) => api.put(`/governance/water-resource-types/${id}`, data),
+  getCrops: (params) => api.get('/governance/crops', { params }),
+  createCrop: (data) => api.post('/governance/crops', data),
+  updateCrop: (id, data) => api.put(`/governance/crops/${id}`, data),
+  getSystemRoles: () => api.get('/governance/system-roles'),
+  getEntities: (params) => api.get('/governance/entities', { params }),
+  createEntity: (data) => api.post('/governance/entities', data),
+  updateEntity: (id, data) => api.put(`/governance/entities/${id}`, data),
+  deleteEntity: (id) => api.delete(`/governance/entities/${id}`),
+  getAuditLogs: (params) => api.get('/governance/audit-logs', { params }),
 };
 
 export const alertsApi = {
   getRecentAlerts: (limit = 20) => api.get(`/alerts/recent?limit=${limit}`),
   getNodeAlerts: (nodeId, limit = 20) => api.get(`/alerts/node/${nodeId}?limit=${limit}`),
+  acknowledgeAlert: (alertId) => api.post(`/alerts/${alertId}/ack`),
   getRecipients: () => api.get('/alerts/recipients'),
   registerRecipient: (data) => api.post('/alerts/recipients', data),
   updateRecipient: (id, data) => api.put(`/alerts/recipients/${id}`, data),
@@ -106,6 +137,28 @@ export const predictionsApi = {
   simulateAgroWhatIf: (data) => api.post('/predictions/agro/what-if', data),
   simulateWaterQualityStress: (data) => api.post('/predictions/agro/stress-simulation', data),
   checkPlantingIntentionsFeasibility: (data) => api.post('/predictions/agro/intentions-feasibility', data),
+  getAIModels: () => api.get('/predictions/models'),
+  getAnomaliesHistory: (params) => api.get('/predictions/anomalies/history', { params }),
+  getBenchmarksSql: (departamento = 'LIMA') => api.get(`/predictions/agro/benchmarks/${departamento}`),
+  getRiskProfilesSql: (departamento = 'LIMA') => api.get(`/predictions/agro/risk-profiles/${departamento}`),
+  getPlantingIntentionsSql: (departamento = 'LIMA') => api.get(`/predictions/agro/planting-intentions/${departamento}`),
+};
+
+export const irrigationApi = {
+  getShifts: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/irrigation/shifts${query ? `?${query}` : ''}`);
+  },
+  createShift: (data) => api.post('/irrigation/shifts', data),
+  updateShiftStatus: (id, estado, volumenReal = null) => {
+    let url = `/irrigation/shifts/${id}/status?estado_turno=${encodeURIComponent(estado)}`;
+    if (volumenReal !== null && volumenReal !== undefined) {
+      url += `&volumen_real_entregado_m3=${volumenReal}`;
+    }
+    return api.put(url);
+  },
+  deleteShift: (id) => api.delete(`/irrigation/shifts/${id}`),
+  simulateReachImpact: (data) => api.post('/irrigation/simulate-reach-impact', data),
 };
 
 export default api;

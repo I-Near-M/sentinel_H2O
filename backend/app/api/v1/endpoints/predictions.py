@@ -3,7 +3,10 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from backend.app.database.session import get_db
-from backend.app.database.models import Nodo, MedicionProcesada
+from backend.app.database.models import (
+    Nodo, MedicionProcesada, ModeloIA, AnomaliaDetectadaIA, CultivoAgricola,
+    EstadisticaRegionalAgro, PerfilRiesgoRegionalAgro, IntencionSiembraAgro
+)
 from backend.app.schemas.predictions import (
     Forecast24hResponse, HourlyForecastItem,
     LeadTimeRequest, LeadTimeResponse,
@@ -16,7 +19,9 @@ from backend.app.schemas.predictions import (
     CropSuitabilityRequest, CropSuitabilityResponse, CropSuitabilityItem,
     AgroScenarioWhatIfRequest, AgroScenarioWhatIfResponse, AgroCropSummaryItem,
     WaterQualityStressSimulationRequest, WaterQualityStressSimulationResponse,
-    PlantingIntentionsFeasibilityRequest, PlantingIntentionsFeasibilityResponse
+    PlantingIntentionsFeasibilityRequest, PlantingIntentionsFeasibilityResponse,
+    ModeloIAResponse, AnomaliaIAResponse, AgroCropCreate, AgroMesh3DResponse,
+    EstadisticaRegionalAgroOut, PerfilRiesgoRegionalAgroOut, IntencionSiembraAgroOut
 )
 from backend.app.ml.gru_predictor import GRUTimeSeriesPredictor
 from backend.app.ml.lead_time import HydraulicLeadTimeEstimator
@@ -24,6 +29,7 @@ from backend.app.ml.whatif_simulator import WhatIfSimulator
 from backend.app.ml.midagri_processor import midagri_processor
 from backend.app.ml.crop_recommender import crop_suitability_engine
 from backend.app.ml.agro_risk_model import agro_risk_model
+from backend.app.ml.st_graph_routing import SpatioTemporalGraphRouter
 
 router = APIRouter()
 
@@ -219,14 +225,66 @@ def sync_all_forecasts_batch(db: Session = Depends(get_db)):
 # =========================================================================
 
 @router.get("/agro/crops", response_model=List[AgroCropItem])
-def get_agro_crops_catalog(natural_region: Optional[str] = Query(None, description="Filtrar por región natural ('Costa', 'Sierra', 'Selva')")):
+def get_agro_crops_catalog(
+    natural_region: Optional[str] = Query(None, description="Filtrar por región natural ('Costa', 'Sierra', 'Selva')"),
+    db: Session = Depends(get_db)
+):
     """
-    **Catálogo Agronómico de Cultivos MIDAGRI**:
+    **Catálogo Agronómico Dinámico de Cultivos (MIDAGRI / BD)**:
     Retorna el listado de cultivos calibrados con requerimientos hídricos (m³/ha),
     umbrales de salinidad (uS/cm), rangos de pH, turbidez, temperatura y cotizaciones en chacra (S/./kg).
+    Consulta la base de datos `cultivos_agricolas` con fallback a memoria.
     """
-    crops = midagri_processor.list_crops(natural_region=natural_region)
+    crops = midagri_processor.list_crops(natural_region=natural_region, db=db)
     return [AgroCropItem(**c) for c in crops]
+
+
+@router.post("/agro/crops", response_model=AgroCropItem, status_code=status.HTTP_201_CREATED)
+def create_custom_agro_crop(
+    payload: AgroCropCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Registra un nuevo cultivo o parámetro regional en la base de datos.
+    Permite a los administradores extender el catálogo agrícola para cualquier cuenca o país.
+    """
+    existente = db.query(CultivoAgricola).filter(CultivoAgricola.id_cultivo == payload.id_cultivo).first()
+    if existente:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"El cultivo con ID '{payload.id_cultivo}' ya se encuentra registrado."
+        )
+
+    nuevo = CultivoAgricola(
+        id_cultivo=payload.id_cultivo,
+        codigo_catalogo=payload.codigo_catalogo,
+        pais_origen=payload.pais_origen,
+        region_natural=payload.region_natural,
+        nombre=payload.nombre,
+        categoria=payload.categoria,
+        demanda_hidrica_m3_ha=payload.demanda_hidrica_m3_ha,
+        ec_umbral_us_cm=payload.ec_umbral_us_cm,
+        salinidad_pendiente_pct=payload.salinidad_pendiente_pct,
+        ph_min=payload.ph_min,
+        ph_max=payload.ph_max,
+        turbidez_max_ntu=payload.turbidez_max_ntu,
+        temp_agua_min_c=payload.temp_agua_min_c,
+        temp_agua_max_c=payload.temp_agua_max_c,
+        wqi_min=payload.wqi_min,
+        dias_ciclo_vegetativo=payload.dias_ciclo_vegetativo,
+        rendimiento_base_kg_ha=payload.rendimiento_base_kg_ha,
+        precio_base_moneda_kg=payload.precio_base_moneda_kg,
+        moneda_codigo=payload.moneda_codigo,
+        nivel_resiliencia=payload.nivel_resiliencia,
+        descripcion=payload.descripcion,
+        activo=True
+    )
+    db.add(nuevo)
+    db.commit()
+    db.refresh(nuevo)
+
+    crop_dict = midagri_processor.get_crop(nuevo.id_cultivo, db=db)
+    return AgroCropItem(**crop_dict)
 
 
 @router.get("/agro/regional-benchmarks", response_model=AgroRegionalBenchmarkResponse)
@@ -247,7 +305,10 @@ def get_agro_regional_benchmarks(region: str = Query("LIMA", description="Depart
 
 
 @router.post("/agro/suitability", response_model=CropSuitabilityResponse)
-def evaluate_crop_suitability(req: CropSuitabilityRequest):
+def evaluate_crop_suitability(
+    req: CropSuitabilityRequest,
+    db: Session = Depends(get_db)
+):
     """
     **Evaluador de Aptitud Agronómica & Resiliencia por Cultivo (IA & FAO-56)**:
     Calcula el índice de aptitud (0-100%), retención de rendimiento y semáforo de viabilidad
@@ -261,7 +322,8 @@ def evaluate_crop_suitability(req: CropSuitabilityRequest):
             turbidity_ntu=req.turbidity_ntu or 20.0,
             temp_water_c=req.temp_water_c or 18.5,
             water_availability_ratio=req.water_availability_ratio,
-            region=req.region
+            region=req.region,
+            db=db
         )
         evaluated_list = [CropSuitabilityItem(**eval_res)]
     else:
@@ -272,7 +334,8 @@ def evaluate_crop_suitability(req: CropSuitabilityRequest):
             temp_water_c=req.temp_water_c or 18.5,
             water_availability_ratio=req.water_availability_ratio,
             region=req.region,
-            natural_region=req.natural_region
+            natural_region=req.natural_region,
+            db=db
         )
         evaluated_list = [CropSuitabilityItem(**r) for r in all_res]
 
@@ -434,3 +497,122 @@ def check_planting_intentions_feasibility(req: PlantingIntentionsFeasibilityRequ
         simulated_duration_days=req.simulated_duration_days
     )
     return PlantingIntentionsFeasibilityResponse(**res)
+
+
+# =========================================================================
+# MLOps, AUDITORÍA DE MODELOS Y VISOR 3D (ST-GRAPH)
+# =========================================================================
+
+@router.get("/models", response_model=List[ModeloIAResponse])
+def list_ai_models(db: Session = Depends(get_db)):
+    """
+    **Catálogo MLOps de Modelos IA**:
+    Retorna los modelos de Deep Learning y Machine Learning registrados en la plataforma
+    (GRU 24h, Isolation Forest, Maas-Hoffman, Saint-Venant) con sus métricas e hiperparámetros.
+    """
+    return db.query(ModeloIA).filter(ModeloIA.activo == True).order_by(ModeloIA.nombre.asc()).all()
+
+
+@router.get("/anomalies/history", response_model=List[AnomaliaIAResponse])
+def list_anomalies_history(
+    limit: int = Query(50, ge=1, le=500),
+    id_nodo: Optional[str] = Query(None),
+    severidad: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    **Historial Forense de Anomalías Detectadas por IA**:
+    Retorna los eventos clasificados por Isolation Forest y reglas expertas
+    (estrés osmótico, vertimientos ácidos, turbidez súbita, fallas de sensor).
+    """
+    query = db.query(AnomaliaDetectadaIA).filter(AnomaliaDetectadaIA.activo == True)
+    if id_nodo:
+        query = query.filter(AnomaliaDetectadaIA.id_nodo == id_nodo)
+    if severidad:
+        query = query.filter(AnomaliaDetectadaIA.severidad == severidad)
+    return query.order_by(AnomaliaDetectadaIA.timestamp_deteccion.desc()).limit(limit).all()
+
+
+@router.get("/st-graph/mesh-3d", response_model=AgroMesh3DResponse)
+def get_3d_mesh_profile(
+    samples_per_reach: int = Query(10, ge=2, le=50, description="Densidad de puntos interpolados por tramo fluvial"),
+    db: Session = Depends(get_db)
+):
+    """
+    **Malla Espacio-Temporal para el Gemelo Digital 3D (WebGL / Three.js)**:
+    Retorna la spline continua interpolada a lo largo del cauce fluvial con caudales,
+    salinidad (EC) y WQI para colorear dinámicamente la geometría 3D.
+    """
+    res = SpatioTemporalGraphRouter.generate_3d_mesh_profile(db=db, samples_per_reach=samples_per_reach)
+    return AgroMesh3DResponse(**res)
+
+
+# =========================================================================
+# 10. CONSULTAS ANALÍTICAS Y BENCHMARKS AGRÍCOLAS PERSISTIDOS EN BD (MIDAGRI)
+# =========================================================================
+@router.get("/agro/benchmarks/{departamento}", response_model=List[EstadisticaRegionalAgroOut])
+def get_regional_benchmarks_sql(
+    departamento: str,
+    db: Session = Depends(get_db)
+):
+    """
+    **Estadísticas Regionales Agrarias desde Base de Datos (SIEA 2017-2023)**:
+    Retorna los registros consolidados de rendimiento, cosecha, producción y precios para el departamento.
+    """
+    dept_clean = midagri_processor.clean_text(departamento)
+    stats = db.query(EstadisticaRegionalAgro).filter(
+        EstadisticaRegionalAgro.departamento_region == dept_clean
+    ).order_by(EstadisticaRegionalAgro.codigo_cultivo.asc()).all()
+
+    if not stats:
+        # Fallback a NACIONAL si el departamento solicitado no tiene registros
+        stats = db.query(EstadisticaRegionalAgro).filter(
+            EstadisticaRegionalAgro.departamento_region == "NACIONAL"
+        ).order_by(EstadisticaRegionalAgro.codigo_cultivo.asc()).all()
+
+    return stats
+
+
+@router.get("/agro/risk-profiles/{departamento}", response_model=List[PerfilRiesgoRegionalAgroOut])
+def get_regional_risk_profiles_sql(
+    departamento: str,
+    db: Session = Depends(get_db)
+):
+    """
+    **Perfiles de Riesgo Agroclimático desde Base de Datos (ENA 2024-2025)**:
+    Retorna frecuencias de sequía, inundación, plagas, heladas y vulnerabilidad para el departamento.
+    """
+    dept_clean = midagri_processor.clean_text(departamento)
+    profiles = db.query(PerfilRiesgoRegionalAgro).filter(
+        PerfilRiesgoRegionalAgro.departamento_region == dept_clean
+    ).all()
+
+    if not profiles:
+        profiles = db.query(PerfilRiesgoRegionalAgro).filter(
+            PerfilRiesgoRegionalAgro.departamento_region == "NACIONAL"
+        ).all()
+
+    return profiles
+
+
+@router.get("/agro/planting-intentions/{departamento}", response_model=List[IntencionSiembraAgroOut])
+def get_planting_intentions_sql(
+    departamento: str,
+    db: Session = Depends(get_db)
+):
+    """
+    **Intenciones de Siembra de Campaña Agrícola desde Base de Datos**:
+    Retorna las metas oficiales de hectáreas proyectadas y requerimientos volumétricos en m³.
+    """
+    dept_clean = midagri_processor.clean_text(departamento)
+    intentions = db.query(IntencionSiembraAgro).filter(
+        IntencionSiembraAgro.departamento_region == dept_clean
+    ).all()
+
+    if not intentions:
+        intentions = db.query(IntencionSiembraAgro).filter(
+            IntencionSiembraAgro.departamento_region == "NACIONAL"
+        ).all()
+
+    return intentions
+

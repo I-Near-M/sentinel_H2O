@@ -62,3 +62,4 @@ desktop.ini
 *.sublime-workspace
 *.swp
 *~
+.stitch/

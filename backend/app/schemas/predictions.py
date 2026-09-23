@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -52,12 +52,12 @@ class WhatIfRequest(BaseModel):
     delta_precipitacion_pct: float = Field(0.0, ge=-100.0, le=500.0, description="Variación % de lluvia", json_schema_extra={"example": -40.0})
     delta_salinidad_us_cm: float = Field(0.0, ge=0.0, le=5000.0, description="Incremento de salinidad en uS/cm", json_schema_extra={"example": 350.0})
     delta_caudal_cabecera_pct: float = Field(0.0, ge=-100.0, le=200.0, description="Variación % en descarga de lagunas", json_schema_extra={"example": -20.0})
-    id_entidad: Optional[int] = Field(None, json_schema_extra={"example": 2})
+    id_entidad: Optional[Union[str, int]] = Field(None, json_schema_extra={"example": 2})
     ejecutado_por: Optional[str] = Field("Ingeniero de Cuenca", json_schema_extra={"example": "Ingeniero de Cuenca"})
 
 
 class WhatIfResponse(BaseModel):
-    id_simulacion: int
+    id_simulacion: Union[str, int]
     titulo_escenario: str
     caudal_valle_proyectado_m3s: float
     caudal_valle_proyectado_ls: float
@@ -97,7 +97,7 @@ class CropImpactResult(BaseModel):
 
 
 class MultiVariableWhatIfResponse(BaseModel):
-    id_simulacion: int
+    id_simulacion: Union[str, int]
     titulo_escenario: str
     id_nodo_origen: str
     caudal_base_m3s: float
@@ -414,3 +414,143 @@ class PlantingIntentionsFeasibilityResponse(BaseModel):
     verdict_color: str
     recommendation: str
     intentions_breakdown: List[Dict[str, Any]]
+
+
+# =========================================================================
+# ESQUEMAS PARA MLOps, MODELOS IA Y REGISTRO DE ANOMALÍAS
+# =========================================================================
+
+class ModeloIAResponse(BaseModel):
+    id_modelo: str
+    codigo_modelo: str
+    nombre: str
+    tipo_modelo: str
+    framework: str
+    version: str
+    descripcion: Optional[str] = None
+    metricas_rendimiento_json: Optional[Dict[str, Any]] = None
+    hiperparametros_json: Optional[Dict[str, Any]] = None
+    activo: bool
+    fecha_entrenamiento: Optional[datetime.datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AnomaliaIAResponse(BaseModel):
+    id_anomalia: str
+    id_nodo: str
+    id_modelo: Optional[str] = None
+    timestamp_deteccion: datetime.datetime
+    anomaly_score: float
+    tipo_evento: str
+    severidad: str
+    vector_lectura_json: Dict[str, Any]
+    diagnostico_ia: str
+    accion_recomendada: Optional[str] = None
+    estado_resolucion: str
+    activo: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AgroCropCreate(BaseModel):
+    id_cultivo: str
+    codigo_catalogo: str = "MIDAGRI_PE"
+    pais_origen: str = "Perú"
+    region_natural: str = "Costa"
+    nombre: str
+    categoria: str
+    demanda_hidrica_m3_ha: float = 6000.0
+    ec_umbral_us_cm: float = 1500.0
+    salinidad_pendiente_pct: float = 10.0
+    ph_min: float = 6.0
+    ph_max: float = 7.5
+    turbidez_max_ntu: float = 50.0
+    temp_agua_min_c: float = 12.0
+    temp_agua_max_c: float = 26.0
+    wqi_min: float = 60.0
+    dias_ciclo_vegetativo: int = 180
+    rendimiento_base_kg_ha: float = 15000.0
+    precio_base_moneda_kg: float = 3.0
+    moneda_codigo: str = "PEN"
+    nivel_resiliencia: str = "Media"
+    descripcion: Optional[str] = None
+
+
+class Mesh3DPoint(BaseModel):
+    lat: float
+    lon: float
+    cota_msnm: float
+    caudal_m3s: float
+    ec_us_cm: float
+    wqi: float
+    es_estacion: bool = False
+    id_nodo: Optional[str] = None
+    nombre_estacion: Optional[str] = None
+
+
+class AgroMesh3DResponse(BaseModel):
+    total_points: int
+    profile_points: List[Mesh3DPoint]
+    network_topology: Dict[str, Any]
+
+
+class AgroCropOut(AgroCropCreate):
+    created_at: Optional[datetime.datetime] = None
+    updated_at: Optional[datetime.datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EstadisticaRegionalAgroOut(BaseModel):
+    id_estadistica: str
+    id_cultivo: Optional[str] = None
+    codigo_cultivo: str
+    departamento_region: str
+    region_natural: str
+    anio: int
+    siembras_ha: float
+    cosechas_ha: float
+    produccion_t: float
+    rendimiento_kgha: float
+    precio_chacra_skg: float
+    valor_bruto_produccion_pen: float
+    created_at: Optional[datetime.datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PerfilRiesgoRegionalAgroOut(BaseModel):
+    id_perfil_riesgo: str
+    id_cultivo: Optional[str] = None
+    codigo_cultivo: str
+    departamento_region: str
+    region_natural: str
+    frecuencia_sequia_pct: float
+    frecuencia_inundacion_pct: float
+    frecuencia_plagas_pct: float
+    frecuencia_heladas_pct: float
+    perdida_rendimiento_promedio_pct: float
+    nivel_vulnerabilidad_hidrica: str
+    fuente_riego_principal: str
+    created_at: Optional[datetime.datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class IntencionSiembraAgroOut(BaseModel):
+    id_intencion: str
+    id_cultivo: Optional[str] = None
+    codigo_cultivo: str
+    departamento_region: str
+    campania_agricola: str
+    superficie_proyectada_ha: float
+    variacion_vs_campania_anterior_pct: float
+    mes_inicio_siembras: Optional[str] = None
+    mes_fin_siembras: Optional[str] = None
+    requerimiento_hidrico_estimado_m3: float
+    created_at: Optional[datetime.datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+

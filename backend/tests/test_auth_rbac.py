@@ -168,3 +168,43 @@ def test_setup_status_and_system_config(client):
     assert res_cfg.status_code == 200
     assert res_cfg.json()["nombre_cuenca"] == "Cuenca del Río Ebro"
 
+
+def test_bootstrap_with_entity_and_cargo(client):
+    payload = {
+        "email": "mguillermolaura@proton.me",
+        "password": "Arrogant2-Lusty8",
+        "nombres": "maycol",
+        "apellidos": "Guillermo",
+        "nombre_completo": "maycol Guillermo",
+        "telefono_contacto": "+51 987 654 321",
+        "cargo_institucional": "Administrador General de Cuenca",
+        "nombre_entidad": "Junta de Usuarios del Sector Hidráulico Chancay-Huaral",
+        "tipo_entidad": "JUNTA_USUARIOS",
+        "nombre_recurso": "rio shullca",
+        "tipo_recurso": "RIO",
+        "pais": "Peru",
+        "region": "Junin",
+        "ubicacion_detallada": "Sector Hidráulico Mayor Chancay",
+        "latitud_centro": -11.49,
+        "longitud_centro": -77.05,
+        "zoom_inicial": 10
+    }
+    res = client.post("/api/v1/auth/bootstrap-admin", json=payload)
+    assert res.status_code == 200
+    user_data = res.json()
+    assert user_data["email"] == "mguillermolaura@proton.me"
+    assert user_data["nombre_completo"] == "maycol Guillermo"
+    assert user_data["nombre_entidad"] == "Junta de Usuarios del Sector Hidráulico Chancay-Huaral"
+    assert user_data["cargo_institucional"] == "Administrador General de Cuenca"
+    assert user_data["rol"] == "ADMIN_SISTEMA"
+
+    # Verificar que el status ahora indica setup completado
+    status_res = client.get("/api/v1/auth/setup-status")
+    assert status_res.status_code == 200
+    st = status_res.json()
+    assert st["is_first_setup"] is False
+    assert st["setup_completed"] is True
+    assert st["config"]["nombre_recurso"] == "rio shullca"
+    assert st["config"]["region"] == "Junin"
+
+

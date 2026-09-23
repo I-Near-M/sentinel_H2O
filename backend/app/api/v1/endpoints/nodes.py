@@ -4,11 +4,15 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from backend.app.database.session import get_db
-from backend.app.database.models import Nodo, CalibracionNodo, UmbralConfig, Entidad, MedicionProcesada, MedicionRaw
+from backend.app.database.models import (
+    Nodo, CalibracionNodo, CalibracionSeccionHidraulica, PuntoSeccionCalibracion,
+    UmbralConfig, Entidad, MedicionProcesada, MedicionRaw, MantenimientoNodo
+)
 from backend.app.schemas.nodes import (
     NodeStatusOut, NodeDetailOut, NodeProvisionIn, NodeProvisionOut,
     NodeUpdateIn, ApiKeyRegenerateOut, EntityOut, EntityCreateIn, EntityUpdateIn,
-    CalibrationOut, CalibrationCreateIn, ThresholdOut
+    CalibrationOut, CalibrationCreateIn, ThresholdOut,
+    MantenimientoCreateIn, MantenimientoOut, MantenimientoUpdateIn
 )
 
 router = APIRouter()
@@ -147,10 +151,13 @@ def list_nodes_with_status(db: Session = Depends(get_db)):
             elif diff_min <= 120:
                 estado_op = "DELAYED"
 
+        tramo = getattr(n, 'tramo_sector', None) or getattr(n, 'sector_cuenca', "SECTOR_PRINCIPAL")
         resultado.append(NodeStatusOut(
             id_nodo=n.id_nodo,
+            codigo_estacion=getattr(n, 'codigo_estacion', n.id_nodo),
             nombre=n.nombre,
-            sector_cuenca=n.sector_cuenca,
+            tramo_sector=tramo,
+            sector_cuenca=tramo,
             subcuenca=n.subcuenca,
             latitud=float(n.latitud),
             longitud=float(n.longitud),
@@ -185,12 +192,19 @@ def provision_node(node_in: NodeProvisionIn, db: Session = Depends(get_db)):
     5. Retorna la API Key y el fragmento C++ listo para copiar en el firmware ESP32 (`config.h`).
     """
     # 1. Verificar si la entidad existe
-    entidad = db.query(Entidad).filter(Entidad.id_entidad == node_in.id_entidad_responsable).first()
+    id_ent = str(node_in.id_entidad_responsable) if node_in.id_entidad_responsable is not None else None
+    entidad = None
+    if id_ent:
+        entidad = db.query(Entidad).filter(
+            (Entidad.id_entidad == id_ent) |
+            (Entidad.id_entidad == f"ENT-{int(id_ent):02d}-JUNTA" if id_ent.isdigit() else False) |
+            (Entidad.id_entidad == f"ENT-{int(id_ent):02d}-ANA" if id_ent.isdigit() and int(id_ent) == 1 else False) |
+            (Entidad.id_entidad == f"ENT-{int(id_ent):02d}-COMISION" if id_ent.isdigit() and int(id_ent) == 3 else False)
+        ).first()
     if not entidad:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"La entidad con ID {node_in.id_entidad_responsable} no existe en el sistema."
-        )
+        entidad = db.query(Entidad).first()
+
+    id_ent_final = entidad.id_entidad if entidad else "ENT-00-PLATAFORMA"
 
     # 2. Generar o validar ID de nodo
     node_id = node_in.id_nodo.strip().upper() if node_in.id_nodo else None
@@ -211,11 +225,14 @@ def provision_node(node_in: NodeProvisionIn, db: Session = Depends(get_db)):
     api_key_raw = f"sec_key_{node_id.lower().replace('-', '_')}_{secrets.token_hex(12)}"
 
     # 4. Crear Nodo
+    tramo = getattr(node_in, 'tramo_sector', None) or getattr(node_in, 'sector_cuenca', 'SECTOR_CABECERA')
+    codigo_est = getattr(node_in, 'codigo_estacion', None) or node_id
     nuevo_nodo = Nodo(
         id_nodo=node_id,
-        id_entidad_responsable=node_in.id_entidad_responsable,
+        codigo_estacion=codigo_est,
+        id_entidad_responsable=id_ent_final,
         nombre=node_in.nombre,
-        sector_cuenca=node_in.sector_cuenca,
+        tramo_sector=tramo,
         subcuenca=node_in.subcuenca,
         latitud=node_in.latitud,
         longitud=node_in.longitud,
@@ -239,12 +256,44 @@ def provision_node(node_in: NodeProvisionIn, db: Session = Depends(get_db)):
         turb_v_clear=node_in.turb_v_clear,
         turb_v_turbid=node_in.turb_v_turbid,
         distancia_fondo_sensor_cm=node_in.distancia_fondo_sensor_cm,
-        caudal_coef_k=node_in.caudal_coef_k,
-        caudal_exp_n=node_in.caudal_exp_n,
         es_vigente=True,
         calibrado_por=node_in.calibrado_por
     )
     db.add(calibracion)
+    db.flush()
+
+    # 5.1 Crear Sección Hidráulica y Molinete Hall
+    molinete_a = node_in.caudal_coef_k if node_in.caudal_coef_k is not None else node_in.molinete_constante_a
+    ancho_rio = getattr(node_in, 'ancho_total_rio_m', 4.0)
+    seccion = CalibracionSeccionHidraulica(
+        id_calibracion=calibracion.id_calibracion,
+        id_nodo=node_id,
+        ancho_total_rio_m=ancho_rio,
+        molinete_constante_a=molinete_a,
+        molinete_constante_b=node_in.molinete_constante_b,
+        coeficiente_friccion=getattr(node_in, 'coeficiente_friccion', 0.035),
+        tipo_seccion=getattr(node_in, 'tipo_seccion', 'REGLETA_PUNTOS'),
+        ancho_solera_m=getattr(node_in, 'ancho_solera_m', None),
+        talud_z=getattr(node_in, 'talud_z', None),
+        numero_verticales_aforo=len(node_in.puntos_seccion) if node_in.puntos_seccion else getattr(node_in, 'numero_verticales_aforo', 3),
+        observaciones_aforo=getattr(node_in, 'observaciones_aforo', None),
+        es_vigente=True,
+        activo=True
+    )
+    db.add(seccion)
+    db.flush()
+
+    if node_in.puntos_seccion:
+        for idx, pt in enumerate(node_in.puntos_seccion, start=1):
+            pto_db = PuntoSeccionCalibracion(
+                id_seccion_calibracion=seccion.id_seccion_calibracion,
+                orden_punto=pt.orden_punto or idx,
+                distancia_orilla_m=pt.distancia_orilla_m,
+                profundidad_lecho_m=pt.profundidad_lecho_m,
+                ancho_subseccion_m=pt.ancho_subseccion_m,
+                activo=True
+            )
+            db.add(pto_db)
 
     # 6. Crear Umbrales de Alerta
     umbral = UmbralConfig(
@@ -274,8 +323,10 @@ def provision_node(node_in: NodeProvisionIn, db: Session = Depends(get_db)):
 
     nodo_detalle = NodeDetailOut(
         id_nodo=nuevo_nodo.id_nodo,
+        codigo_estacion=nuevo_nodo.codigo_estacion,
         nombre=nuevo_nodo.nombre,
-        sector_cuenca=nuevo_nodo.sector_cuenca,
+        tramo_sector=nuevo_nodo.tramo_sector,
+        sector_cuenca=nuevo_nodo.tramo_sector,
         subcuenca=nuevo_nodo.subcuenca,
         latitud=float(nuevo_nodo.latitud),
         longitud=float(nuevo_nodo.longitud),
@@ -286,34 +337,13 @@ def provision_node(node_in: NodeProvisionIn, db: Session = Depends(get_db)):
         descripcion=nuevo_nodo.descripcion,
         id_entidad_responsable=nuevo_nodo.id_entidad_responsable,
         entidad_nombre=entidad.nombre_entidad,
-        calibracion_vigente=CalibrationOut(
-            id_calibracion=calibracion.id_calibracion,
-            ph_offset_v=calibracion.ph_offset_v,
-            ph_slope=calibracion.ph_slope,
-            tds_factor_k=calibracion.tds_factor_k,
-            tds_offset_v=calibracion.tds_offset_v,
-            turb_v_clear=calibracion.turb_v_clear,
-            turb_v_turbid=calibracion.turb_v_turbid,
-            distancia_fondo_sensor_cm=calibracion.distancia_fondo_sensor_cm,
-            caudal_coef_k=calibracion.caudal_coef_k,
-            caudal_exp_n=calibracion.caudal_exp_n,
-            es_vigente=calibracion.es_vigente,
-            calibrado_por=calibracion.calibrado_por
-        ),
-        umbrales=ThresholdOut(
-            ph_min_alerta=umbral.ph_min_alerta,
-            ph_max_alerta=umbral.ph_max_alerta,
-            ec_max_advertencia_us_cm=umbral.ec_max_advertencia_us_cm,
-            ec_max_critico_us_cm=umbral.ec_max_critico_us_cm,
-            tds_max_alerta_ppm=umbral.tds_max_alerta_ppm,
-            turb_max_alerta_ntu=umbral.turb_max_alerta_ntu,
-            tirante_min_alerta_cm=umbral.tirante_min_alerta_cm,
-            bateria_min_alerta_v=umbral.bateria_min_alerta_v
-        )
+        calibracion_vigente=CalibrationOut.model_validate(calibracion),
+        umbrales=ThresholdOut.model_validate(umbral)
     )
 
     return NodeProvisionOut(
         id_nodo=node_id,
+        codigo_estacion=nuevo_nodo.codigo_estacion,
         nombre=nuevo_nodo.nombre,
         subcuenca=nuevo_nodo.subcuenca,
         api_key_plaintext=api_key_raw,
@@ -345,10 +375,13 @@ def get_node_detail(node_id: str, db: Session = Depends(get_db)):
 
     umbral = db.query(UmbralConfig).filter(UmbralConfig.id_nodo == node_id).first()
 
+    tramo = getattr(nodo, 'tramo_sector', None) or getattr(nodo, 'sector_cuenca', "SECTOR_PRINCIPAL")
     return NodeDetailOut(
         id_nodo=nodo.id_nodo,
+        codigo_estacion=getattr(nodo, 'codigo_estacion', nodo.id_nodo),
         nombre=nodo.nombre,
-        sector_cuenca=nodo.sector_cuenca,
+        tramo_sector=tramo,
+        sector_cuenca=tramo,
         subcuenca=nodo.subcuenca,
         latitud=float(nodo.latitud),
         longitud=float(nodo.longitud),
@@ -357,7 +390,7 @@ def get_node_detail(node_id: str, db: Session = Depends(get_db)):
         intervalo_envio_min=nodo.intervalo_envio_min,
         activo=nodo.activo,
         descripcion=nodo.descripcion,
-        id_entidad_responsable=nodo.id_entidad_responsable,
+        id_entidad_responsable=str(nodo.id_entidad_responsable) if nodo.id_entidad_responsable else None,
         entidad_nombre=nodo.entidad.nombre_entidad if nodo.entidad else None,
         calibracion_vigente=CalibrationOut.model_validate(calibracion) if calibracion else None,
         umbrales=ThresholdOut.model_validate(umbral) if umbral else None
@@ -481,6 +514,10 @@ def update_node_calibration(node_id: str, calib_in: CalibrationCreateIn, db: Ses
         CalibracionNodo.id_nodo == node_id
     ).update({"es_vigente": False})
 
+    db.query(CalibracionSeccionHidraulica).filter(
+        CalibracionSeccionHidraulica.id_nodo == node_id
+    ).update({"es_vigente": False})
+
     # Crear nueva calibración
     nueva_calib = CalibracionNodo(
         id_nodo=node_id,
@@ -491,14 +528,198 @@ def update_node_calibration(node_id: str, calib_in: CalibrationCreateIn, db: Ses
         turb_v_clear=calib_in.turb_v_clear,
         turb_v_turbid=calib_in.turb_v_turbid,
         distancia_fondo_sensor_cm=calib_in.distancia_fondo_sensor_cm,
-        caudal_coef_k=calib_in.caudal_coef_k,
-        caudal_exp_n=calib_in.caudal_exp_n,
         es_vigente=True,
         calibrado_por=calib_in.calibrado_por
     )
     db.add(nueva_calib)
+    db.flush()
+
+    # Crear nueva sección hidráulica
+    molinete_a = calib_in.caudal_coef_k if calib_in.caudal_coef_k is not None else calib_in.molinete_constante_a
+    ancho_rio = getattr(calib_in, 'ancho_total_rio_m', 4.0)
+    seccion = CalibracionSeccionHidraulica(
+        id_calibracion=nueva_calib.id_calibracion,
+        id_nodo=node_id,
+        ancho_total_rio_m=ancho_rio,
+        molinete_constante_a=molinete_a,
+        molinete_constante_b=getattr(calib_in, 'molinete_constante_b', 0.05),
+        coeficiente_friccion=getattr(calib_in, 'coeficiente_friccion', 0.035),
+        tipo_seccion=getattr(calib_in, 'tipo_seccion', 'REGLETA_PUNTOS'),
+        ancho_solera_m=getattr(calib_in, 'ancho_solera_m', None),
+        talud_z=getattr(calib_in, 'talud_z', None),
+        numero_verticales_aforo=len(calib_in.puntos_seccion) if calib_in.puntos_seccion else getattr(calib_in, 'numero_verticales_aforo', 3),
+        observaciones_aforo=getattr(calib_in, 'observaciones_aforo', None),
+        es_vigente=True,
+        activo=True
+    )
+    db.add(seccion)
+    db.flush()
+
+    if calib_in.puntos_seccion:
+        for idx, pt in enumerate(calib_in.puntos_seccion, start=1):
+            pto_db = PuntoSeccionCalibracion(
+                id_seccion_calibracion=seccion.id_seccion_calibracion,
+                orden_punto=pt.orden_punto or idx,
+                distancia_orilla_m=pt.distancia_orilla_m,
+                profundidad_lecho_m=pt.profundidad_lecho_m,
+                ancho_subseccion_m=pt.ancho_subseccion_m,
+                activo=True
+            )
+            db.add(pto_db)
+
     db.commit()
     db.refresh(nueva_calib)
 
     return CalibrationOut.model_validate(nueva_calib)
+
+
+# ============================================================================
+# 6. BITÁCORA Y MANTENIMIENTOS DE NODO
+# ============================================================================
+def _format_maint_out(maint: MantenimientoNodo) -> MantenimientoOut:
+    out = MantenimientoOut.model_validate(maint)
+    if maint.nodo:
+        out.nodo_nombre = maint.nodo.nombre
+        out.codigo_estacion = maint.nodo.codigo_estacion
+        out.subcuenca = maint.nodo.subcuenca
+    return out
+
+
+@router.get("/maintenances/all", response_model=List[MantenimientoOut])
+def list_all_maintenances(
+    node_id: Optional[str] = Query(None, description="Filtrar por ID de nodo"),
+    estado: Optional[str] = Query(None, description="Filtrar por estado: PROGRAMADO, EN_EJECUCION, COMPLETADO, CANCELADO"),
+    tipo: Optional[str] = Query(None, description="Filtrar por tipo"),
+    categoria: Optional[str] = Query(None, description="Filtrar por categoria: FISICO, LOGICO, HIDRAULICO"),
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna la bitácora completa de mantenimientos preventivos y correctivos de toda la red de estaciones.
+    """
+    query = db.query(MantenimientoNodo).filter(MantenimientoNodo.activo == True)
+    if node_id:
+        query = query.filter(MantenimientoNodo.id_nodo == node_id)
+    if estado:
+        query = query.filter(MantenimientoNodo.estado_mantenimiento == estado)
+    if tipo:
+        query = query.filter(MantenimientoNodo.tipo_mantenimiento == tipo)
+    if categoria:
+        query = query.filter(MantenimientoNodo.categoria == categoria)
+
+    maintenances = query.order_by(MantenimientoNodo.fecha_programada.desc()).all()
+    return [_format_maint_out(m) for m in maintenances]
+
+
+@router.get("/{node_id}/maintenances", response_model=List[MantenimientoOut])
+def list_node_maintenances(
+    node_id: str,
+    estado: Optional[str] = Query(None, description="Filtrar por estado: PROGRAMADO, EN_EJECUCION, COMPLETADO, CANCELADO"),
+    db: Session = Depends(get_db)
+):
+    """
+    Lista el historial de mantenimientos físicos, lógicos y calibraciones de un nodo específico.
+    """
+    nodo = db.query(Nodo).filter(Nodo.id_nodo == node_id).first()
+    if not nodo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"El nodo '{node_id}' no existe."
+        )
+
+    query = db.query(MantenimientoNodo).filter(
+        MantenimientoNodo.id_nodo == node_id,
+        MantenimientoNodo.activo == True
+    )
+    if estado:
+        query = query.filter(MantenimientoNodo.estado_mantenimiento == estado)
+
+    maintenances = query.order_by(MantenimientoNodo.fecha_programada.desc()).all()
+    return [_format_maint_out(m) for m in maintenances]
+
+
+@router.post("/{node_id}/maintenances", response_model=MantenimientoOut, status_code=status.HTTP_201_CREATED)
+def create_node_maintenance(
+    node_id: str,
+    maint_in: MantenimientoCreateIn,
+    db: Session = Depends(get_db)
+):
+    """
+    Registra una orden de mantenimiento preventivo, correctivo o calibración para un nodo.
+    """
+    nodo = db.query(Nodo).filter(Nodo.id_nodo == node_id).first()
+    if not nodo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"El nodo '{node_id}' no existe."
+        )
+
+    nuevo_mantenimiento = MantenimientoNodo(
+        id_nodo=node_id,
+        tipo_mantenimiento=maint_in.tipo_mantenimiento,
+        categoria=maint_in.categoria,
+        fecha_programada=maint_in.fecha_programada,
+        fecha_ejecucion=maint_in.fecha_ejecucion,
+        tecnico_responsable=maint_in.tecnico_responsable,
+        descripcion_trabajo=maint_in.descripcion_trabajo,
+        diagnostico_inicial=maint_in.diagnostico_inicial,
+        acciones_realizadas=maint_in.acciones_realizadas,
+        repuestos_utilizados=maint_in.repuestos_utilizados,
+        firmware_version_anterior=maint_in.firmware_version_anterior,
+        firmware_version_instalada=maint_in.firmware_version_instalada,
+        costo_estimado=maint_in.costo_estimado or 0.0,
+        estado_mantenimiento=maint_in.estado_mantenimiento or "PROGRAMADO",
+        observaciones=maint_in.observaciones,
+        activo=True
+    )
+    db.add(nuevo_mantenimiento)
+    db.commit()
+    db.refresh(nuevo_mantenimiento)
+    return _format_maint_out(nuevo_mantenimiento)
+
+
+@router.put("/maintenances/{maintenance_id}", response_model=MantenimientoOut)
+def update_maintenance(
+    maintenance_id: str,
+    maint_update: MantenimientoUpdateIn,
+    db: Session = Depends(get_db)
+):
+    """
+    Actualiza el estado de una intervención de mantenimiento (ej. COMPLETADO, repuestos usados, diagnóstico).
+    """
+    maint = db.query(MantenimientoNodo).filter(MantenimientoNodo.id_mantenimiento == maintenance_id).first()
+    if not maint:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"El mantenimiento '{maintenance_id}' no fue encontrado."
+        )
+
+    update_data = maint_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(maint, field, value)
+
+    maint.updated_at = datetime.datetime.now(datetime.timezone.utc)
+    db.commit()
+    db.refresh(maint)
+    return _format_maint_out(maint)
+
+
+@router.delete("/maintenances/{maintenance_id}")
+def delete_maintenance(
+    maintenance_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Desactiva lógicamente una orden de mantenimiento archivándola.
+    """
+    maint = db.query(MantenimientoNodo).filter(MantenimientoNodo.id_mantenimiento == maintenance_id).first()
+    if not maint:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"El mantenimiento '{maintenance_id}' no fue encontrado."
+        )
+    maint.activo = False
+    maint.updated_at = datetime.datetime.now(datetime.timezone.utc)
+    db.commit()
+    return {"message": "Mantenimiento cancelado y archivado correctamente"}
+
 

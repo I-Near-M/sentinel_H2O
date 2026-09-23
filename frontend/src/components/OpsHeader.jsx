@@ -3,11 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSystemConfig } from '../context/SystemConfigContext';
 import { 
-  Droplets, ExternalLink, LogOut, Shield, 
+  Droplets, LogOut, Shield, 
   Building2, UserCheck, Moon, Sun, User 
 } from 'lucide-react';
 
-export const OpsHeader = ({ onOpenProfile, grafanaUrl = 'http://localhost:3000' }) => {
+export const OpsHeader = ({ onOpenProfile }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
   const { nombre_cuenca, pais_region } = useSystemConfig();
@@ -60,18 +60,6 @@ export const OpsHeader = ({ onOpenProfile, grafanaUrl = 'http://localhost:3000' 
         >
           {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-cyan-600" />}
         </button>
-
-        {/* Acceso a Grafana Externo */}
-        <a
-          href={grafanaUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden md:flex px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-400 text-cyan-700 dark:text-cyan-300 text-xs font-semibold rounded-xl shadow-sm items-center gap-1.5 transition-all duration-150"
-          title="Abrir Gemelo Digital en Grafana (Pestaña Completa)"
-        >
-          <span>Grafana Pro</span>
-          <ExternalLink className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
-        </a>
 
         {/* Botón de Perfil de Usuario */}
         {user && (

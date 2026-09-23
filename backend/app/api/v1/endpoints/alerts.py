@@ -20,10 +20,13 @@ class DestinatarioUpdate(BaseModel):
     telefono_whatsapp: Optional[str] = None
     email: Optional[str] = None
     rol_usuario: Optional[str] = None
+    id_tipo_uso: Optional[str] = None
+    detalle_actividad: Optional[str] = None
     tipo_cultivo: Optional[str] = None
     sector_predio: Optional[str] = None
     recibe_alertas_calidad: Optional[bool] = None
     recibe_alertas_caudal: Optional[bool] = None
+    recibe_alertas_mantenimiento: Optional[bool] = None
     recibe_reporte_diario: Optional[bool] = None
     activo: Optional[bool] = None
 
@@ -54,6 +57,22 @@ def get_node_alerts(
         AlertaLog.id_nodo == node_id
     ).order_by(AlertaLog.timestamp.desc()).limit(limit).all()
     return alertas
+
+
+@router.post("/{alerta_id}/ack")
+def acknowledge_alert(alerta_id: str, db: Session = Depends(get_db)):
+    """
+    Registra el reconocimiento operacional (ACK) de una alerta por el operador de turno.
+    """
+    alerta = db.query(AlertaLog).filter(AlertaLog.id_alerta == alerta_id).first()
+    if not alerta:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"La alerta {alerta_id} no fue encontrada."
+        )
+    alerta.estado_envio_whatsapp = "RECONOCIDA"
+    db.commit()
+    return {"status": "ok", "id_alerta": alerta_id, "estado": "RECONOCIDA"}
 
 
 @router.post("/recipients", response_model=DestinatarioOut, status_code=status.HTTP_201_CREATED)
@@ -110,7 +129,7 @@ def list_recipients(include_inactive: bool = False, db: Session = Depends(get_db
 
 
 @router.put("/recipients/{id_destinatario}", response_model=DestinatarioOut)
-def update_recipient(id_destinatario: int, update_in: DestinatarioUpdate, db: Session = Depends(get_db)):
+def update_recipient(id_destinatario: str, update_in: DestinatarioUpdate, db: Session = Depends(get_db)):
     """
     Actualiza la información de un destinatario suscrito a alertas.
     """
@@ -131,7 +150,7 @@ def update_recipient(id_destinatario: int, update_in: DestinatarioUpdate, db: Se
 
 
 @router.delete("/recipients/{id_destinatario}", status_code=status.HTTP_200_OK)
-def delete_recipient(id_destinatario: int, db: Session = Depends(get_db)):
+def delete_recipient(id_destinatario: str, db: Session = Depends(get_db)):
     """
     Desactiva lógicamente (soft-delete) a un destinatario de alertas para mantener el historial de turnos y eventos.
     """

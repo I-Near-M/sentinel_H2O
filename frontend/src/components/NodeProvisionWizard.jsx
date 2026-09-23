@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   PlusCircle, 
   Check, 
@@ -13,7 +13,12 @@ import {
   CheckCircle2, 
   Building2, 
   AlertTriangle,
-  Sparkles
+  Sparkles,
+  Ruler,
+  Gauge,
+  Waves,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { nodesApi } from '../services/api';
 import { useSystemConfig } from '../context/SystemConfigContext';
@@ -43,16 +48,31 @@ export default function NodeProvisionWizard({ onNodeCreated, setActiveTab }) {
     intervalo_envio_min: 15,
     descripcion: '',
 
-    // Paso 2: Estructura Hidráulica y Calibración
-    estructura_tipo: 'PARSHALL_6_INCH',
-    distancia_fondo_sensor_cm: 100.0,
-    caudal_coef_k: 0.381,
-    caudal_exp_n: 1.58,
+    // Paso 2: Calibración Físico-Química y Aforo Hidráulico
     ph_offset_v: 2.5000,
-    ph_slope: -0.1840,
+    ph_slope: -0.1800,
     tds_factor_k: 0.5000,
+    tds_offset_v: 0.0000,
     turb_v_clear: 4.2000,
     turb_v_turbid: 2.5000,
+    distancia_fondo_sensor_cm: 150.0,
+
+    // Molinete Hidrométrico (Efecto Hall en Superficie)
+    molinete_constante_a: 0.2500,
+    molinete_constante_b: 0.0500,
+    coeficiente_friccion: 0.0350,
+    tipo_seccion: 'REGLETA_PUNTOS',
+
+    // Sección Hidráulica y Batimetría con Regleta
+    ancho_total_rio_m: 4.00,
+    observaciones_aforo: 'Aforo batimétrico con regleta graduada y molinete Hall de superficie',
+    puntos_seccion: [
+      { orden_punto: 1, distancia_orilla_m: 0.0, profundidad_lecho_m: 0.0, ancho_subseccion_m: 0.5 },
+      { orden_punto: 2, distancia_orilla_m: 1.0, profundidad_lecho_m: 0.8, ancho_subseccion_m: 1.0 },
+      { orden_punto: 3, distancia_orilla_m: 2.0, profundidad_lecho_m: 1.4, ancho_subseccion_m: 1.0 },
+      { orden_punto: 4, distancia_orilla_m: 3.0, profundidad_lecho_m: 0.9, ancho_subseccion_m: 1.0 },
+      { orden_punto: 5, distancia_orilla_m: 4.0, profundidad_lecho_m: 0.0, ancho_subseccion_m: 0.5 }
+    ],
 
     // Paso 3: Cultivo y Umbrales Agronómicos
     cultivo_preset: 'FRUTALES_MELOCOTON',
@@ -79,26 +99,116 @@ export default function NodeProvisionWizard({ onNodeCreated, setActiveTab }) {
       .catch(err => console.error("Error cargando entidades:", err));
   }, []);
 
-  const handleStructureChange = (e) => {
-    const val = e.target.value;
-    let k = 1.0, n = 1.55;
-    
-    if (val === 'PARSHALL_3_INCH') { k = 0.177; n = 1.55; }
-    else if (val === 'PARSHALL_6_INCH') { k = 0.381; n = 1.58; }
-    else if (val === 'PARSHALL_9_INCH') { k = 0.535; n = 1.53; }
-    else if (val === 'PARSHALL_1_FOOT') { k = 0.690; n = 1.522; }
-    else if (val === 'PARSHALL_2_FOOT') { k = 1.426; n = 1.550; }
-    else if (val === 'VERTEDERO_TRIANG_90') { k = 1.380; n = 2.50; }
-    else if (val === 'VERTEDERO_RECT_50CM') { k = 0.920; n = 1.50; }
-    else if (val === 'CANAL_MANNING_TRAPECIO') { k = 1.250; n = 1.667; }
-
+  // Handlers para la tabla de Regletas
+  const addPuntoSeccion = () => {
+    const pts = formData.puntos_seccion || [];
+    const lastX = pts.length > 0 ? pts[pts.length - 1].distancia_orilla_m : 0;
+    const nextX = Math.min(formData.ancho_total_rio_m, parseFloat((lastX + 0.5).toFixed(2)));
+    const newPt = {
+      orden_punto: pts.length + 1,
+      distancia_orilla_m: nextX,
+      profundidad_lecho_m: 0.5,
+      ancho_subseccion_m: 0.5
+    };
     setFormData(prev => ({
       ...prev,
-      estructura_tipo: val,
-      caudal_coef_k: k,
-      caudal_exp_n: n
+      puntos_seccion: [...pts, newPt]
     }));
   };
+
+  const updatePuntoSeccion = (index, field, value) => {
+    const updated = [...formData.puntos_seccion];
+    updated[index] = {
+      ...updated[index],
+      [field]: parseFloat(value) || 0
+    };
+    setFormData(prev => ({ ...prev, puntos_seccion: updated }));
+  };
+
+  const removePuntoSeccion = (index) => {
+    if (formData.puntos_seccion.length <= 2) {
+      alert("Se requieren al menos 2 puntos para delimitar los márgenes de la sección.");
+      return;
+    }
+    const updated = formData.puntos_seccion.filter((_, i) => i !== index).map((p, idx) => ({
+      ...p,
+      orden_punto: idx + 1
+    }));
+    setFormData(prev => ({ ...prev, puntos_seccion: updated }));
+  };
+
+  const applyRiverPreset = (presetKey) => {
+    if (presetKey === 'CHANCAY_NATURAL') {
+      setFormData(prev => ({
+        ...prev,
+        ancho_total_rio_m: 4.0,
+        tipo_seccion: 'REGLETA_PUNTOS',
+        molinete_constante_a: 0.2500,
+        molinete_constante_b: 0.0500,
+        coeficiente_friccion: 0.0350,
+        distancia_fondo_sensor_cm: 180.0,
+        observaciones_aforo: 'Río Chancay curso natural con lecho pedregoso irregular',
+        puntos_seccion: [
+          { orden_punto: 1, distancia_orilla_m: 0.0, profundidad_lecho_m: 0.0, ancho_subseccion_m: 0.5 },
+          { orden_punto: 2, distancia_orilla_m: 1.0, profundidad_lecho_m: 0.8, ancho_subseccion_m: 1.0 },
+          { orden_punto: 3, distancia_orilla_m: 2.0, profundidad_lecho_m: 1.4, ancho_subseccion_m: 1.0 },
+          { orden_punto: 4, distancia_orilla_m: 3.0, profundidad_lecho_m: 0.9, ancho_subseccion_m: 1.0 },
+          { orden_punto: 5, distancia_orilla_m: 4.0, profundidad_lecho_m: 0.0, ancho_subseccion_m: 0.5 }
+        ]
+      }));
+    } else if (presetKey === 'CANAL_RECTANGULAR') {
+      setFormData(prev => ({
+        ...prev,
+        ancho_total_rio_m: 2.0,
+        tipo_seccion: 'RECTANGULAR',
+        molinete_constante_a: 0.2500,
+        molinete_constante_b: 0.0500,
+        coeficiente_friccion: 0.0250,
+        distancia_fondo_sensor_cm: 160.0,
+        observaciones_aforo: 'Canal matriz rectangular de concreto alisado',
+        puntos_seccion: [
+          { orden_punto: 1, distancia_orilla_m: 0.0, profundidad_lecho_m: 1.2, ancho_subseccion_m: 0.5 },
+          { orden_punto: 2, distancia_orilla_m: 1.0, profundidad_lecho_m: 1.2, ancho_subseccion_m: 1.0 },
+          { orden_punto: 3, distancia_orilla_m: 2.0, profundidad_lecho_m: 1.2, ancho_subseccion_m: 0.5 }
+        ]
+      }));
+    } else if (presetKey === 'QUEBRADA_ESTRECHA') {
+      setFormData(prev => ({
+        ...prev,
+        ancho_total_rio_m: 2.5,
+        tipo_seccion: 'REGLETA_PUNTOS',
+        molinete_constante_a: 0.2500,
+        molinete_constante_b: 0.0500,
+        coeficiente_friccion: 0.0400,
+        distancia_fondo_sensor_cm: 140.0,
+        observaciones_aforo: 'Quebrada de cabecera con pendiente pronunciada',
+        puntos_seccion: [
+          { orden_punto: 1, distancia_orilla_m: 0.0, profundidad_lecho_m: 0.0, ancho_subseccion_m: 0.5 },
+          { orden_punto: 2, distancia_orilla_m: 1.25, profundidad_lecho_m: 1.1, ancho_subseccion_m: 1.25 },
+          { orden_punto: 3, distancia_orilla_m: 2.5, profundidad_lecho_m: 0.0, ancho_subseccion_m: 0.5 }
+        ]
+      }));
+    }
+  };
+
+  // Cálculo en tiempo real del área mojada y profundidad máxima
+  const { calculatedArea, maxRiverDepth } = useMemo(() => {
+    const pts = formData.puntos_seccion || [];
+    if (pts.length < 2) return { calculatedArea: 0, maxRiverDepth: 0 };
+    const sorted = [...pts].sort((a, b) => a.distancia_orilla_m - b.distancia_orilla_m);
+    let area = 0;
+    let maxD = 0;
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const p1 = sorted[i];
+      const p2 = sorted[i + 1];
+      const dx = Math.abs(p2.distancia_orilla_m - p1.distancia_orilla_m);
+      const avgD = ((Number(p1.profundidad_lecho_m) || 0) + (Number(p2.profundidad_lecho_m) || 0)) / 2;
+      area += avgD * dx;
+      if ((Number(p1.profundidad_lecho_m) || 0) > maxD) maxD = Number(p1.profundidad_lecho_m);
+      if ((Number(p2.profundidad_lecho_m) || 0) > maxD) maxD = Number(p2.profundidad_lecho_m);
+    }
+    return { calculatedArea: parseFloat(area.toFixed(3)), maxRiverDepth: parseFloat(maxD.toFixed(2)) };
+  }, [formData.puntos_seccion]);
 
   const handleCropPresetChange = (e) => {
     const val = e.target.value;
@@ -151,7 +261,17 @@ export default function NodeProvisionWizard({ onNodeCreated, setActiveTab }) {
       const payload = {
         ...formData,
         id_nodo: finalId,
-        id_entidad_responsable: parseInt(formData.id_entidad_responsable) || entities[0].id_entidad
+        id_entidad_responsable: formData.id_entidad_responsable || (entities[0]?.id_entidad || "ENT-01-ANA"),
+        ancho_total_rio_m: Number(formData.ancho_total_rio_m) || 4.0,
+        molinete_constante_a: Number(formData.molinete_constante_a) || 0.25,
+        molinete_constante_b: Number(formData.molinete_constante_b) || 0.05,
+        coeficiente_friccion: Number(formData.coeficiente_friccion) || 0.035,
+        puntos_seccion: formData.puntos_seccion.map((p, idx) => ({
+          orden_punto: idx + 1,
+          distancia_orilla_m: Number(p.distancia_orilla_m) || 0,
+          profundidad_lecho_m: Number(p.profundidad_lecho_m) || 0,
+          ancho_subseccion_m: Number(p.ancho_subseccion_m) || 1.0
+        }))
       };
 
       const res = await nodesApi.provisionNode(payload);
@@ -602,69 +722,330 @@ export default function NodeProvisionWizard({ onNodeCreated, setActiveTab }) {
                 </div>
               </div>
 
-              {/* SECCIÓN B: AFORADOR HIDRÁULICO & ULTRASONIDO */}
-              <div className="space-y-4 pt-2">
-                <h4 className="text-xs font-black uppercase tracking-wider text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5" />
-                  <span>B. Estructura de Aforo y Ecuación de Gasto (Q = K · hᴺ)</span>
-                </h4>
+              {/* SECCIÓN B: AFORO POR MOLINETE HALL Y BATIMETRÍA CON REGLETA */}
+              <div className="space-y-6 pt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
+                    <Waves className="w-4 h-4 text-cyan-500" />
+                    <span>B. Aforo por Molinete Hidrométrico (Hall) & Modelado Batimétrico con Regleta</span>
+                  </h4>
 
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tipo de Estructura de Aforo Instalada</label>
-                    <select
-                      value={formData.estructura_tipo}
-                      onChange={handleStructureChange}
-                      className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 font-medium"
+                  <div className="flex items-center space-x-1 text-xs">
+                    <span className="text-slate-500 dark:text-slate-400 font-bold mr-1">Presets de Cauce:</span>
+                    <button
+                      type="button"
+                      onClick={() => applyRiverPreset('CHANCAY_NATURAL')}
+                      className="px-2.5 py-1 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-800/60 text-cyan-300 text-[11px] font-bold transition-all cursor-pointer"
                     >
-                      <option value="PARSHALL_3_INCH" className="bg-[#072433] text-white">Canal Parshall 3 pulgadas (W=0.076m) - K: 0.177, N: 1.55</option>
-                      <option value="PARSHALL_6_INCH" className="bg-[#072433] text-white">Canal Parshall 6 pulgadas (W=0.152m) - K: 0.381, N: 1.58</option>
-                      <option value="PARSHALL_9_INCH" className="bg-[#072433] text-white">Canal Parshall 9 pulgadas (W=0.229m) - K: 0.535, N: 1.53</option>
-                      <option value="PARSHALL_1_FOOT" className="bg-[#072433] text-white">Canal Parshall 1 pie (W=0.305m) - K: 0.690, N: 1.522</option>
-                      <option value="PARSHALL_2_FOOT" className="bg-[#072433] text-white">Canal Parshall 2 pies (W=0.610m) - K: 1.426, N: 1.550</option>
-                      <option value="VERTEDERO_TRIANG_90" className="bg-[#072433] text-white">Vertedero Triangular 90° (Thompson) - K: 1.380, N: 2.50</option>
-                      <option value="VERTEDERO_RECT_50CM" className="bg-[#072433] text-white">Vertedero Rectangular 0.50m - K: 0.920, N: 1.50</option>
-                      <option value="CANAL_MANNING_TRAPECIO" className="bg-[#072433] text-white">Canal Abierto Trapezoidal (Manning) - K: 1.250, N: 1.667</option>
-                    </select>
+                      Río Natural (5 Vert.)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyRiverPreset('CANAL_RECTANGULAR')}
+                      className="px-2.5 py-1 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-800/60 text-cyan-300 text-[11px] font-bold transition-all cursor-pointer"
+                    >
+                      Canal Rectangular
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyRiverPreset('QUEBRADA_ESTRECHA')}
+                      className="px-2.5 py-1 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-800/60 text-cyan-300 text-[11px] font-bold transition-all cursor-pointer"
+                    >
+                      Quebrada Estrecha
+                    </button>
+                  </div>
+                </div>
+
+                {/* 1. Constantes del Molinete Hidrométrico y Sensor Ultrasónico */}
+                <div className="grid sm:grid-cols-4 gap-3 p-4 bg-slate-50 dark:bg-[#061821] rounded-2xl border border-slate-300 dark:border-cyan-900/60 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1">
+                      <Gauge className="w-3.5 h-3.5 text-cyan-500" />
+                      <span>Constante a (Paso Hélice)</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      name="molinete_constante_a"
+                      value={formData.molinete_constante_a}
+                      onChange={handleInputChange}
+                      className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
+                      title="Pendiente de la recta de calibración V = a*(RPM/60) + b"
+                    />
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Ecuación: V = a·n + b</span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 p-4 bg-slate-100 dark:bg-[#061821] rounded-2xl border border-slate-300 dark:border-cyan-900/60 text-xs">
-                    <div className="space-y-1">
-                      <label className="text-slate-600 dark:text-slate-400 font-bold">Distancia Sensor-Fondo (cm)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        name="distancia_fondo_sensor_cm"
-                        value={formData.distancia_fondo_sensor_cm}
-                        onChange={handleInputChange}
-                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
-                        title="Distancia en cm medida con cinta métrica desde la cara del sensor ultrasónico JSN-SR04T hasta el piso/fondo del canal"
-                      />
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">h = Dist.Fondo - Eco</span>
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1">
+                      <Gauge className="w-3.5 h-3.5 text-cyan-500" />
+                      <span>Constante b (Fricción m/s)</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      name="molinete_constante_b"
+                      value={formData.molinete_constante_b}
+                      onChange={handleInputChange}
+                      className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
+                      title="Velocidad mínima de inicio de giro del molinete (m/s)"
+                    />
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Vel. umbral inicial</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1">
+                      <Waves className="w-3.5 h-3.5 text-teal-500" />
+                      <span>Rugosidad Manning n</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      name="coeficiente_friccion"
+                      value={formData.coeficiente_friccion}
+                      onChange={handleInputChange}
+                      className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
+                      title="Coeficiente de rugosidad de Manning del cauce"
+                    />
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Típico: 0.030 - 0.040</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1">
+                      <Ruler className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Distancia Sensor-Lecho (cm)</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      name="distancia_fondo_sensor_cm"
+                      value={formData.distancia_fondo_sensor_cm}
+                      onChange={handleInputChange}
+                      className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
+                      title="Distancia fija desde la cara del sensor ultrasónico al punto más bajo del lecho"
+                    />
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Cota fija de montaje</span>
+                  </div>
+                </div>
+
+                {/* 2. Ancho del Río y Puntos de Batimetría con Regleta */}
+                <div className="grid lg:grid-cols-12 gap-6 items-start">
+                  {/* Formulario de Puntos de Regleta */}
+                  <div className="lg:col-span-6 space-y-4">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                          <Ruler className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Ancho Total del Río / Espejo (m)</span>
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0.5"
+                          name="ancho_total_rio_m"
+                          value={formData.ancho_total_rio_m}
+                          onChange={handleInputChange}
+                          className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl px-3.5 py-2 font-mono text-sm text-slate-900 dark:text-white font-bold"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tipo de Sección</label>
+                        <select
+                          name="tipo_seccion"
+                          value={formData.tipo_seccion}
+                          onChange={handleInputChange}
+                          className="w-full bg-slate-50 dark:bg-[#061821] border border-slate-300 dark:border-cyan-900/60 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white"
+                        >
+                          <option value="REGLETA_PUNTOS" className="bg-[#072433]">Batimetría Regleta (Puntos Variables)</option>
+                          <option value="RECTANGULAR" className="bg-[#072433]">Canal Rectangular</option>
+                          <option value="TRAPEZOIDAL" className="bg-[#072433]">Canal Trapezoidal</option>
+                        </select>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-slate-600 dark:text-slate-400 font-bold">Coeficiente K</label>
-                      <input
-                        type="number"
-                        step="0.001"
-                        name="caudal_coef_k"
-                        value={formData.caudal_coef_k}
-                        onChange={handleInputChange}
-                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
-                      />
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Factor de escala de gasto</span>
+
+                    {/* Tabla Interactiva de Verticales con Regleta */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                          Mediciones Batimétricas con Regleta ({formData.puntos_seccion.length} Verticales)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={addPuntoSeccion}
+                          className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Agregar Vertical</span>
+                        </button>
+                      </div>
+
+                      <div className="border border-slate-300 dark:border-cyan-900/60 rounded-xl overflow-hidden text-xs">
+                        <table className="w-full text-left">
+                          <thead className="bg-slate-100 dark:bg-[#061821] border-b border-slate-300 dark:border-cyan-900/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px]">
+                            <tr>
+                              <th className="px-3 py-2"># Vert.</th>
+                              <th className="px-3 py-2">Dist. Orilla (m)</th>
+                              <th className="px-3 py-2">Prof. Regleta (m)</th>
+                              <th className="px-2 py-2 text-center">Acción</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200 dark:divide-cyan-900/40 font-mono">
+                            {formData.puntos_seccion.map((pt, idx) => (
+                              <tr key={idx} className="hover:bg-cyan-950/20">
+                                <td className="px-3 py-1.5 text-slate-600 dark:text-slate-400 font-bold">
+                                  P{pt.orden_punto || idx + 1}
+                                </td>
+                                <td className="px-3 py-1.5">
+                                  <input
+                                    type="number"
+                                    step="0.05"
+                                    min="0"
+                                    value={pt.distancia_orilla_m}
+                                    onChange={(e) => updatePuntoSeccion(idx, 'distancia_orilla_m', e.target.value)}
+                                    className="w-20 bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded px-2 py-1 text-slate-900 dark:text-white font-bold"
+                                  />
+                                </td>
+                                <td className="px-3 py-1.5">
+                                  <input
+                                    type="number"
+                                    step="0.05"
+                                    min="0"
+                                    value={pt.profundidad_lecho_m}
+                                    onChange={(e) => updatePuntoSeccion(idx, 'profundidad_lecho_m', e.target.value)}
+                                    className="w-20 bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded px-2 py-1 text-teal-600 dark:text-cyan-300 font-bold"
+                                  />
+                                </td>
+                                <td className="px-2 py-1.5 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => removePuntoSeccion(idx)}
+                                    className="p-1 rounded text-rose-500 hover:bg-rose-500/20 transition-colors"
+                                    title="Eliminar vertical"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-slate-600 dark:text-slate-400 font-bold">Exponente N</label>
-                      <input
-                        type="number"
-                        step="0.001"
-                        name="caudal_exp_n"
-                        value={formData.caudal_exp_n}
-                        onChange={handleInputChange}
-                        className="w-full bg-white dark:bg-[#072433] border border-slate-300 dark:border-cyan-900/60 rounded-lg p-2 font-mono text-slate-900 dark:text-white font-bold"
-                      />
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Exponente hidráulico</span>
+                  </div>
+
+                  {/* Previsualización Dinámica 2D (SVG) del Perfil del Río */}
+                  <div className="lg:col-span-6 p-4 bg-slate-900/90 rounded-2xl border border-cyan-500/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-cyan-400 font-extrabold text-xs">
+                        <Waves className="w-4 h-4" />
+                        <span>Perfil Transversal en Tiempo Real (Aforo Batimétrico)</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                        Q = A(h) · V
+                      </span>
+                    </div>
+
+                    {/* Contenedor SVG Interactivo */}
+                    <div className="w-full bg-[#041119] rounded-xl border border-cyan-900/60 p-2 overflow-hidden">
+                      <svg viewBox="0 0 500 210" className="w-full h-44 select-none">
+                        <defs>
+                          <linearGradient id="waterFlowGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.8" />
+                            <stop offset="100%" stopColor="#0284c7" stopOpacity="0.25" />
+                          </linearGradient>
+                          <pattern id="pebbles" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <circle cx="5" cy="5" r="1.5" fill="#334155" opacity="0.6" />
+                            <circle cx="15" cy="12" r="2" fill="#1e293b" opacity="0.8" />
+                          </pattern>
+                        </defs>
+
+                        {/* Superficie y Margen Terrestre */}
+                        <line x1="40" y1="65" x2="460" y2="65" stroke="#38bdf8" strokeWidth="2.5" strokeDasharray="4 2" />
+                        <text x="40" y="58" fill="#64748b" fontSize="9" fontWeight="bold">Orilla Izq. (0m)</text>
+                        <text x="460" y="58" fill="#64748b" fontSize="9" fontWeight="bold" textAnchor="end">Orilla Der. ({formData.ancho_total_rio_m}m)</text>
+
+                        {/* Construcción del Polígono Mojado del Río */}
+                        {(() => {
+                          const totalW = formData.ancho_total_rio_m > 0 ? formData.ancho_total_rio_m : 4.0;
+                          const maxD = maxRiverDepth > 0 ? maxRiverDepth : 1.0;
+                          const pts = [...formData.puntos_seccion].sort((a, b) => a.distancia_orilla_m - b.distancia_orilla_m);
+                          
+                          const svgCoords = pts.map(p => {
+                            const x = 40 + (p.distancia_orilla_m / totalW) * 420;
+                            const y = 65 + (p.profundidad_lecho_m / (maxD * 1.3)) * 115;
+                            return { x, y, pt: p };
+                          });
+
+                          const pathData = svgCoords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x} ${c.y}`).join(' ') + 
+                            ` L ${svgCoords[svgCoords.length - 1]?.x || 460} 65 L 40 65 Z`;
+
+                          return (
+                            <>
+                              {/* Relleno de Agua */}
+                              <path d={pathData} fill="url(#waterFlowGrad)" />
+                              
+                              {/* Línea del Lecho del Río */}
+                              <path 
+                                d={svgCoords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x} ${c.y}`).join(' ')} 
+                                fill="none" 
+                                stroke="#475569" 
+                                strokeWidth="4" 
+                                strokeLinecap="round" 
+                              />
+
+                              {/* Verticales de Regletas Graduadas */}
+                              {svgCoords.map((c, idx) => (
+                                <g key={idx}>
+                                  <line x1={c.x} y1={65} x2={c.x} y2={c.y} stroke="#f59e0b" strokeWidth="2" strokeDasharray="3 3" />
+                                  <circle cx={c.x} cy={c.y} r="4" fill="#f59e0b" stroke="#041119" strokeWidth="1.5" />
+                                  <rect x={c.x - 18} y={c.y + 6} width="36" height="14" rx="3" fill="#0f172a" stroke="#f59e0b" strokeWidth="0.8" />
+                                  <text x={c.x} y={c.y + 16} fill="#fbbf24" fontSize="8.5" fontWeight="bold" textAnchor="middle">
+                                    {c.pt.profundidad_lecho_m}m
+                                  </text>
+                                </g>
+                              ))}
+                            </>
+                          );
+                        })()}
+
+                        {/* Sensor Ultrasonido Superior */}
+                        <g transform="translate(230, 8)">
+                          <rect x="0" y="0" width="40" height="18" rx="4" fill="#0369a1" stroke="#38bdf8" strokeWidth="1.5" />
+                          <text x="20" y="12" fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle">JSN-SR04T</text>
+                          {/* Ondas ultrasónicas */}
+                          <path d="M 12 24 Q 20 32 28 24" stroke="#38bdf8" strokeWidth="1.5" fill="none" opacity="0.8" />
+                          <path d="M 6 32 Q 20 44 34 32" stroke="#38bdf8" strokeWidth="1.5" fill="none" opacity="0.5" />
+                        </g>
+
+                        {/* Molinete Hidrométrico de Superficie */}
+                        <g transform="translate(250, 65)">
+                          {/* Mástil seco */}
+                          <line x1="0" y1="-39" x2="0" y2="0" stroke="#94a3b8" strokeWidth="2.5" />
+                          {/* Núcleo Molinete */}
+                          <circle cx="0" cy="0" r="10" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
+                          {/* Aspas en rotación */}
+                          <line x1="-7" y1="-7" x2="7" y2="7" stroke="#06b6d4" strokeWidth="2" />
+                          <line x1="7" y1="-7" x2="-7" y2="7" stroke="#06b6d4" strokeWidth="2" />
+                          <circle cx="0" cy="0" r="3" fill="#38bdf8" />
+                          <text x="14" y="4" fill="#06b6d4" fontSize="8" fontWeight="bold">Molinete Hall</text>
+                        </g>
+                      </svg>
+                    </div>
+
+                    {/* Resumen Hidrométrico en Vivo */}
+                    <div className="grid grid-cols-3 gap-2 text-[11px] font-mono">
+                      <div className="p-2 rounded-xl bg-slate-950/60 border border-cyan-900/40 text-center">
+                        <span className="text-slate-400 block text-[9px]">ÁREA MOJADA (A)</span>
+                        <span className="text-cyan-300 font-extrabold text-sm">{calculatedArea} m²</span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-slate-950/60 border border-cyan-900/40 text-center">
+                        <span className="text-slate-400 block text-[9px]">PROF. MÁXIMA</span>
+                        <span className="text-teal-300 font-extrabold text-sm">{maxRiverDepth} m</span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-slate-950/60 border border-cyan-900/40 text-center">
+                        <span className="text-slate-400 block text-[9px]">ANCHO ESPEJO (B)</span>
+                        <span className="text-amber-300 font-extrabold text-sm">{formData.ancho_total_rio_m} m</span>
+                      </div>
                     </div>
                   </div>
                 </div>
