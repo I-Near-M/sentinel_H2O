@@ -48,8 +48,22 @@ class ProcessedTelemetryOut(BaseModel):
     estado_ph: str
     aptitud_piscicola: str = "NO_EVALUADO"
     battery_v: float
+    bateria_pct: Optional[int] = None
     signal_rssi: Optional[int] = None
     alerta_disparada: bool = False
     alerta_info: Optional[Dict[str, Any]] = None
+
+    # Variables RAW de instrumentación física (hardware directo)
+    raw_dist_cm: Optional[float] = None
+    raw_v_ph: Optional[float] = None
+    raw_v_tds: Optional[float] = None
+    raw_v_turb: Optional[float] = None
+    hall_rpm: Optional[float] = None
+    hall_pulsos: Optional[int] = None
+    hall_frecuencia_hz: Optional[float] = None
+
+    # Parámetros Hidráulicos Avanzados
+    froude: Optional[float] = None
+    manning_n: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)

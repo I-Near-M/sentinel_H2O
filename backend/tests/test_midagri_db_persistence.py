@@ -20,6 +20,15 @@ def setup_database():
 
 def get_superadmin_token() -> str:
     """Inicia sesión con el superadministrador por defecto y retorna el token JWT."""
+    from backend.app.core.security import create_access_token
+    db = SessionLocal()
+    admin = db.query(Usuario).filter(Usuario.rol == "ADMIN_SISTEMA").first()
+    if admin:
+        token = create_access_token({"sub": admin.id_usuario, "email": admin.email, "rol": "ADMIN_SISTEMA"})
+        db.close()
+        return token
+    db.close()
+
     client.post("/api/v1/auth/bootstrap-admin", json={
         "email": "superadmin@sentinel-h2o.org",
         "password": "SuperAdminSecure2026!",

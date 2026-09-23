@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { useTheme } from '../context/ThemeContext';
-import { nodesApi } from '../services/api';
+import { nodesApi, telemetryApi } from '../services/api';
 import { 
   Layers, Eye, RotateCcw, Compass, Waves, Gauge, Zap, Activity, 
   Info, Sliders, Calendar, ChevronRight, ChevronLeft, ChevronDown, 
@@ -155,23 +155,33 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
     };
   }, [dbNodes]);
 
-  // Live telemetry state for River / Station (simulated 1.2s dynamic tick)
+  // Live telemetry state for River / Station (real-time stream via WebSockets)
   const [telemetry, setTelemetry] = useState({
-    tirante_cm: 138.4,
-    caudal_m3s: 16.85,
-    velocidad_ms: 1.36,
-    froude: 0.38,
-    area_m2: 12.4,
-    ancho_m: 14.8,
-    rpm_hall: 182,
-    ph: 7.38,
-    tds_us: 615,
-    turbidez_ntu: 14.2,
-    temp_c: 16.8,
-    bateria_v: 4.18,
-    bateria_pct: 98,
+    tirante_cm: 140.0,
+    caudal_m3s: 1.85,
+    velocidad_ms: 0.62,
+    froude: 0.17,
+    area_m2: 2.98,
+    ancho_m: 7.0,
+    rpm_hall: 65.0,
+    ph: 7.06,
+    tds_us: 487.2,
+    turbidez_ntu: 4.4,
+    temp_c: 14.8,
+    bateria_v: 12.72,
+    bateria_pct: 94,
     manning_n: 0.035,
-    last_sync: '1s'
+    raw_dist_cm: 110.0,
+    raw_v_ph: 2.49,
+    raw_v_tds: 0.58,
+    raw_v_turb: 4.05,
+    hall_pulsos: 130,
+    hall_frecuencia_hz: 13.0,
+    signal_rssi: 26,
+    wqi_score: 91.5,
+    wqi_categoria: 'EXCELENTE',
+    last_sync: '1s',
+    is_live_ws: false
   });
 
   // Live telemetry state for High-Andean Lagoon (simulated 1.5s dynamic tick)
@@ -307,6 +317,59 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
   }, []);
 
   // Fetch database nodes on mount
+  const [isWsConnected, setIsWsConnected] = useState(false);
+  const selectedNodeIdRef = useRef(selectedNodeId);
+
+  useEffect(() => {
+    selectedNodeIdRef.current = selectedNodeId;
+  }, [selectedNodeId]);
+
+  // Aplica mediciones procesadas y RAW al estado reactivo del Gemelo Digital 3D
+  const applyTelemetryData = (data) => {
+    if (!data) return;
+    setTelemetry(prev => ({
+      ...prev,
+      id_nodo: data.id_nodo || prev.id_nodo,
+      tirante_cm: data.tirante_agua_cm != null ? Number(data.tirante_agua_cm.toFixed(1)) : prev.tirante_cm,
+      caudal_m3s: data.caudal_m3s != null ? Number(data.caudal_m3s.toFixed(2)) : prev.caudal_m3s,
+      velocidad_ms: data.velocidad_agua_ms != null ? Number(data.velocidad_agua_ms.toFixed(2)) : prev.velocidad_ms,
+      froude: data.froude != null ? Number(data.froude.toFixed(2)) : prev.froude,
+      area_m2: data.area_hidraulica_m2 != null ? Number(data.area_hidraulica_m2.toFixed(2)) : prev.area_m2,
+      rpm_hall: data.hall_rpm != null ? Number(data.hall_rpm.toFixed(1)) : prev.rpm_hall,
+      ph: data.ph != null ? Number(data.ph.toFixed(2)) : prev.ph,
+      tds_us: data.ec_us_cm != null ? Number(data.ec_us_cm.toFixed(1)) : (data.tds_ppm != null ? Number((data.tds_ppm / 0.5).toFixed(1)) : prev.tds_us),
+      turbidez_ntu: data.turbidez_ntu != null ? Number(data.turbidez_ntu.toFixed(1)) : prev.turbidez_ntu,
+      temp_c: data.temp_agua_c != null ? Number(data.temp_agua_c.toFixed(1)) : prev.temp_c,
+      bateria_v: data.battery_v != null ? Number(data.battery_v.toFixed(2)) : prev.bateria_v,
+      bateria_pct: data.bateria_pct != null ? data.bateria_pct : prev.bateria_pct,
+      manning_n: data.manning_n != null ? data.manning_n : 0.035,
+      raw_dist_cm: data.raw_dist_cm != null ? Number(data.raw_dist_cm.toFixed(1)) : prev.raw_dist_cm,
+      raw_v_ph: data.raw_v_ph != null ? Number(data.raw_v_ph.toFixed(3)) : prev.raw_v_ph,
+      raw_v_tds: data.raw_v_tds != null ? Number(data.raw_v_tds.toFixed(3)) : prev.raw_v_tds,
+      raw_v_turb: data.raw_v_turb != null ? Number(data.raw_v_turb.toFixed(3)) : prev.raw_v_turb,
+      hall_pulsos: data.hall_pulsos != null ? data.hall_pulsos : prev.hall_pulsos,
+      hall_frecuencia_hz: data.hall_frecuencia_hz != null ? Number(data.hall_frecuencia_hz.toFixed(1)) : prev.hall_frecuencia_hz,
+      signal_rssi: data.signal_rssi != null ? data.signal_rssi : prev.signal_rssi,
+      wqi_score: data.wqi_score != null ? data.wqi_score : prev.wqi_score,
+      wqi_categoria: data.wqi_categoria || prev.wqi_categoria,
+      last_sync: 'En vivo',
+      is_live_ws: true
+    }));
+  };
+
+  // Carga reactiva de telemetría de una estación desde el endpoint /latest
+  const loadTelemetryForNode = async (nodeId) => {
+    if (!nodeId) return;
+    try {
+      const res = await telemetryApi.getLatest(nodeId);
+      if (res.data) {
+        applyTelemetryData(res.data);
+      }
+    } catch (err) {
+      console.warn(`No se pudo obtener última telemetría para nodo ${nodeId}:`, err);
+    }
+  };
+
   const fetchDbNodes = () => {
     setLoadingDbNodes(true);
     nodesApi.getNodes()
@@ -317,7 +380,9 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
             const firstNode = res.data[0];
             setSelectedDbNode(prev => prev || firstNode);
             setSelectedNodeId(prev => prev || firstNode.id_nodo);
+            selectedNodeIdRef.current = firstNode.id_nodo;
             loadCalibrationForNode(firstNode.id_nodo);
+            loadTelemetryForNode(firstNode.id_nodo);
           }
         }
       })
@@ -329,6 +394,62 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
 
   useEffect(() => {
     fetchDbNodes();
+  }, []);
+
+  // Streaming WebSocket en vivo para telemetría continua de campo
+  useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/api/v1/telemetry/ws/live`;
+
+    let ws = null;
+    let reconnectTimer = null;
+
+    const connectWs = () => {
+      try {
+        ws = new WebSocket(wsUrl);
+        ws.onopen = () => {
+          setIsWsConnected(true);
+        };
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (!data) return;
+            const targetId = selectedNodeIdRef.current;
+            if (!targetId || data.id_nodo === targetId) {
+              applyTelemetryData(data);
+            }
+          } catch (e) {
+            // frame de texto (ej. pong)
+          }
+        };
+        ws.onerror = () => {
+          setIsWsConnected(false);
+        };
+        ws.onclose = () => {
+          setIsWsConnected(false);
+          reconnectTimer = setTimeout(connectWs, 5000);
+        };
+      } catch (err) {
+        setIsWsConnected(false);
+        reconnectTimer = setTimeout(connectWs, 5000);
+      }
+    };
+
+    connectWs();
+
+    // Polling de respaldo cada 12 segundos
+    const pollInterval = setInterval(() => {
+      if (selectedNodeIdRef.current) {
+        loadTelemetryForNode(selectedNodeIdRef.current);
+      }
+    }, 12000);
+
+    return () => {
+      if (ws) ws.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      clearInterval(pollInterval);
+    };
   }, []);
 
   // ===================================================================
@@ -691,9 +812,9 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
     microGroup.add(armGroup);
 
     // Badge espacial del sensor ultrasónico (más pequeño y nítido al zoom)
-    const badgeUltrasonic = createSensorBadgeSprite('Sensor Ultrasónico', [
-      { label: 'Tirante', value: `${curTelemetry?.tirante_cm || 138.4} cm`, color: '#38bdf8' },
-      { label: 'Cota Agua', value: `${waterY.toFixed(2)} m`, color: '#22d3ee' },
+    const badgeUltrasonic = createSensorBadgeSprite('Sensor Ultrasónico (JSN-SR04T)', [
+      { label: 'Tirante h', value: `${curTelemetry?.tirante_cm || 140.0} cm`, color: '#38bdf8' },
+      { label: 'Eco RAW', value: `${curTelemetry?.raw_dist_cm || 110.0} cm`, color: '#22d3ee' },
       { label: 'Eco Acústico', value: '40 kHz (OK)', color: '#4ade80' }
     ], '#06b6d4', darkTheme, [centerWaterX, 4.85, 0], [1.15, 0.58, 1]);
     microGroup.add(badgeUltrasonic);
@@ -738,10 +859,10 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
     if (objectsRef && objectsRef.current) objectsRef.current.molineteGroup = molineteGroup;
 
     // Badge espacial del Molinete centrado sobre su vertical en xMolinete (más pequeño al zoom)
-    const badgeMolinete = createSensorBadgeSprite('Molinete Hidrométrico', [
-      { label: 'Sensor Hall', value: `${curTelemetry?.rpm_hall || 182} RPM`, color: '#38bdf8' },
-      { label: 'Velocidad', value: `${curTelemetry?.velocidad_ms || 1.36} m/s`, color: '#22d3ee' },
-      { label: 'Caudal Q', value: `${curTelemetry?.caudal_m3s || 16.85} m³/s`, color: '#4ade80' }
+    const badgeMolinete = createSensorBadgeSprite('Molinete Hidrométrico (Hall)', [
+      { label: 'RPM Hall RAW', value: `${curTelemetry?.rpm_hall || 65.0} RPM (${curTelemetry?.hall_frecuencia_hz || 13} Hz)`, color: '#38bdf8' },
+      { label: 'Velocidad Flujo V', value: `${curTelemetry?.velocidad_ms || 0.62} m/s`, color: '#22d3ee' },
+      { label: 'Caudal Q', value: `${curTelemetry?.caudal_m3s || 1.85} m³/s (${((curTelemetry?.caudal_m3s || 1.85) * 1000).toFixed(0)} L/s)`, color: '#4ade80' }
     ], '#3b82f6', darkTheme, [xMolinete, molineteY + molineteRadius + 0.35, 0], [1.15, 0.58, 1]);
     microGroup.add(badgeMolinete);
     if (objectsRef && objectsRef.current) objectsRef.current.badgeMolinete = badgeMolinete;
@@ -1011,9 +1132,9 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
 
     // Badge espacial de Tinas / Calidad posicionado sobre la segunda tina (Tina 2) con escala reducida
     const badgeTinas = createSensorBadgeSprite('Tinas / Calidad Agua', [
-      { label: 'pH Fluvial', value: `${curTelemetry?.ph || 7.38} pH`, color: '#4ade80' },
-      { label: 'TDS / Turb', value: `${curTelemetry?.tds_us || 615} µS | ${curTelemetry?.turbidez_ntu || 14.2} NTU`, color: '#38bdf8' },
-      { label: 'Temperatura', value: `${curTelemetry?.temp_c || 16.8} °C`, color: '#f59e0b' }
+      { label: 'Sonda pH', value: `${curTelemetry?.ph || 7.06} pH (${curTelemetry?.raw_v_ph || 2.49}V RAW)`, color: '#4ade80' },
+      { label: 'TDS / CE (25°C)', value: `${curTelemetry?.tds_us || 487.2} µS (${curTelemetry?.raw_v_tds || 0.58}V RAW)`, color: '#38bdf8' },
+      { label: 'Turbidez / Temp', value: `${curTelemetry?.turbidez_ntu || 4.4} NTU | ${curTelemetry?.temp_c || 14.8}°C`, color: '#f59e0b' }
     ], '#10b981', darkTheme, [tinasGroundX, tinaBaseY + tinaH + 0.48, zTina2], [1.05, 0.525, 1]);
     microGroup.add(badgeTinas);
     if (objectsRef && objectsRef.current) {
@@ -1144,9 +1265,9 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
 
     // Badge espacial de Nodo Central (más pequeño al zoom)
     const badgeCabinet = createSensorBadgeSprite('Nodo Central Sentinel', [
-      { label: 'Batería', value: `${curTelemetry?.bateria_v || 4.18}V (${curTelemetry?.bateria_pct || 98}%)`, color: '#4ade80' },
-      { label: 'Froude / Manning', value: `${curTelemetry?.froude || 0.38} | ${curTelemetry?.manning_n || 0.035}`, color: '#38bdf8' },
-      { label: 'Enlace', value: 'LoRa / 4G (En línea)', color: '#22c55e' }
+      { label: 'Batería 12V', value: `${curTelemetry?.bateria_v || 12.72}V (${curTelemetry?.bateria_pct || 94}%)`, color: '#4ade80' },
+      { label: 'Enlace Celular', value: `GPRS 2G · SIM800L (CSQ ${curTelemetry?.signal_rssi || 26}/31)`, color: '#22c55e' },
+      { label: 'Froude / Manning', value: `Fr: ${curTelemetry?.froude || 0.17} (Subc.) | n: ${curTelemetry?.manning_n || 0.035}`, color: '#38bdf8' }
     ], '#8b5cf6', darkTheme, [tinasGroundX + 0.10, platformY + 1.65, zTinasCenter - 0.20], [1.15, 0.58, 1]);
     microGroup.add(badgeCabinet);
     if (objectsRef && objectsRef.current) objectsRef.current.badgeCabinet = badgeCabinet;
@@ -2088,20 +2209,33 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
 
     animate();
 
-    // Window resize handler
+    // Window & Container resize handler
     const handleResize = () => {
       if (!containerRef.current || !renderer || !camera) return;
       const w = containerRef.current.clientWidth;
       const h = containerRef.current.clientHeight;
+      if (w === 0 || h === 0) return;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
 
+    // ResizeObserver para cambios de orientación o tamaño en móviles/tablets
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        handleResize();
+      });
+      resizeObserver.observe(containerRef.current);
+    }
+
     return () => {
       cancelAnimationFrame(reqAnimRef.current);
       window.removeEventListener('resize', handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       controls.removeEventListener('start', onUserInteract);
       renderer.domElement.removeEventListener('pointerdown', onUserInteract);
       renderer.domElement.removeEventListener('wheel', onUserInteract);
@@ -2494,31 +2628,31 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
     if (scale !== 'micro' || !objectsRef.current) return;
     const { badgeUltrasonic, badgeMolinete, badgeTinas, badgeCabinet, baseWaterY } = objectsRef.current;
     if (badgeUltrasonic) {
-      updateSensorBadgeCanvas(badgeUltrasonic, 'Sensor Ultrasónico', [
-        { label: 'Tirante', value: `${telemetry.tirante_cm} cm`, color: '#38bdf8' },
-        { label: 'Cota Agua', value: `${(baseWaterY !== undefined ? baseWaterY : -0.4).toFixed(2)} m`, color: '#22d3ee' },
+      updateSensorBadgeCanvas(badgeUltrasonic, 'Sensor Ultrasónico (JSN-SR04T)', [
+        { label: 'Tirante h', value: `${telemetry.tirante_cm} cm`, color: '#38bdf8' },
+        { label: 'Eco RAW', value: `${telemetry.raw_dist_cm || 110.0} cm`, color: '#22d3ee' },
         { label: 'Eco Acústico', value: '40 kHz (OK)', color: '#4ade80' }
       ], '#06b6d4', isDark);
     }
     if (badgeMolinete) {
-      updateSensorBadgeCanvas(badgeMolinete, 'Molinete Hidrométrico', [
-        { label: 'Sensor Hall', value: `${telemetry.rpm_hall} RPM`, color: '#38bdf8' },
-        { label: 'Velocidad', value: `${telemetry.velocidad_ms} m/s`, color: '#22d3ee' },
-        { label: 'Caudal Q', value: `${telemetry.caudal_m3s} m³/s`, color: '#4ade80' }
+      updateSensorBadgeCanvas(badgeMolinete, 'Molinete Hidrométrico (Hall)', [
+        { label: 'RPM Hall RAW', value: `${telemetry.rpm_hall} RPM (${telemetry.hall_frecuencia_hz || 13} Hz)`, color: '#38bdf8' },
+        { label: 'Velocidad Flujo V', value: `${telemetry.velocidad_ms} m/s`, color: '#22d3ee' },
+        { label: 'Caudal Q', value: `${telemetry.caudal_m3s} m³/s (${(telemetry.caudal_m3s * 1000).toFixed(0)} L/s)`, color: '#4ade80' }
       ], '#3b82f6', isDark);
     }
     if (badgeTinas) {
       updateSensorBadgeCanvas(badgeTinas, 'Tinas / Calidad Agua', [
-        { label: 'pH Fluvial', value: `${telemetry.ph} pH`, color: '#4ade80' },
-        { label: 'TDS / Turb', value: `${telemetry.tds_us} µS | ${telemetry.turbidez_ntu} NTU`, color: '#38bdf8' },
-        { label: 'Temperatura', value: `${telemetry.temp_c} °C`, color: '#f59e0b' }
+        { label: 'Sonda pH', value: `${telemetry.ph} pH (${telemetry.raw_v_ph || 2.49}V RAW)`, color: '#4ade80' },
+        { label: 'TDS / CE (25°C)', value: `${telemetry.tds_us} µS (${telemetry.raw_v_tds || 0.58}V RAW)`, color: '#38bdf8' },
+        { label: 'Turbidez / Temp', value: `${telemetry.turbidez_ntu} NTU | ${telemetry.temp_c}°C`, color: '#f59e0b' }
       ], '#10b981', isDark);
     }
     if (badgeCabinet) {
       updateSensorBadgeCanvas(badgeCabinet, 'Nodo Central Sentinel', [
-        { label: 'Batería', value: `${telemetry.bateria_v}V (${telemetry.bateria_pct}%)`, color: '#4ade80' },
-        { label: 'Froude / Manning', value: `${telemetry.froude} | ${telemetry.manning_n}`, color: '#38bdf8' },
-        { label: 'Enlace', value: 'LoRa / 4G (En línea)', color: '#22c55e' }
+        { label: 'Batería 12V', value: `${telemetry.bateria_v}V (${telemetry.bateria_pct || 94}%)`, color: '#4ade80' },
+        { label: 'Enlace Celular', value: `GPRS 2G · SIM800L (CSQ ${telemetry.signal_rssi || 26}/31)`, color: '#22c55e' },
+        { label: 'Froude / Manning', value: `Fr: ${telemetry.froude} (Subc.) | n: ${telemetry.manning_n || 0.035}`, color: '#38bdf8' }
       ], '#8b5cf6', isDark);
     }
   }, [telemetry, isDark, scale]);
@@ -2526,12 +2660,14 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
   // Selección dinámica de estación real y vuelo suave de cámara
   const handleNodeSelect = async (nodeId) => {
     setSelectedNodeId(nodeId);
+    selectedNodeIdRef.current = nodeId;
     if (!nodeId) return;
 
     const foundNode = dbNodes.find(n => n.id_nodo === nodeId);
     if (foundNode) {
       setSelectedDbNode(foundNode);
       const calib = await loadCalibrationForNode(nodeId);
+      await loadTelemetryForNode(nodeId);
 
       // Si estamos en escala micro, actualizar estación directamente
       if (scale === 'micro') {
@@ -2598,7 +2734,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
   };
 
   return (
-    <div className="relative w-full h-[calc(100vh-4.5rem)] lg:h-[calc(100vh-5rem)] overflow-hidden bg-slate-100 dark:bg-slate-950 font-sans select-none touch-none">
+    <div className="relative w-full h-[calc(100dvh-8.75rem)] sm:h-[calc(100dvh-9.25rem)] lg:h-[calc(100vh-5.5rem)] min-h-[340px] rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-100 dark:bg-slate-950 font-sans select-none touch-none border border-slate-200/80 dark:border-slate-800/80 shadow-lg">
       
       {/* THREE.JS CANVAS CONTAINER (Con soporte táctil directo para móviles) */}
       <div 
@@ -2610,11 +2746,11 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
       {/* ========================================================= */}
       {/* TOP FLOATING BAR (Compacta, Responsiva & Móvil-Amigable)   */}
       {/* ========================================================= */}
-      <div className="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-20">
+      <div className="absolute top-2 sm:top-3 left-2 sm:left-3 right-2 sm:right-3 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 pointer-events-none z-20">
         
         {/* Left: Water Resource Typology Switcher & Node Selector */}
-        <div className="flex items-center space-x-2 pointer-events-auto bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-2xl shadow-xl overflow-x-auto no-scrollbar max-w-full">
-          <div className="hidden sm:flex items-center space-x-1.5 border-r border-slate-200 dark:border-slate-800 pr-2.5">
+        <div className="flex items-center space-x-1 sm:space-x-2 pointer-events-auto bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl shadow-xl overflow-x-auto no-scrollbar max-w-full">
+          <div className="hidden sm:flex items-center space-x-1.5 border-r border-slate-200 dark:border-slate-800 pr-2 sm:pr-2.5">
             <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
             <span className="text-[11px] font-mono font-bold tracking-wider text-cyan-700 dark:text-cyan-300">GEMELO 3D</span>
           </div>
@@ -2623,7 +2759,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
           <div className="flex bg-slate-100 dark:bg-slate-950/80 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800">
             <button 
               onClick={() => handleScaleChange('macro')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                 scale === 'macro' 
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -2637,7 +2773,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
             {hasLagunaNode && (
               <button 
                 onClick={() => handleScaleChange('laguna')}
-                className={`flex items-center space-x-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   scale === 'laguna' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -2651,7 +2787,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
 
             <button 
               onClick={() => handleScaleChange('micro')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                 scale === 'micro' 
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -2668,7 +2804,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
             <select 
               value={selectedNodeId} 
               onChange={(e) => handleNodeSelect(e.target.value)}
-              className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-800 focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[150px] sm:max-w-[220px] truncate"
+              className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-[11px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-slate-300 dark:border-slate-800 focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[120px] sm:max-w-[220px] truncate"
             >
               {dbNodes.length === 0 ? (
                 <option value="">Sin estaciones en BD</option>
@@ -2686,7 +2822,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
             <select 
               value={selectedLagunaNode} 
               onChange={(e) => handleLagunaNodeSelect(e.target.value)}
-              className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-xs px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-800 focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[150px] sm:max-w-[220px] truncate"
+              className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200 text-[11px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-slate-300 dark:border-slate-800 focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[120px] sm:max-w-[220px] truncate"
             >
               <option value="ALL">Panorámica Lacustre</option>
               {dbNodes.filter(isLagunaNode).map(n => (
@@ -2701,7 +2837,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
             <select 
               value={selectedNodeId} 
               onChange={(e) => handleMicroNodeSelect(e.target.value)}
-              className="bg-cyan-50 dark:bg-slate-950 text-cyan-900 dark:text-cyan-300 font-mono text-xs px-2.5 py-1 rounded-lg border border-cyan-300 dark:border-cyan-800 focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[160px] sm:max-w-[240px] truncate font-semibold"
+              className="bg-cyan-50 dark:bg-slate-950 text-cyan-900 dark:text-cyan-300 font-mono text-[11px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-cyan-300 dark:border-cyan-800 focus:outline-none focus:border-cyan-500 cursor-pointer max-w-[125px] sm:max-w-[240px] truncate font-semibold"
             >
               {dbNodes.length === 0 ? (
                 <option value="">Sin estaciones en BD</option>
@@ -2722,19 +2858,19 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
         </div>
 
         {/* Right: Reset Camera, Flow particles, & DRAWER TOGGLE BUTTON */}
-        <div className="flex items-center space-x-1.5 pointer-events-auto bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-2xl shadow-xl">
+        <div className="flex items-center space-x-1 sm:space-x-1.5 pointer-events-auto bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl shadow-xl">
           <button 
             onClick={() => setCameraPreset('general')}
             title="Resetear perspectiva de cámara"
-            className="p-1.5 text-slate-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            className="p-1 sm:p-1.5 text-slate-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
           
           <button 
             onClick={() => setShowParticles(!showParticles)}
             title="Activar/Desactivar partículas de corriente"
-            className={`px-2 py-1 text-xs rounded-lg transition-colors cursor-pointer ${
+            className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs rounded-lg transition-colors cursor-pointer ${
               showParticles 
                 ? 'text-cyan-700 dark:text-cyan-300 bg-cyan-100 dark:bg-cyan-950/60 font-semibold' 
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2743,19 +2879,20 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
             Partículas
           </button>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
+          <div className="h-3.5 sm:h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
           {/* MAIN INSPECTOR DRAWER TOGGLE BUTTON */}
           <button
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            className={`flex items-center space-x-1.5 px-3 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm ${
+            className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[11px] sm:text-xs font-bold rounded-lg sm:rounded-xl transition-all cursor-pointer shadow-sm ${
               isDrawerOpen
                 ? 'bg-cyan-600 text-white shadow-cyan-600/30'
                 : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:brightness-110 shadow-blue-600/30'
             }`}
           >
             <Activity className="w-3.5 h-3.5 animate-pulse" />
-            <span>{isDrawerOpen ? 'Cerrar Panel' : 'Telemetría & Datos'}</span>
+            <span className="hidden sm:inline">{isDrawerOpen ? 'Cerrar Panel' : 'Telemetría & Datos'}</span>
+            <span className="sm:hidden">{isDrawerOpen ? 'Cerrar' : 'Datos'}</span>
           </button>
         </div>
 
@@ -2764,17 +2901,17 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
       {/* ========================================================= */}
       {/* BOTTOM HUD: CAMERA PRESETS & COMPACT CONTEXT STRIP       */}
       {/* ========================================================= */}
-      <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-20">
+      <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 pointer-events-none z-20">
         
         {/* Dynamic Camera Presets Selector according to Scale */}
-        <div className="flex items-center space-x-1 pointer-events-auto bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-2xl shadow-xl overflow-x-auto no-scrollbar max-w-full">
+        <div className="flex items-center space-x-1 pointer-events-auto bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl shadow-xl overflow-x-auto no-scrollbar max-w-full">
           <span className="hidden sm:inline text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider mr-1.5">Vistas:</span>
           
           {scale === 'macro' && (
             <>
               <button 
                 onClick={() => setCameraPreset('general')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   macroPreset === 'general' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2784,7 +2921,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               </button>
               <button 
                 onClick={() => setCameraPreset('cabecera')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   macroPreset === 'cabecera' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2794,7 +2931,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               </button>
               <button 
                 onClick={() => setCameraPreset('saume')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   macroPreset === 'saume' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2805,7 +2942,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               {hasSeaNode && (
                 <button 
                   onClick={() => setCameraPreset('desembocadura')}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     macroPreset === 'desembocadura' 
                       ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2818,7 +2955,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
                 <button
                   key={n.id_nodo}
                   onClick={() => handleNodeSelect(n.id_nodo)}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     selectedNodeId === n.id_nodo
                       ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2834,7 +2971,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
             <>
               <button 
                 onClick={() => setCameraPreset('general')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   lagunaPreset === 'general' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2844,7 +2981,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               </button>
               <button 
                 onClick={() => setCameraPreset('boya')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   lagunaPreset === 'boya' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2854,7 +2991,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               </button>
               <button 
                 onClick={() => setCameraPreset('presa')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   lagunaPreset === 'presa' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2864,7 +3001,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               </button>
               <button 
                 onClick={() => setCameraPreset('afluente')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   lagunaPreset === 'afluente' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2876,7 +3013,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
                 <button
                   key={n.id_nodo}
                   onClick={() => handleLagunaNodeSelect(n.id_nodo)}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     selectedNodeId === n.id_nodo
                       ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2892,7 +3029,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
             <>
               <button 
                 onClick={() => setCameraPreset('general')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   microPreset === 'general' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2902,7 +3039,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               </button>
               <button 
                 onClick={() => setCameraPreset('nodo')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   microPreset === 'nodo' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2912,7 +3049,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               </button>
               <button 
                 onClick={() => setCameraPreset('ultrasonico')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   microPreset === 'ultrasonico' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2922,7 +3059,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               </button>
               <button 
                 onClick={() => setCameraPreset('molinete')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   microPreset === 'molinete' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2932,7 +3069,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               </button>
               <button 
                 onClick={() => setCameraPreset('tinas')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   microPreset === 'tinas' 
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' 
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -3009,7 +3146,14 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
                 <span>Telemetría & Inspección</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 font-semibold">1 Hz</span>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold flex items-center space-x-1 ${
+                  isWsConnected 
+                    ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30' 
+                    : 'bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isWsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-cyan-500'}`} />
+                  <span>{isWsConnected ? 'WS EN VIVO' : 'SYNC 1Hz'}</span>
+                </span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {scale === 'macro' ? 'Macrocuenca Fluvial (65 km)' : scale === 'laguna' ? 'Laguna Altoandina Glacial' : 'Micro-Nodo Estación Ribereña'}
@@ -3065,7 +3209,7 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
         </div>
 
         {/* Drawer Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 pb-24 lg:pb-6 space-y-4">
 
           {/* ======================================================= */}
           {/* TAB 1: HIDRÁULICA Y NODOS EN VIVO                       */}
@@ -3203,34 +3347,61 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
                 <>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl">
-                      <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Aforo Continuo</div>
+                      <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Aforo Continuo Q</div>
                       <div className="text-xl font-mono font-bold text-cyan-600 dark:text-cyan-400 mt-0.5">
                         {telemetry.caudal_m3s} <span className="text-xs font-normal text-slate-400">m³/s</span>
                       </div>
-                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400">ISO 748 Dovelas</div>
+                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium">
+                        {Math.round(telemetry.caudal_m3s * 1000)} L/s • ISO 748
+                      </div>
                     </div>
 
                     <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl">
-                      <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Molinete Hall</div>
+                      <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">Tirante Fluvial h</div>
                       <div className="text-xl font-mono font-bold text-slate-900 dark:text-white mt-0.5">
-                        {telemetry.rpm_hall} <span className="text-xs font-normal text-slate-400">RPM</span>
+                        {telemetry.tirante_cm} <span className="text-xs font-normal text-slate-400">cm</span>
                       </div>
-                      <div className="text-[10px] text-cyan-600 dark:text-cyan-400">Eje seco continuo</div>
+                      <div className="text-[10px] text-cyan-600 dark:text-cyan-400 font-mono font-medium">
+                        Eco RAW: {telemetry.raw_dist_cm || 110.0} cm
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/60 rounded-xl space-y-1.5 text-xs">
-                    <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                      <span className="text-slate-500 dark:text-slate-400">Área Hidráulica Mojada:</span>
-                      <span className="font-mono font-semibold">{telemetry.area_m2} m²</span>
+                  <div className="p-3 bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/60 rounded-xl space-y-2 text-xs">
+                    <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                      <span className="flex items-center space-x-1.5">
+                        <Activity className="w-3.5 h-3.5 text-cyan-500" />
+                        <span>Dinámica Hidráulica Fluvial</span>
+                      </span>
+                      <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Régimen Subcrítico</span>
                     </div>
-                    <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                      <span className="text-slate-500 dark:text-slate-400">Ancho Superficial:</span>
-                      <span className="font-mono font-semibold">{telemetry.ancho_m} m</span>
+
+                    <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px] font-mono">
+                      <div className="p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded border border-slate-200 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 font-sans block text-[10px]">Sensor Hall RAW:</span>
+                        <span className="font-bold text-cyan-600 dark:text-cyan-300">{telemetry.rpm_hall} RPM</span>
+                        <span className="text-[10px] text-slate-400 font-sans block">{telemetry.hall_frecuencia_hz || 13.0} Hz ({telemetry.hall_pulsos || 130} pulsos)</span>
+                      </div>
+                      <div className="p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded border border-slate-200 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 font-sans block text-[10px]">Velocidad Corriente V:</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">{telemetry.velocidad_ms} m/s</span>
+                        <span className="text-[10px] text-slate-400 font-sans block">Área: {telemetry.area_m2} m²</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-slate-700 dark:text-slate-300">
-                      <span className="text-slate-500 dark:text-slate-400">Arquitectura de Estación:</span>
-                      <span className="font-mono font-semibold">Doble Tina Rompeolas</span>
+
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 space-y-1.5 text-[11px]">
+                      <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                        <span className="text-slate-500 dark:text-slate-400">Número de Froude (Fr):</span>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{telemetry.froude} (Tranquilo &lt; 1.0)</span>
+                      </div>
+                      <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                        <span className="text-slate-500 dark:text-slate-400">Coeficiente Manning (n):</span>
+                        <span className="font-mono font-semibold text-cyan-600 dark:text-cyan-400">{telemetry.manning_n} (Lecho aluvial natural)</span>
+                      </div>
+                      <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                        <span className="text-slate-500 dark:text-slate-400">Ancho Superficial:</span>
+                        <span className="font-mono font-semibold">{telemetry.ancho_m} m</span>
+                      </div>
                     </div>
                   </div>
 
@@ -3365,48 +3536,54 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
               {/* Sonda pH */}
               <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-slate-900 dark:text-slate-200">Sonda pH (E-201C)</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Cámara sumergida • Flujo continuo</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-200">Sonda pH (E-201C / PH-4502C)</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    Voltaje RAW: <span className="text-cyan-600 dark:text-cyan-300 font-bold">{telemetry.raw_v_ph != null ? `${telemetry.raw_v_ph} V` : '2.490 V'}</span> (Offset 2.50V)
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">{telemetry.ph} pH</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Apta Riego</div>
-                </div>
-              </div>
-
-              {/* Turbidez TS-300 */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-slate-900 dark:text-slate-200">Turbidez (TS-300)</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Cámara óptica reflectométrica</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono font-bold text-sm text-amber-600 dark:text-amber-300">{telemetry.turbidez_ntu} NTU</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Transparente</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Apta Riego (Valle)</div>
                 </div>
               </div>
 
               {/* Conductividad & TDS */}
               <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-slate-900 dark:text-slate-200">Conductividad & TDS</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Salinidad agronómica</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-200">Sensor TDS v1 (Titanio)</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    Voltaje RAW: <span className="text-cyan-600 dark:text-cyan-300 font-bold">{telemetry.raw_v_tds != null ? `${telemetry.raw_v_tds} V` : '0.580 V'}</span> (Comp. 25°C)
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="font-mono font-bold text-sm text-cyan-600 dark:text-cyan-300">{telemetry.tds_us} µS/cm</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Baja salinidad</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{((telemetry.tds_us || 487) * 0.5).toFixed(0)} ppm • Óptima</div>
                 </div>
               </div>
 
-              {/* Temperatura */}
+              {/* Turbidez TS-300B */}
               <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-slate-900 dark:text-slate-200">Temperatura de Agua</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Termistor blindado</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-200">Turbidez Óptica (TS-300B)</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    Voltaje RAW: <span className="text-cyan-600 dark:text-cyan-300 font-bold">{telemetry.raw_v_turb != null ? `${telemetry.raw_v_turb} V` : '4.050 V'}</span> (Divisor 1.5x)
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono font-bold text-sm text-amber-600 dark:text-amber-300">{telemetry.turbidez_ntu} NTU</div>
+                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400">Translúcida</div>
+                </div>
+              </div>
+
+              {/* Temperatura DS18B20 */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-200">Temperatura Agua (DS18B20)</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Sonda impermeable 1-Wire</div>
                 </div>
                 <div className="text-right">
                   <div className="font-mono font-bold text-sm text-slate-900 dark:text-slate-200">{telemetry.temp_c} °C</div>
-                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400">Estable</div>
+                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400">Calibrado</div>
                 </div>
               </div>
 
@@ -3437,15 +3614,27 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
                 </>
               )}
 
-              {/* Batería y Radioenlace */}
+              {/* Batería 12V Industrial */}
               <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-slate-900 dark:text-slate-200">Alimentación Solar / Batería</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">LiFePO4 + Panel 50W</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-200">Batería Solar Estación (12V)</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Banco Ciclo Profundo + Panel 50W</div>
                 </div>
                 <div className="text-right">
                   <div className="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">{telemetry.bateria_v} V</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">{telemetry.bateria_pct}% Carga</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{telemetry.bateria_pct}% Carga (11.8V - 14.4V)</div>
+                </div>
+              </div>
+
+              {/* Enlace Celular IoT (SIM800L GPRS Movistar) */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-200">Enlace Celular SIM800L GPRS</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Movistar Perú • Banda 2G 850/1900 MHz</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">CSQ {telemetry.signal_rssi || 26}/31</div>
+                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400">Excelente Cobertura</div>
                 </div>
               </div>
 
@@ -3483,8 +3672,9 @@ export default function ThreeDigitalTwin3D({ onNavigateWhatIf, onNavigateMainten
 
               <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
                 <div>• Nodo seleccionado: <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{selectedNodeId}</span></div>
-                <div>• Frecuencia de muestreo: <span className="font-mono text-cyan-600 dark:text-cyan-400">1.0 Hz en tiempo real</span></div>
-                <div>• Protocolo de enlace: <span className="font-mono text-emerald-600 dark:text-emerald-400">ESP32 / LoRaWAN / 4G LTE</span></div>
+                <div>• Frecuencia de telemetría: <span className="font-mono text-cyan-600 dark:text-cyan-400">1.0 Hz en tiempo real</span></div>
+                <div>• Protocolo de enlace: <span className="font-mono text-emerald-600 dark:text-emerald-400">ESP32 / SIM800L GPRS 2G (Movistar Perú)</span></div>
+                <div>• Sistema de Energía: <span className="font-mono text-emerald-600 dark:text-emerald-400">Solar Industrial 12V ({telemetry.bateria_v}V)</span></div>
               </div>
             </div>
           )}

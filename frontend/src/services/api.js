@@ -137,6 +137,11 @@ export const predictionsApi = {
   simulateAgroWhatIf: (data) => api.post('/predictions/agro/what-if', data),
   simulateWaterQualityStress: (data) => api.post('/predictions/agro/stress-simulation', data),
   checkPlantingIntentionsFeasibility: (data) => api.post('/predictions/agro/intentions-feasibility', data),
+  getAIModels: () => api.get('/predictions/models'),
+  getAnomaliesHistory: (params) => api.get('/predictions/anomalies/history', { params }),
+  getBenchmarksSql: (departamento = 'LIMA') => api.get(`/predictions/agro/benchmarks/${departamento}`),
+  getRiskProfilesSql: (departamento = 'LIMA') => api.get(`/predictions/agro/risk-profiles/${departamento}`),
+  getPlantingIntentionsSql: (departamento = 'LIMA') => api.get(`/predictions/agro/planting-intentions/${departamento}`),
 };
 
 export const irrigationApi = {

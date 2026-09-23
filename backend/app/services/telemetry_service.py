@@ -87,7 +87,8 @@ class TelemetryService:
             raw_v_turb=telemetry_in.raw_v_turb,
             raw_dist_cm=telemetry_in.raw_dist_cm,
             temp_c=telemetry_in.temp_c,
-            calibracion=calibracion
+            calibracion=calibracion,
+            hall_rpm=telemetry_in.hall_rpm
         )
 
         # 6. Guardar MedicionProcesada
@@ -100,13 +101,18 @@ class TelemetryService:
             ec_us_cm=proc_data["ec_us_cm"],
             turbidez_ntu=proc_data["turbidez_ntu"],
             temp_agua_c=proc_data["temp_agua_c"],
+            oxigeno_disuelto_mgl=proc_data.get("oxigeno_disuelto_mgl"),
+            saturacion_oxigeno_pct=proc_data.get("saturacion_oxigeno_pct"),
             tirante_agua_cm=proc_data["tirante_agua_cm"],
+            velocidad_agua_ms=proc_data.get("velocidad_agua_ms", 0.0),
+            area_hidraulica_m2=proc_data.get("area_hidraulica_m2", 0.0),
             caudal_m3s=proc_data["caudal_m3s"],
             caudal_ls=proc_data["caudal_ls"],
             wqi_score=proc_data["wqi_score"],
             wqi_categoria=proc_data["wqi_categoria"],
             estado_salinidad=proc_data["estado_salinidad"],
-            estado_ph=proc_data["estado_ph"]
+            estado_ph=proc_data["estado_ph"],
+            aptitud_piscicola=proc_data.get("aptitud_piscicola", "NO_EVALUADO")
         )
         db.add(medicion_proc)
         db.flush()

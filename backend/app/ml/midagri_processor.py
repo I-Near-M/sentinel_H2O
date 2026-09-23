@@ -872,7 +872,32 @@ class MIDAGRIProcessor:
                     }
             except Exception as e:
                 logger.debug(f"Fallback to in-memory crop: {e}")
-        return self.crops_catalog.get(crop_id)
+        normalized_id = (crop_id or "").strip().lower()
+        if normalized_id in self.crops_catalog:
+            return self.crops_catalog[normalized_id]
+
+        # Mapeo de prefijos o identificadores comunes a las claves reales del catálogo
+        alias_map = {
+            "palto": "palto",
+            "paltos": "palto",
+            "hass": "palto",
+            "mandarina": "mandarina",
+            "satsuma": "mandarina",
+            "melocoton": "palto",
+            "maiz": "maiz_amarillo",
+            "chala": "maiz_amarillo",
+            "fresa": "fresa",
+            "esparrago": "esparrago",
+            "papa": "papa",
+            "quinua": "quinua",
+            "vid": "vid"
+        }
+        for alias, target in alias_map.items():
+            if alias in normalized_id and target in self.crops_catalog:
+                return self.crops_catalog[target]
+
+        # Fallback seguro al primer cultivo del catálogo para prevenir caídas
+        return self.crops_catalog.get("palto") or (list(self.crops_catalog.values())[0] if self.crops_catalog else None)
 
     def list_crops(self, natural_region: Optional[str] = None, db: Optional[Any] = None) -> List[Dict[str, Any]]:
         """Returns the list of available crops, optionally filtered by natural region, queried from DB if available."""

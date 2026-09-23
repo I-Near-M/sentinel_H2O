@@ -593,17 +593,28 @@ def seed_mvp_demo_nodes(db: Session):
     # Primero asegurar catálogos base
     seed_base_catalogs(db)
 
-    if db.query(Nodo).first():
+    if db.query(Nodo).filter(Nodo.id_nodo == "NODO-01-CABECERA").first():
         return
 
     logger.info("Sembrando entidades y los 3 nodos MVP de demostración para pruebas...")
 
     # Sembrar entidades de demo
+    tipo_gob = db.query(TipoEntidad).filter(
+        (TipoEntidad.codigo == "AUTORIDAD_NACIONAL") | (TipoEntidad.codigo == "GUBERNAMENTAL_NACIONAL")
+    ).first()
+    tipo_junta = db.query(TipoEntidad).filter(TipoEntidad.codigo == "JUNTA_USUARIOS").first()
+    tipo_comision = db.query(TipoEntidad).filter(TipoEntidad.codigo == "COMISION_REGANTES").first()
+    first_tipo = db.query(TipoEntidad).first()
+
+    id_t_gob = tipo_gob.id_tipo_entidad if tipo_gob else (first_tipo.id_tipo_entidad if first_tipo else "TE-01-GOB-NACIONAL")
+    id_t_junta = tipo_junta.id_tipo_entidad if tipo_junta else (first_tipo.id_tipo_entidad if first_tipo else "TE-02-JUNTA-USUARIOS")
+    id_t_comision = tipo_comision.id_tipo_entidad if tipo_comision else (first_tipo.id_tipo_entidad if first_tipo else "TE-03-COMISION-REGANTES")
+
     e1 = db.query(Entidad).filter(Entidad.id_entidad == "ENT-01-ANA").first()
     if not e1:
         e1 = Entidad(
             id_entidad="ENT-01-ANA",
-            id_tipo_entidad="TE-01-GOB-NACIONAL",
+            id_tipo_entidad=id_t_gob,
             nombre_entidad="Autoridad Nacional del Agua (ANA)",
             ruc="20501234567",
             telefono_contacto="+51965432109",
@@ -616,7 +627,7 @@ def seed_mvp_demo_nodes(db: Session):
     if not e2:
         e2 = Entidad(
             id_entidad="ENT-02-JUNTA",
-            id_tipo_entidad="TE-02-JUNTA-USUARIOS",
+            id_tipo_entidad=id_t_junta,
             nombre_entidad="Junta de Usuarios del Sector Hidráulico Central",
             ruc="20489123456",
             telefono_contacto="+51976543210",
@@ -629,7 +640,7 @@ def seed_mvp_demo_nodes(db: Session):
     if not e3:
         e3 = Entidad(
             id_entidad="ENT-03-COMISION",
-            id_tipo_entidad="TE-03-COMISION-REGANTES",
+            id_tipo_entidad=id_t_comision,
             nombre_entidad="Comisión de Regantes Huayopampa",
             ruc="20345678901",
             telefono_contacto="+51987654321",
@@ -841,11 +852,19 @@ def seed_mvp_demo_nodes(db: Session):
         bateria_min_alerta_v=11.50
     )
     db.add_all([u1, u2, u3])
+    db.commit()
 
     # Destinatarios
+    uso_agr = db.query(TipoUsoAgua).filter((TipoUsoAgua.codigo == "AGRICOLA") | (TipoUsoAgua.codigo == "USO_AGRARIO")).first()
+    uso_eco = db.query(TipoUsoAgua).filter((TipoUsoAgua.codigo == "ECOLOGICO_CONSERVACION") | (TipoUsoAgua.codigo == "USO_ECOLOGICO")).first()
+    first_uso = db.query(TipoUsoAgua).first()
+
+    id_u_agr = uso_agr.id_tipo_uso if uso_agr else (first_uso.id_tipo_uso if first_uso else "USO-01-AGRARIO")
+    id_u_eco = uso_eco.id_tipo_uso if uso_eco else (first_uso.id_tipo_uso if first_uso else "USO-06-ECOLOGICO")
+
     d1 = DestinatarioAlerta(
         id_entidad="ENT-03-COMISION",
-        id_tipo_uso="USO-01-AGRARIO",
+        id_tipo_uso=id_u_agr,
         id_nodo_suscrito="NODO-03-PARCELA",
         nombres="Juan Carlos",
         apellidos="Mendoza Quispe",
@@ -861,7 +880,7 @@ def seed_mvp_demo_nodes(db: Session):
     )
     d2 = DestinatarioAlerta(
         id_entidad="ENT-02-JUNTA",
-        id_tipo_uso="USO-01-AGRARIO",
+        id_tipo_uso=id_u_agr,
         id_nodo_suscrito="NODO-02-CONDUCCION",
         nombres="Mario Alberto",
         apellidos="Robles",
@@ -877,7 +896,7 @@ def seed_mvp_demo_nodes(db: Session):
     )
     d3 = DestinatarioAlerta(
         id_entidad="ENT-01-ANA",
-        id_tipo_uso="USO-06-ECOLOGICO",
+        id_tipo_uso=id_u_eco,
         id_nodo_suscrito="NODO-01-CABECERA",
         nombres="Patricia",
         apellidos="Villanueva",
