@@ -1,0 +1,45 @@
+﻿{
+  "projectId": "4562769585422360732",
+  "projectTitle": "Sentinel Monitoreo Hidrico",
+  "designSystems": {
+    "dark": "assets/15363274829735251958",
+    "light": "assets/11204517126195807758"
+  },
+  "screens": [
+    {
+      "id": "0cfb21912df746b5bcbd5329e1e4d73c",
+      "title": "Sentinel-H2O - Sala de Situación y Despacho Operativo",
+      "mode": "DARK",
+      "category": "Sala de Situación",
+      "screenshotUrl": "https://lh3.googleusercontent.com/aida/AEtjO1VS0xE25napfMFz2t5tkhF1iftbBu3wCeXLG4HAAu6bUSJ9SGi-Jd_kdHh1guiD9izCjTKIaibtb0SRfIx3PV5Y0OlFcBPD7LyyJ0qGl6s-JM2GD6OI3lwgpSUlyaZazKosjnPfsYi4fCFfhh4Zf1PSSLRyMj9TNmmz-ioiI8qjynVwbD9vn0NH19mjKbPC5L_U6QAKjt8siNep2CUFfGofdlQgD_MSbqGm2YG9CU677RVTknVa516rnWY"
+    },
+    {
+      "id": "0ac687f6fd2c42568b180e1b02a811ea",
+      "title": "Sentinel-H2O - Gemelo Digital 3D (Nodo ST-03 Saume)",
+      "mode": "DARK",
+      "category": "Gemelo Digital 3D",
+      "screenshotUrl": "https://lh3.googleusercontent.com/aida/AEtjO1VtPzFZQ6WUfvWwdy3iLWJ6JVqC-yzB636LKxxdBEYWvqbvcoucKRBtyLRhfQBhRJnNK9rrvfYhBxgfX_z8yV4dJOLvPYdM0Se7w9BVDtDZp-kl5DA_gTri49UdksfhEKk7cNDYliluBRA5Um3yrAYV_bdBTOZnc16jfDMs_U4HBTh_rtfEIvNIfAtWmZJOXzTsWSb3Ihn3Dtj92rfBANtOO8tyAdgpNpSp-x2j_bbx3-NncdFtlnx1XeI"
+    },
+    {
+      "id": "ce005c0890b94f71a81c2a9832e9eb2c",
+      "title": "Sentinel-H2O - Simulador What-If y Sandbox Hidráulico",
+      "mode": "DARK",
+      "category": "Simulador What-If",
+      "screenshotUrl": "https://lh3.googleusercontent.com/aida/AEtjO1VZ3DN-GdkduSYdv3fu24iVZ0dfxfQF-9Cj0yoih1t1EKHhUicb4hSzYckq11hQLaF6cKpvnkASWvONqYhryPoqG8xrQSqMm0YEGHq7bTOtOwMm3dXMaeIFyxp0G6_sV2YvSHTEVy62oCJBWl-I1KYJgd1DxEi-fYajqgNgfG5rgHFrpy0Oep-4FvCYVNzn40mDZu81wPrvi2JTKgU35mA1Ei5BqXgMLLwkRjSwvaLEzPx5A28omuljcqY"
+    },
+    {
+      "id": "0072934748a14808a7ed9030ee099570",
+      "title": "Sentinel-H2O - Gobernanza y Administración Central",
+      "mode": "DARK",
+      "category": "Gobernanza & Control",
+      "screenshotUrl": "https://lh3.googleusercontent.com/aida/AEtjO1X6WrRfMzHg5u-LibwIRYjLrAbSs9c3SvcX2wt4BbPH_a26-oPBDRMmJRGsUOZt9TD7s2n4ueHdvWjXAWvCgE-yB55EhQsk0Yzx1NBy6yDM7P8bZ3ECZwDH0LXSbvFn5AYYJkK_ufOOm-XYd-bIAh_Gu3FKK9CKOKv96tu2-wYedMUvNhMehceHZQr_pk49VG1JUATDx_9DAL_CUlTrPb89zNNMIW964f4zslG8LXB4pTs2iJzXB7jwPzM"
+    },
+    {
+      "id": "ce52e71151ba46b4a38c9806ec69889b",
+      "title": "Sentinel-H2O - Sala de Situación y Despacho Operativo (Modo Claro)",
+      "mode": "LIGHT",
+      "category": "Sala de Situación",
+      "screenshotUrl": "https://lh3.googleusercontent.com/aida/AEtjO1U-lYGo33fCSM0y-5G2MuCtuwAmHCE1O71dpcEgagFU-qPt_PkakvdChEhVrDBu7MaS6SNN9-O-U1IJ1qhUejYqkHFXCARDq_9h95EpLPgqH-NaS8QmBUZWLaKxx3I57m4WBEd88urLmpsulMlM-dyArlEpYt_rsYo6M_CzI_8ysO4-JagZMIo4U7P5yfEAOkLpN3jDELtoGmIxHY21WAagdDFnMfyFB6Uta0KcmKyQN8HUsnqHZQsFbg"
+    }
+  ]
+}
