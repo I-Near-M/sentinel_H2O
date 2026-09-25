@@ -62,6 +62,19 @@ class GRUTimeSeriesPredictor:
         # Efecto de lluvia en escorrentía según modelo hidrológico
         impulso_lluvia = (rain_1h * 0.15) + (rain_3h * 0.05)
 
+        # Estimación de lead time hidrodinámico (horas de arribo a valle / zona de riego)
+        calc_lead_time = 0.0
+        try:
+            from backend.app.ml.lead_time import HydraulicLeadTimeEstimator
+            lead_res = HydraulicLeadTimeEstimator.estimate_travel_time(
+                origen_nodo_id=id_nodo,
+                caudal_origen_m3s=base_caudal,
+                db=db
+            )
+            calc_lead_time = round(lead_res.get("lead_time_frente_horas", 0.0), 1)
+        except Exception:
+            calc_lead_time = 0.0
+
         for h in range(1, 25):
             future_time = now + datetime.timedelta(hours=h)
             target_hour = future_time.hour
@@ -119,7 +132,8 @@ class GRUTimeSeriesPredictor:
                 "tds_predicho_ppm": pred_tds,
                 "temp_predicha_c": pred_temp,
                 "turbidez_predicha_ntu": pred_turb,
-                "riesgo_estres_hidrico": riesgo
+                "riesgo_estres_hidrico": riesgo,
+                "lead_time_horas": calc_lead_time
             }
             predictions.append(pred_item)
 
@@ -134,6 +148,7 @@ class GRUTimeSeriesPredictor:
                     ph_predicho=pred_ph,
                     ec_predicho_us_cm=pred_ec,
                     riesgo_estres_hidrico=riesgo,
+                    lead_time_horas_llegada_pluma=calc_lead_time,
                     modelo_version="GRU-Shallow-v1.0"
                 )
                 db_records.append(record)

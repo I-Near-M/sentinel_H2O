@@ -4,13 +4,15 @@ from sqlalchemy.orm import Session
 from backend.app.database.session import SessionLocal
 from backend.app.database.models import Nodo
 from backend.app.services.weather_client import WeatherClient
+from backend.app.ml.gru_predictor import GRUTimeSeriesPredictor
 
 logger = logging.getLogger(__name__)
 
 class WeatherSyncWorker:
     """
     Servicio en segundo plano que sincroniza periódicamente la información
-    meteorológica de OpenWeatherMap para todos los nodos activos de la cuenca.
+    meteorológica de OpenWeatherMap y actualiza las predicciones neuronales GRU
+    a 24 horas para todos los nodos activos de la cuenca.
     """
     def __init__(self, interval_seconds: int = 1800): # 30 minutos por defecto
         self.interval_seconds = interval_seconds
@@ -33,8 +35,8 @@ class WeatherSyncWorker:
         logger.info("WeatherSyncWorker detenido.")
 
     async def _run_loop(self):
-        # Esperar 10 segundos antes del primer sync para permitir arranque completo del sistema
-        await asyncio.sleep(10)
+        # Esperar 5 segundos antes del primer sync para permitir arranque completo del sistema
+        await asyncio.sleep(5)
         while self._running:
             try:
                 await self.sync_all_nodes()
@@ -58,14 +60,20 @@ class WeatherSyncWorker:
                 logger.info("WeatherSync: No hay estaciones/nodos registrados para sincronizar clima.")
                 return
 
-            logger.info(f"WeatherSync: Sincronizando clima para {len(nodos)} estación(es)...")
+            logger.info(f"WeatherSync: Sincronizando clima y pronósticos IA para {len(nodos)} estación(es)...")
             for nodo in nodos:
                 try:
                     await WeatherClient.sync_weather_for_node(db=db, id_nodo=nodo.id_nodo)
-                    # Pequeña pausa de 1s para no saturar rate limit
-                    await asyncio.sleep(1)
                 except Exception as node_err:
-                    logger.warning(f"WeatherSync error en nodo {nodo.id_nodo}: {node_err}")
+                    logger.warning(f"WeatherSync error de clima en nodo {nodo.id_nodo}: {node_err}")
+
+                try:
+                    GRUTimeSeriesPredictor.forecast_24h(db=db, id_nodo=nodo.id_nodo, persist_in_db=True)
+                except Exception as pred_err:
+                    logger.warning(f"WeatherSync error de pronóstico IA en nodo {nodo.id_nodo}: {pred_err}")
+
+                # Pequeña pausa de 1s para no saturar rate limit
+                await asyncio.sleep(1)
         finally:
             db.close()
 

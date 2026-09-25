@@ -134,4 +134,17 @@ class TelemetryService:
             except Exception as e:
                 logger.warning(f"Error despachando notificación: {e}")
 
+        # 9. Disparar pronóstico 24h si el nodo no tiene predicciones recientes (< 2 horas)
+        try:
+            from backend.app.ml.gru_predictor import GRUTimeSeriesPredictor
+            from backend.app.database.models import PrediccionIA
+            pred_count = db.query(PrediccionIA).filter(
+                PrediccionIA.id_nodo == telemetry_in.node_id,
+                PrediccionIA.fecha_emision >= now_utc - datetime.timedelta(hours=2)
+            ).count()
+            if pred_count == 0:
+                GRUTimeSeriesPredictor.forecast_24h(db=db, id_nodo=telemetry_in.node_id, persist_in_db=True)
+        except Exception as pred_err:
+            logger.warning(f"Error generando pronóstico inmediato para {telemetry_in.node_id}: {pred_err}")
+
         return medicion_proc
