@@ -132,16 +132,18 @@ def list_nodes_with_status(db: Session = Depends(get_db)):
             MedicionProcesada.id_nodo == n.id_nodo
         ).order_by(MedicionProcesada.timestamp.desc()).first()
 
-        ultima_conexion = ultima_medicion.timestamp if ultima_medicion else None
+        ultima_conexion = None
+        if ultima_medicion and ultima_medicion.timestamp:
+            ts = ultima_medicion.timestamp
+            ultima_conexion = ts.replace(tzinfo=datetime.timezone.utc) if ts.tzinfo is None else ts
+
         bateria = ultima_medicion.raw.battery_v if (ultima_medicion and ultima_medicion.raw) else None
         rssi = ultima_medicion.raw.signal_rssi if (ultima_medicion and ultima_medicion.raw) else None
 
         # Determinar estado operativo (ONLINE si transmitió en los últimos 45 min)
         estado_op = "OFFLINE"
         if ultima_conexion:
-            # Compatibilidad naive/aware
-            t_conn = ultima_conexion.replace(tzinfo=datetime.timezone.utc) if ultima_conexion.tzinfo is None else ultima_conexion
-            diff_min = (now_utc - t_conn).total_seconds() / 60.0
+            diff_min = (now_utc - ultima_conexion).total_seconds() / 60.0
             if diff_min <= (n.intervalo_envio_min * 2.5):
                 estado_op = "ONLINE"
             elif diff_min <= 120:

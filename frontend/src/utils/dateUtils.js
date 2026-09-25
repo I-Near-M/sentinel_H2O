@@ -25,15 +25,18 @@ export const formatDateTime = (ts) => {
   });
 };
 
-export const formatTime = (ts) => {
+export const formatTime = (ts, showSeconds = true) => {
   const date = parseUtcDate(ts);
   if (!date || isNaN(date.getTime())) return '-';
-  return date.toLocaleTimeString('es-PE', {
+  const opts = {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
     hour12: true,
-  });
+  };
+  if (showSeconds) {
+    opts.second = '2-digit';
+  }
+  return date.toLocaleTimeString('es-PE', opts);
 };
 
 export const formatDate = (ts) => {

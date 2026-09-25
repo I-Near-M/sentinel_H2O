@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { nodesApi } from '../services/api';
+import { formatTime } from '../utils/dateUtils';
 
 export default function NodeManagement({ setActiveTab, grafanaUrl }) {
   const [nodes, setNodes] = useState([]);
@@ -275,7 +276,7 @@ export default function NodeManagement({ setActiveTab, grafanaUrl }) {
                   <div className="flex items-center space-x-1" title="Última transmisión recibida">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                      {node.ultima_conexion ? new Date(node.ultima_conexion).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Nunca'}
+                      {node.ultima_conexion ? formatTime(node.ultima_conexion, false) : 'Nunca'}
                     </span>
                   </div>
                 </div>
