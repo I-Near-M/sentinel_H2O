@@ -52,24 +52,44 @@
           "mappings": [
             {
               "options": {
-                "BAJO": {
+                "0": {
                   "color": "green",
                   "index": 0,
                   "text": "BAJO (SEGURO)"
                 },
-                "MODERADO": {
+                "1": {
                   "color": "yellow",
                   "index": 1,
                   "text": "MODERADO"
                 },
-                "ALTO": {
+                "2": {
                   "color": "orange",
                   "index": 2,
                   "text": "ALTO (PRECAUCIÓN)"
                 },
-                "CRITICO": {
+                "3": {
                   "color": "red",
                   "index": 3,
+                  "text": "CRÍTICO (PELIGRO)"
+                },
+                "BAJO": {
+                  "color": "green",
+                  "index": 4,
+                  "text": "BAJO (SEGURO)"
+                },
+                "MODERADO": {
+                  "color": "yellow",
+                  "index": 5,
+                  "text": "MODERADO"
+                },
+                "ALTO": {
+                  "color": "orange",
+                  "index": 6,
+                  "text": "ALTO (PRECAUCIÓN)"
+                },
+                "CRITICO": {
+                  "color": "red",
+                  "index": 7,
                   "text": "CRÍTICO (PELIGRO)"
                 }
               },
@@ -98,7 +118,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE((SELECT CASE WHEN MAX(CASE WHEN riesgo_estres_hidrico = 'CRITICO' THEN 4 WHEN riesgo_estres_hidrico = 'ALTO' THEN 3 WHEN riesgo_estres_hidrico = 'MODERADO' THEN 2 ELSE 1 END) = 4 THEN 'CRITICO' WHEN MAX(CASE WHEN riesgo_estres_hidrico = 'CRITICO' THEN 4 WHEN riesgo_estres_hidrico = 'ALTO' THEN 3 WHEN riesgo_estres_hidrico = 'MODERADO' THEN 2 ELSE 1 END) = 3 THEN 'ALTO' WHEN MAX(CASE WHEN riesgo_estres_hidrico = 'CRITICO' THEN 4 WHEN riesgo_estres_hidrico = 'ALTO' THEN 3 WHEN riesgo_estres_hidrico = 'MODERADO' THEN 2 ELSE 1 END) = 2 THEN 'MODERADO' ELSE 'BAJO' END FROM predicciones_ia WHERE fecha_emision >= NOW() - INTERVAL 12 HOUR), 'BAJO') AS riesgo_global;",
+          "rawSql": "SELECT COALESCE((SELECT MAX(CASE p.riesgo_estres_hidrico WHEN 'CRITICO' THEN 3 WHEN 'ALTO' THEN 2 WHEN 'MODERADO' THEN 1 ELSE 0 END) FROM predicciones_ia p INNER JOIN (SELECT id_nodo, MAX(id_prediccion) AS max_id FROM predicciones_ia GROUP BY id_nodo) latest ON p.id_prediccion = latest.max_id), 0) AS riesgo_global;",
           "refId": "A"
         }
       ],
@@ -152,7 +172,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE((SELECT ROUND(SUM(sub.avg_caudal), 2) FROM (SELECT id_nodo, AVG(caudal_predicho_m3s) AS avg_caudal FROM predicciones_ia WHERE fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia) GROUP BY id_nodo) sub), 0.0) AS caudal_total_cuenca;",
+          "rawSql": "SELECT COALESCE((SELECT ROUND(SUM(sub.avg_caudal), 2) FROM (SELECT p.id_nodo, AVG(p.caudal_predicho_m3s) AS avg_caudal FROM predicciones_ia p INNER JOIN (SELECT id_nodo, MAX(fecha_emision) AS max_fem FROM predicciones_ia GROUP BY id_nodo) latest ON p.id_nodo = latest.id_nodo AND p.fecha_emision = latest.max_fem GROUP BY p.id_nodo) sub), 0.0) AS caudal_total_cuenca;",
           "refId": "A"
         }
       ],
@@ -206,7 +226,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE((SELECT ROUND(AVG(wqi_predicho), 1) FROM predicciones_ia WHERE fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia)), 75.0) AS wqi_medio_cuenca;",
+          "rawSql": "SELECT COALESCE((SELECT ROUND(AVG(p.wqi_predicho), 1) FROM predicciones_ia p INNER JOIN (SELECT id_nodo, MAX(fecha_emision) AS max_fem FROM predicciones_ia GROUP BY id_nodo) latest ON p.id_nodo = latest.id_nodo AND p.fecha_emision = latest.max_fem), 75.0) AS wqi_medio_cuenca;",
           "refId": "A"
         }
       ],
@@ -225,11 +245,22 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "red",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
         }
       },
       "gridPos": {
@@ -251,12 +282,12 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT CONCAT(COALESCE((SELECT COUNT(DISTINCT id_nodo) FROM predicciones_ia WHERE riesgo_estres_hidrico = 'BAJO' AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia)), 0), ' / ', COALESCE((SELECT COUNT(*) FROM nodos WHERE activo = 1), 0)) AS estaciones_seguras;",
+          "rawSql": "SELECT COALESCE(ROUND((SELECT COUNT(DISTINCT p.id_nodo) FROM predicciones_ia p INNER JOIN (SELECT id_nodo, MAX(id_prediccion) AS max_id FROM predicciones_ia GROUP BY id_nodo) latest ON p.id_prediccion = latest.max_id WHERE p.riesgo_estres_hidrico = 'BAJO') * 100.0 / NULLIF((SELECT COUNT(*) FROM nodos WHERE activo = 1), 0), 0), 100) AS pct_estaciones_seguras;",
           "refId": "A"
         }
       ],
-      "title": "Estaciones en Condición Segura",
-      "description": "Proporción de estaciones con riesgo BAJO frente al total activo",
+      "title": "Índice de Seguridad en Red (24h)",
+      "description": "Porcentaje de estaciones activas con nivel de riesgo BAJO en las próximas 24 horas",
       "type": "stat"
     },
     {
@@ -362,7 +393,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT n.nombre AS Estacion, n.sector_cuenca AS Sector, n.cota_msnm AS Cota_msnm, COALESCE(ROUND(p_avg.avg_caudal, 2), 0.0) AS Caudal_Medio_24h, COALESCE(ROUND(p_avg.avg_wqi, 1), 75.0) AS WQI_Medio_24h, COALESCE(p_latest.riesgo_estres_hidrico, 'BAJO') AS Riesgo_24h FROM nodos n LEFT JOIN (SELECT id_nodo, AVG(caudal_predicho_m3s) AS avg_caudal, AVG(wqi_predicho) AS avg_wqi FROM predicciones_ia WHERE fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia) GROUP BY id_nodo) p_avg ON n.id_nodo = p_avg.id_nodo LEFT JOIN (SELECT p1.id_nodo, p1.riesgo_estres_hidrico FROM predicciones_ia p1 INNER JOIN (SELECT id_nodo, MAX(id_prediccion) AS max_id FROM predicciones_ia GROUP BY id_nodo) p2 ON p1.id_prediccion = p2.max_id) p_latest ON n.id_nodo = p_latest.id_nodo WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
+          "rawSql": "SELECT n.nombre AS Estacion, n.sector_cuenca AS Sector, n.cota_msnm AS Cota_msnm, COALESCE(ROUND(p_avg.avg_caudal, 2), 0.0) AS Caudal_Medio_24h, COALESCE(ROUND(p_avg.avg_wqi, 1), 75.0) AS WQI_Medio_24h, COALESCE(p_latest.riesgo_estres_hidrico, 'BAJO') AS Riesgo_24h FROM nodos n LEFT JOIN (SELECT p.id_nodo, AVG(p.caudal_predicho_m3s) AS avg_caudal, AVG(p.wqi_predicho) AS avg_wqi FROM predicciones_ia p INNER JOIN (SELECT id_nodo, MAX(fecha_emision) AS max_fem FROM predicciones_ia GROUP BY id_nodo) latest ON p.id_nodo = latest.id_nodo AND p.fecha_emision = latest.max_fem GROUP BY p.id_nodo) p_avg ON n.id_nodo = p_avg.id_nodo LEFT JOIN (SELECT p1.id_nodo, p1.riesgo_estres_hidrico FROM predicciones_ia p1 INNER JOIN (SELECT id_nodo, MAX(id_prediccion) AS max_id FROM predicciones_ia GROUP BY id_nodo) p2 ON p1.id_prediccion = p2.max_id) p_latest ON n.id_nodo = p_latest.id_nodo WHERE n.activo = 1 ORDER BY n.cota_msnm DESC;",
           "refId": "A"
         }
       ],
@@ -413,24 +444,44 @@
           "mappings": [
             {
               "options": {
-                "BAJO": {
+                "0": {
                   "color": "green",
                   "index": 0,
                   "text": "BAJO (SEGURO)"
                 },
-                "MODERADO": {
+                "1": {
                   "color": "yellow",
                   "index": 1,
                   "text": "MODERADO"
                 },
-                "ALTO": {
+                "2": {
                   "color": "orange",
                   "index": 2,
                   "text": "ALTO (PRECAUCIÓN)"
                 },
-                "CRITICO": {
+                "3": {
                   "color": "red",
                   "index": 3,
+                  "text": "CRÍTICO (PELIGRO)"
+                },
+                "BAJO": {
+                  "color": "green",
+                  "index": 4,
+                  "text": "BAJO (SEGURO)"
+                },
+                "MODERADO": {
+                  "color": "yellow",
+                  "index": 5,
+                  "text": "MODERADO"
+                },
+                "ALTO": {
+                  "color": "orange",
+                  "index": 6,
+                  "text": "ALTO (PRECAUCIÓN)"
+                },
+                "CRITICO": {
+                  "color": "red",
+                  "index": 7,
                   "text": "CRÍTICO (PELIGRO)"
                 }
               },
@@ -459,7 +510,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE((SELECT riesgo_estres_hidrico FROM predicciones_ia WHERE id_nodo IN ($id_nodo) ORDER BY fecha_emision DESC, horizonte_horas ASC LIMIT 1), 'BAJO') AS nivel_riesgo;",
+          "rawSql": "SELECT COALESCE((SELECT CASE p.riesgo_estres_hidrico WHEN 'CRITICO' THEN 3 WHEN 'ALTO' THEN 2 WHEN 'MODERADO' THEN 1 ELSE 0 END FROM predicciones_ia p WHERE p.id_nodo IN ($id_nodo) ORDER BY p.fecha_emision DESC, p.horizonte_horas ASC LIMIT 1), 0) AS nivel_riesgo;",
           "refId": "A"
         }
       ],
@@ -512,7 +563,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE((SELECT AVG(caudal_predicho_m3s) FROM predicciones_ia WHERE id_nodo IN ($id_nodo) AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo IN ($id_nodo))), 0.0) AS caudal_medio_24h;",
+          "rawSql": "SELECT COALESCE((SELECT AVG(p.caudal_predicho_m3s) FROM predicciones_ia p INNER JOIN (SELECT id_nodo, MAX(fecha_emision) AS max_fem FROM predicciones_ia WHERE id_nodo IN ($id_nodo) GROUP BY id_nodo) latest ON p.id_nodo = latest.id_nodo AND p.fecha_emision = latest.max_fem WHERE p.id_nodo IN ($id_nodo)), 0.0) AS caudal_medio_24h;",
           "refId": "A"
         }
       ],
@@ -565,7 +616,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE((SELECT AVG(wqi_predicho) FROM predicciones_ia WHERE id_nodo IN ($id_nodo) AND fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo IN ($id_nodo))), 75.0) AS wqi_medio_24h;",
+          "rawSql": "SELECT COALESCE((SELECT AVG(p.wqi_predicho) FROM predicciones_ia p INNER JOIN (SELECT id_nodo, MAX(fecha_emision) AS max_fem FROM predicciones_ia WHERE id_nodo IN ($id_nodo) GROUP BY id_nodo) latest ON p.id_nodo = latest.id_nodo AND p.fecha_emision = latest.max_fem WHERE p.id_nodo IN ($id_nodo)), 75.0) AS wqi_medio_24h;",
           "refId": "A"
         }
       ],
@@ -618,7 +669,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT COALESCE((SELECT lead_time_horas_llegada_pluma FROM predicciones_ia WHERE id_nodo IN ($id_nodo) ORDER BY fecha_emision DESC LIMIT 1), 0.0) AS lead_time;",
+          "rawSql": "SELECT COALESCE((SELECT p.lead_time_horas_llegada_pluma FROM predicciones_ia p WHERE p.id_nodo IN ($id_nodo) ORDER BY p.fecha_emision DESC, p.horizonte_horas ASC LIMIT 1), 0.0) AS lead_time;",
           "refId": "A"
         }
       ],
@@ -666,7 +717,7 @@
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT p.fecha_proyectada AS time, p.caudal_predicho_m3s AS value, n.nombre AS metric FROM predicciones_ia p JOIN nodos n ON p.id_nodo = n.id_nodo WHERE p.id_nodo IN ($id_nodo) AND p.fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = p.id_nodo) ORDER BY p.fecha_proyectada ASC;",
+          "rawSql": "SELECT p.fecha_proyectada AS time, p.caudal_predicho_m3s AS value, n.nombre AS metric FROM predicciones_ia p JOIN nodos n ON p.id_nodo = n.id_nodo INNER JOIN (SELECT id_nodo, MAX(fecha_emision) AS max_fem FROM predicciones_ia WHERE id_nodo IN ($id_nodo) GROUP BY id_nodo) latest ON p.id_nodo = latest.id_nodo AND p.fecha_emision = latest.max_fem WHERE p.id_nodo IN ($id_nodo) ORDER BY p.fecha_proyectada ASC;",
           "refId": "A"
         }
       ],
@@ -704,7 +755,7 @@
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT p.fecha_proyectada AS time, p.wqi_predicho AS value, n.nombre AS metric FROM predicciones_ia p JOIN nodos n ON p.id_nodo = n.id_nodo WHERE p.id_nodo IN ($id_nodo) AND p.fecha_emision = (SELECT MAX(fecha_emision) FROM predicciones_ia WHERE id_nodo = p.id_nodo) ORDER BY p.fecha_proyectada ASC;",
+          "rawSql": "SELECT p.fecha_proyectada AS time, p.wqi_predicho AS value, n.nombre AS metric FROM predicciones_ia p JOIN nodos n ON p.id_nodo = n.id_nodo INNER JOIN (SELECT id_nodo, MAX(fecha_emision) AS max_fem FROM predicciones_ia WHERE id_nodo IN ($id_nodo) GROUP BY id_nodo) latest ON p.id_nodo = latest.id_nodo AND p.fecha_emision = latest.max_fem WHERE p.id_nodo IN ($id_nodo) ORDER BY p.fecha_proyectada ASC;",
           "refId": "A"
         }
       ],
@@ -804,5 +855,5 @@
   "timezone": "browser",
   "title": "03. Sentinel-H2O — Modelos Predictivos IA y Simulador What-If",
   "uid": "sentinel-03-ia-predicciones",
-  "version": 6
+  "version": 7
 }

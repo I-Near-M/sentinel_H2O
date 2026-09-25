@@ -9,7 +9,7 @@ class TelemetryIn(BaseModel):
     """
     node_id: str = Field(..., description="ID único del nodo emisor", json_schema_extra={"example": "NODO-03-PARCELA"})
     api_key: str = Field(..., description="API Key secreta del nodo", json_schema_extra={"example": "hash_key_parcela_secure_03"})
-    battery_v: float = Field(..., ge=0.0, le=20.0, description="Voltaje de la batería en Voltios", json_schema_extra={"example": 3.95})
+    battery_v: float = Field(..., ge=0.0, le=20.0, description="Voltaje de la batería en Voltios", json_schema_extra={"example": 12.50})
     signal_rssi: Optional[int] = Field(None, ge=0, le=31, description="Calidad de señal celular CSQ (0-31)", json_schema_extra={"example": 18})
     temp_c: float = Field(..., ge=-10.0, le=60.0, description="Temperatura del agua medida por DS18B20", json_schema_extra={"example": 18.5})
     raw_dist_cm: float = Field(..., ge=0.0, le=2000.0, description="Distancia al espejo de agua medida por JSN-SR04T (cm)", json_schema_extra={"example": 65.4})
