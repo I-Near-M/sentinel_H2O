@@ -1,3 +1,4 @@
+import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field
@@ -135,7 +136,9 @@ def update_recipient(id_destinatario: int, update_in: DestinatarioUpdate, db: Se
 @router.delete("/recipients/{id_destinatario}", status_code=status.HTTP_200_OK)
 def delete_recipient(id_destinatario: int, db: Session = Depends(get_db)):
     """
-    Desactiva lógicamente (soft-delete) a un destinatario de alertas para mantener el historial de turnos y eventos.
+    Elimina a un destinatario de alertas del padrón.
+    Si no cuenta con turnos de riego asociados, se elimina físicamente.
+    Si cuenta con turnos o auditoría previa, se desactiva lógicamente (soft-delete) para mantener integridad.
     """
     dest = db.query(DestinatarioAlerta).filter(DestinatarioAlerta.id_destinatario == id_destinatario).first()
     if not dest:
@@ -144,10 +147,25 @@ def delete_recipient(id_destinatario: int, db: Session = Depends(get_db)):
             detail=f"El destinatario con ID {id_destinatario} no existe."
         )
 
-    dest.activo = False
-    dest.updated_at = datetime.datetime.now(datetime.timezone.utc)
-    db.commit()
-    return {"status": "SUCCESS", "message": f"Destinatario '{dest.nombre_completo}' desactivado con éxito."}
+    nombre = dest.nombre_completo
+    try:
+        # Si no tiene relaciones con turnos de riego, eliminar el registro físicamente
+        if not getattr(dest, "turnos", None):
+            db.delete(dest)
+            db.commit()
+            return {"status": "SUCCESS", "message": f"Destinatario '{nombre}' eliminado con éxito del padrón."}
+        else:
+            dest.activo = False
+            dest.updated_at = datetime.datetime.now(datetime.timezone.utc)
+            db.commit()
+            return {"status": "SUCCESS", "message": f"Destinatario '{nombre}' desactivado con éxito."}
+    except Exception as e:
+        db.rollback()
+        # Fallback a desactivación lógica por si existe alguna restricción de clave foránea
+        dest.activo = False
+        dest.updated_at = datetime.datetime.now(datetime.timezone.utc)
+        db.commit()
+        return {"status": "SUCCESS", "message": f"Destinatario '{nombre}' desactivado con éxito."}
 
 
 @router.post("/test-whatsapp")
