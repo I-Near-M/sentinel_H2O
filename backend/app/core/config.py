@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     WHATSAPP_PROVIDER: str = "mock"  # 'meta_cloud' o 'mock'
     WHATSAPP_API_TOKEN: str = ""
     WHATSAPP_PHONE_NUMBER_ID: str = ""
+    WHATSAPP_API_VERSION: str = "v21.0"
 
     # Hardware SIM800L SMS Fallback
     ENABLE_SIM800L_EDGE_SMS: bool = True

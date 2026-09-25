@@ -11,8 +11,10 @@ router = APIRouter()
 
 
 class WhatsAppTestRequest(BaseModel):
-    phone_number: str = Field(..., description="Número telefónico de destino (ej: 51987654321)", json_schema_extra={"example": "51987654321"})
+    phone_number: str = Field(..., description="Número telefónico de destino (ej: 51982729255)", json_schema_extra={"example": "51982729255"})
     message_text: Optional[str] = Field(None, description="Mensaje personalizado de prueba", json_schema_extra={"example": "🟢 Sentinel-H2O: Prueba de alerta exitosa."})
+    use_template: Optional[bool] = Field(False, description="Si es True, envía la plantilla oficial de Meta (ej: hello_world)")
+    template_name: Optional[str] = Field("hello_world", description="Nombre de la plantilla en Meta for Developers")
 
 
 class DestinatarioUpdate(BaseModel):
@@ -152,20 +154,28 @@ def delete_recipient(id_destinatario: int, db: Session = Depends(get_db)):
 async def send_test_whatsapp(req: WhatsAppTestRequest):
     """
     **Enviar WhatsApp de Prueba**: Envía un mensaje inmediato a un número telefónico
-    usando el servicio de notificaciones.
+    usando el servicio de notificaciones (modo 'meta_cloud' oficial o 'mock').
+    Permite enviar texto libre o plantillas oficiales (ej: 'hello_world') para iniciar la conversación.
     """
     msg = req.message_text or "🟢 *Sentinel-H2O (Cuenca Chancay-Huaral)*: Conexión con el servidor de alertas establecida correctamente."
-    success = await NotificationService.send_whatsapp_alert(
+    result = await NotificationService.send_whatsapp_message_detailed(
         phone_number=req.phone_number,
-        message_text=msg
+        message_text=msg if not req.use_template else None,
+        template_name=req.template_name if req.use_template else None
     )
-    if not success:
+
+    if not result.get("success"):
+        diag = result.get("diagnostic", "No se pudo despachar el mensaje de WhatsApp.")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="No se pudo despachar el mensaje de WhatsApp. Verifique la configuración en .env."
+            detail=diag
         )
+
     return {
         "status": "SUCCESS",
-        "destinatario": req.phone_number,
-        "mensaje": msg
+        "provider": result.get("provider"),
+        "destinatario": result.get("recipient"),
+        "tipo_envio": "PLANTILLA" if req.use_template else "TEXTO_LIBRE",
+        "meta_message_id": result.get("meta_message_id"),
+        "mensaje": msg if not req.use_template else f"Plantilla '{req.template_name}'"
     }

@@ -191,15 +191,18 @@ export default function RecipientsManagement() {
     e.preventDefault();
     setSendingTest(true);
     try {
-      await alertsApi.sendTestWhatsApp({
+      const res = await alertsApi.sendTestWhatsApp({
         phone_number: testModal.telefono_whatsapp,
         message_text: testMessage || undefined
       });
-      alert("¡Alerta despachada con éxito! (En modo local se registró en la terminal/logs de Docker)");
+      const providerDesc = res.data?.provider === 'meta_cloud' ? 'vía Meta WhatsApp Cloud API Oficial' : 'en modo Mock (consola)';
+      alert(`¡Mensaje despachado con éxito ${providerDesc}! Destinatario: +${res.data?.destinatario || testModal.telefono_whatsapp}`);
       setTestModal(null);
       setTestMessage('');
     } catch (err) {
-      alert("Error despachando mensaje: " + (err.response?.data?.detail || err.message));
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string' ? detail : (detail?.diagnostico || detail?.mensaje || err.message);
+      alert("Error despachando mensaje: " + errorMsg);
     } finally {
       setSendingTest(false);
     }

@@ -120,17 +120,18 @@ class TelemetryService:
             battery_v=telemetry_in.battery_v
         )
 
-        # 8. Despacho inmediato de alertas a los destinatarios (imprime en logs en modo Mock)
+        db.commit()
+        db.refresh(medicion_proc)
+
+        # 8. Despacho inmediato de alertas a los destinatarios (Meta Cloud o Mock)
         for alt in alertas:
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    asyncio.create_task(NotificationService.dispatch_alert_to_recipients(db=db, alerta=alt))
+                    asyncio.create_task(NotificationService.dispatch_alert_to_recipients(alerta=alt))
                 else:
-                    loop.run_until_complete(NotificationService.dispatch_alert_to_recipients(db=db, alerta=alt))
+                    loop.run_until_complete(NotificationService.dispatch_alert_to_recipients(alerta=alt))
             except Exception as e:
                 logger.warning(f"Error despachando notificación: {e}")
 
-        db.commit()
-        db.refresh(medicion_proc)
         return medicion_proc
